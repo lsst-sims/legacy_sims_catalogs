@@ -37,7 +37,7 @@ class CatalogDescription (object):
                                      "STUB":["id","ra","dec"]}
 
             cls.__metadataAttributeList = {"TRIM":["OPSIM_RA"], 
-                                       "STUB":["OPSIM_RA"]}
+                                       "STUB":["fieldradeg"]}
 
             cls.__dataFormatString = {"TRIM":"", 
                                       "STUB":"{0[0]:d} {0[1]:g} {0[2]:g} \n"}
