@@ -123,7 +123,8 @@ class InstanceCatalog (object):
             attributeList = self.catalogDescription.dataAttributeList(catalogType)
             print formatString
             print attributeList
-            for i in range(self.dataArray["ra"].size):
+            # RRG:  changed self.dataArray["ra"].size to len(...)
+            for i in range(len(self.dataArray["ra"])):
 #                print map(lambda x: self.dataArray[x][i],attributeList)
                 outputFile.write(formatString.format(map(lambda x: self.dataArray[x][i],attributeList)))
         outputFile.close()
