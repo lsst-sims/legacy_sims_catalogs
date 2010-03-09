@@ -34,15 +34,13 @@ class CatalogDescription (object):
             # for a given set of catalogTypes
             # Make all attributes private
             cls.__dataAttributeList = {"STAR":["ra","dec","time"], 
-                                     "DIA":["ra","dec","time","time1", "time2",
-                                            "time3","time4", "time5","time51","time52",
-                                            "time53","time54", "time55","time56"]}
+                                     "STUB":["id","ra","dec"]}
 
-            cls.__metadataAttributeList = {"TRIM":["ONE","TWO"], 
-                                       "DIA":["OPSIM_RA"]}
+            cls.__metadataAttributeList = {"TRIM":["OPSIM_RA"], 
+                                       "STUB":["OPSIM_RA"]}
 
             cls.__dataFormatString = {"TRIM":"", 
-                                      "DIA":"{0[0]:g} {0[1]:g} {0[2]:g} {0[3]:g} {0[4]:g} {0[5]:g} {0[6]:g} {0[7]:g} {0[8]:g} {0[9]:g} {0[10]:g} {0[11]:g} {0[12]:g} {0[13]:g}\n"}
+                                      "STUB":"{0[0]:d} {0[1]:g} {0[2]:g} \n"}
 
             cls.__objectFormatString = {"STAR":"object {0[0]:g} {0[1]:g} {0[2]:g}\n", 
                                         "SERSIC2D":"object {0[0]:g} {0[1]:g} {0[2]:.9g}\n"}
