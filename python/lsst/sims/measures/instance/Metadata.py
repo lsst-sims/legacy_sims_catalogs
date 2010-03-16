@@ -19,7 +19,7 @@ class Metadata (object):
     """ Class that describes the metadata for an instanceCatalog"""
     
     def __init__(self):
-        self.catalogDescription = CatalogDescription.CatalogDescription()
+        self.catalogDescription = None
         self.parameters = {}
         self.comments = {}
         self.ismerged = 0

@@ -23,50 +23,72 @@
         returns a list of object types in the an instanceCatalog
 
 """
+
+import re
+import shlex
+
 class CatalogDescription (object):
     """ Singleton class  describes the defintions of types of InstanceClasses"""
 
-    def __new__(cls, *p, **k):
-        if not '_the_instance' in cls.__dict__:
-            cls._the_instance = object.__new__(cls)
+    def __init__(cls, requireMetadataFile, requiredSchemaFile, requiredDerivedFile, requiredFormatFile):
+        #        requireMetadataFile, requiredSchemaFile, requiredDerivedFile, requiredFormatFile):
+        # List the attributes, header information and format string
+        # for a given set of catalogTypes
+        # Make all attributes private
+        cls.__metadataAttributeList = cls.readRequiredData(requireMetadataFile)
+        
+        cls.__databaseAttributeList =  cls.readRequiredData(requiredSchemaFile)
 
-            # List the attributes, header information and format string
-            # for a given set of catalogTypes
-            # Make all attributes private
-            cls.__dataAttributeList = {"STAR":["ra","dec","time"], 
-                                     "STUB":["id","ra","dec"]}
+        cls.__derivedAttributeList =  cls.readRequiredData(requiredDerivedFile)
 
-            cls.__metadataAttributeList = {"TRIM":["OPSIM_RA"], 
-                                       "STUB":["fieldradeg"]}
+        cls.__formatString =  cls.readRequiredData(requiredFormatFile)
 
-            cls.__dataFormatString = {"TRIM":"", 
-                                      "STUB":"{0[0]:d} {0[1]:g} {0[2]:g} \n"}
-
-            cls.__objectFormatString = {"STAR":"object {0[0]:g} {0[1]:g} {0[2]:g}\n", 
-                                        "SERSIC2D":"object {0[0]:g} {0[1]:g} {0[2]:.9g}\n"}
-
-        return cls._the_instance
-
-    def dataFormatString(self, catalogType):
+    def formatString(self, catalogType):
         """Return the format for the output of the data for catalogType"""
-        return self.__dataFormatString[catalogType]
+        if ((catalogType in self.__formatString) == False):
+            raise ValueError("Entry %s does not exist in format list"%catalogType)
+        return self.__formatString[catalogType]
 
-    def objectFormatString(self, objectType):
-        """Return the format for the trim file output of the data for objectType"""
-        return self.__objectFormatString[objectType]
-
-    def dataAttributeList(self, catalogType):
+    def databaseAttributeList(self, catalogType):
         """Return the list of attributes in dataArray for catalogType"""
-        return self.__dataAttributeList[catalogType]
+        return self.__databaseAttributeList[catalogType]
+
+    def derivedAttributeList(self, catalogType):
+        """Return the list of attributes in dataArray for catalogType"""
+        return self.__derivedAttributeList[catalogType]
 
     def metadataAttributeList(self, catalogType):
         """Return the list of header data for catalogType"""
         return self.__metadataAttributeList[catalogType]
 
-    def catalogTypeList(self):
-        """ Return a list of catalogTypes available"""
-        return self.__dataAttributeList.keys()
+#    def listTypes(self):
+#        """ Return a list of catalogTypes available"""
+#        return self.__dataAttributeList.keys()
 
-    def objectTypeList(self):
-        """ Return a list of objectTypes available"""
-        return self.__objectFormatString.keys()
+#    def listTypeList(self):
+#        """ Return a list of objectTypes available"""
+#        return self.__objectFormatString.keys()
+
+
+    def readRequiredData(self, fileName):
+        """ Read in a data file that specifies required attributes/metadata for a given catalog type
+        
+        Given a filename  returns a dictionary of tuples with attribute name and data type
+        """
+        fp = open(fileName,"r")
+        metadata = {}
+        attributeList = None
+        for line in fp:
+            line = line.strip()
+            if line.startswith("["):
+                if (attributeList != None):
+                    metadata[objectType] = attributeList
+                objectType = re.findall(r'\w+',line)[0]
+                attributeList = []
+            elif ((len(line) > 0) and (line.startswith("#") == False)):
+                metadataKey,metadataType = shlex.split(line)
+                attributeList.append((metadataKey,metadataType))
+        
+        metadata[objectType] = attributeList
+
+        return metadata
