@@ -1,0 +1,44 @@
+[POINT]
+id long 
+ra float
+dec float
+glon float
+glat float
+magNorm float
+sedFilename str
+galacticExtinctionModel str
+galacticAv float
+galacticRv float
+
+[MOVINGPOINT]
+id long
+ra float
+dec float
+magNorm float
+sedFilename str
+galacticExtinctionModel str
+galacticAv float
+galacticRv float
+
+[SERSIC2D]
+id long
+ra float
+dec float
+glon float
+glat float
+magNorm float
+sedFilename str
+galacticExtinctionModel str
+galacticAv float
+galacticRv float
+sersicExtinctionModel str
+sersicAv float
+sersicRv float
+redshift float
+
+
+[STUB]
+id long
+ra float
+dec float
+
