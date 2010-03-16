@@ -6,19 +6,37 @@ glon float
 glat float
 magNorm float
 sedFilename str
+redshift float
+shear_xx float
+shear_yy float
+magnification float
+properMotionRa float
+properMotionDec float
+spatialmodel str
 galacticExtinctionModel str
 galacticAv float
 galacticRv float
+internalExtinctionModel str
+
 
 [MOVINGPOINT]
-id long
+id long 
 ra float
 dec float
+glon float
+glat float
 magNorm float
 sedFilename str
+redshift float
+shear_xx float
+shear_yy float
+magnification float
+properMotionRa float
+properMotionDec float
+spatialmodel str
 galacticExtinctionModel str
-galacticAv float
-galacticRv float
+internalExtinctionModel str
+
 
 [SERSIC2D]
 id long
@@ -28,17 +46,24 @@ glon float
 glat float
 magNorm float
 sedFilename str
+redshift float
+shear_xx float
+shear_yy float
+magnification float
+properMotionRa float
+properMotionDec float
+spatialmodel str
+majorAxis float
+minorAxis float
+positionAngle float
 galacticExtinctionModel str
 galacticAv float
 galacticRv float
-sersicExtinctionModel str
-sersicAv float
-sersicRv float
-redshift float
-
+internalExtinctionModel str
+internalAv float
+internalRv float
 
 [STUB]
 id long
 ra float
 dec float
-
