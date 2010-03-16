@@ -7,8 +7,8 @@ glat float
 magNorm float
 sedFilename str
 redshift float
-shear_xx float
-shear_yy float
+shearXX float
+shearYY float
 magnification float
 properMotionRa float
 properMotionDec float
@@ -28,8 +28,8 @@ glat float
 magNorm float
 sedFilename str
 redshift float
-shear_xx float
-shear_yy float
+shearXX float
+shearYY float
 magnification float
 properMotionRa float
 properMotionDec float
@@ -47,8 +47,8 @@ glat float
 magNorm float
 sedFilename str
 redshift float
-shear_xx float
-shear_yy float
+shearXX float
+shearYY float
 magnification float
 properMotionRa float
 properMotionDec float

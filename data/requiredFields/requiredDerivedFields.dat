@@ -1,11 +1,17 @@
 [POINT]
-
+raHelio float
+decHelio float
 
 [MOVINGPOINT]
+raHelio float
+decHelio float
 
 
 [SERSIC2D]
+raHelio float
+decHelio float
 
 
 [STUB]
-ra2 float
+raHelio float
+decHelio float
