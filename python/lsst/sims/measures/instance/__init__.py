@@ -1,3 +1,3 @@
 from CatalogDescription import *
-from instanceCatalog import *
+from InstanceCatalog import *
 from Metadata import *
