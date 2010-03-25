@@ -17,8 +17,8 @@ galacticExtinctionModel str
 galacticAv float
 galacticRv float
 internalExtinctionModel str
-paralax float
-vr float
+parallax float
+radialVelocity float
 
 
 [MOVINGPOINT]
