@@ -5,10 +5,9 @@
 
 """
 
-#import astrometry
-#import magnitudes
-#import instrument
-#import site
+from lsst.sims.measures.astrometry.Astrometry import *
+import slalsst
+import SiteDescription
 import numpy
 import warnings
 import CatalogDescription
@@ -33,7 +32,7 @@ class SourceType:
     ARTEFACT = 5
 
 
-class InstanceCatalog (object):
+class InstanceCatalog (Astrometry):
     """ Class that describes the instance catalog for the simulations. 
 
     Instance catalogs include a dictionary of numpy arrays which contains 
@@ -55,6 +54,7 @@ class InstanceCatalog (object):
         """
         self.catalogDescription = None
         
+        self.site = SiteDescription.SiteDescription()
         self.metadata = Metadata.Metadata()
         self.catalogType = CatalogType.INVALID
         self.objectType = ""
@@ -94,7 +94,7 @@ class InstanceCatalog (object):
         return True
                 
                 
-    # write formatted data catalogs
+    # Output of formatted data catalogs
     def writeCatalogData(self, filename, catalogType, newfile = False):
         """Write an instanceCatalog dataArray based on the catalog type given
 
@@ -130,7 +130,53 @@ class InstanceCatalog (object):
                 outputFile.write(formatString.format(map(lambda x: self.dataArray[x][i],attributeList)))
         outputFile.close()
 
-    # composite astrometry operations
+    # Composite astrometry operations
+    def makeHelio(self):
+        """ Generate Heliocentric coordinates """
+
+        # Generate Julian epoch from MJD
+        julianEpoch = slalsst.slaEpj(self.metadata.parameters['Opsim_expmjd'])
+        print julianEpoch
+        # apply precession
+#        raOut, decOut = applyPrecession(cls, cls.dataArray['ra'], cls.dataArray['dec'], EP1=julianEpoch)
+        raOut, decOut = self.applyPrecession(self.dataArray['ra'], self.dataArray['dec'],
+                                                   Date = self.metadata.parameters['Opsim_expmjd'])
+
+        # apply proper motion
+        raOut, decOut = self.applyProperMotion(raOut, decOut, self.dataArray['properMotionRa'],
+                                               self.dataArray['properMotionDec'], self.dataArray['parallax'],
+                                               self.dataArray['radialVelocity'], EP1=julianEpoch)
+
+        self.addColumn(raOut, 'raHelio')
+        self.addColumn(decOut, 'decHelio')
+
+    def makeApparent(self):
+        #if ((("raHelio" in self.dataArray) and 
+        #     ("decHelio" in self.dataArray)) != True):
+        #    self.makeHelio()
+        print self.metadata.parameters['Opsim_expmjd']
+        raOut, decOut = self.applyMeanApparentPlace(self.dataArray['ra'], self.dataArray['dec'],
+                                                    self.dataArray['properMotionRa'],
+                                                    self.dataArray['properMotionDec'], self.dataArray['parallax'],
+                                                    self.dataArray['radialVelocity'],
+                                                    Date=self.metadata.parameters['Opsim_expmjd'])
+
+        self.addColumn(raOut, 'raApp')
+        self.addColumn(decOut, 'decApp')
+
+    def makeObserved(self):
+        if ((("raApp" in self.dataArray) and 
+             ("decApp" in self.dataArray)) != True):
+            self.makeApparent()
+        raOut, decOut = self.applyMeanObservedPlace(self.dataArray['raApp'], self.dataArray['decApp'],
+                                                    Date=self.metadata.parameters['Opsim_expmjd'])
+
+        self.addColumn(raOut, 'raObs')
+        self.addColumn(decOut, 'decObs')
+
+
+
+    # Photometry composite methods
 """ TODO (2/18/2010) incorporate the precession routines
     def makeMeasured(self):
         raOut, decOut = self.applyPropermotion(self.dataArray['ra'], 
@@ -138,11 +184,6 @@ class InstanceCatalog (object):
         raOut, decOut = self.applyParallax(raOut, decOut)
         self.addColumn(raOut, 'raMeasured')
         self.addColumn(decOut, 'decMeasured')
-    def makeHelio(self):
-        raOut, decOut = self.applyPrecession()
-        raOut, decOut = self.applyPropermotion()
-        self.addColumn(raOut, 'raHelio')
-        self.addColumn(decOut, 'decHelio')
     def makeGeo(self):
         if ((("raHelio" in self.dataArray) and 
              ("decHelio" in self.dataArray)) != True):
