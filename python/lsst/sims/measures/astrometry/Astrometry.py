@@ -2,7 +2,7 @@ import numpy
 import ctypes
 import math
 
-slalib = numpy.ctypeslib.load_library("slalib/_slalsst.so",".")
+slalib = numpy.ctypeslib.load_library("_slalsst.so",".")
 
 class Astrometry():
     """Collection of astrometry routines that operate on numpy arrays"""
