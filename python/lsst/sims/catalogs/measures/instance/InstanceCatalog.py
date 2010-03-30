@@ -76,20 +76,29 @@ class InstanceCatalog (Astrometry):
             
 
     # validate that the catalog contains the correct data
-    def validateData(self, dataType):
+    def validateData(self, catalogType):
         """Validate that the class contains the correct attributes
         
             This does not test validity of the data
             This combines searches through the schema and derived attributes"""
-        if (dataType == None):
+        if (catalogType == None):
             return True
-        else:
+        elif (catalogType == "TRIM"):
             # copy the attribute list so we dont append to the original list
-            attributeList = self.catalogDescription.databaseAttributeList(dataType)[:]
-            attributeList.extend(self.catalogDescription.derivedAttributeList(dataType))
+            attributeList = self.catalogDescription.databaseAttributeList(self.objectType)[:]
+            attributeList.extend(self.catalogDescription.derivedAttributeList(self.objectType))
             for name in attributeList:
                 if ((self.dataArray.has_key(name[0]) == False)):
-                    raise ValueError("Entry %s does not exist in data"%name)
+                    raise ValueError("Entry %s does not exist in data"%name[0])
+        else:
+            # copy the attribute list so we dont append to the original list
+            attributeList = self.catalogDescription.databaseAttributeList(catalogType)[:]
+            attributeList.extend(self.catalogDescription.derivedAttributeList(catalogType))
+            for name in attributeList:
+                if ((self.dataArray.has_key(name[0]) == False)):
+                    raise ValueError("Entry %s does not exist in data"%name[0])
+
+
         return True
                 
                 
