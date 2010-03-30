@@ -2,7 +2,8 @@ import numpy
 import ctypes
 import math
 
-slalib = numpy.ctypeslib.load_library("_slalsst.so",".")
+#slalib = numpy.ctypeslib.load_library("slalsst.so")
+slalib = ctypes.CDLL("slalsst.so")
 
 class Astrometry():
     """Collection of astrometry routines that operate on numpy arrays"""
@@ -23,7 +24,7 @@ class Astrometry():
 
         return longitude, latitude
     
-    def applyPrecession(self, ra, dec, EP0=2000.0, Date=2000.0):
+    def applyPrecession(self, ra, dec, EP0=2000.0, MJD=2000.0):
         """ applyPrecession() applies precesion and nutation to coordinates between two epochs.
         
         Assumes FK5 as the coordinate system
@@ -32,8 +33,6 @@ class Astrometry():
         This uses the Fricke IAU 1976 model for J2000 precession
         This uses the IAU 1980 nutation model
         """
-        print ra
-
         raOut = numpy.zeros(len(ra))
         decOut = numpy.zeros(len(ra))
         
@@ -53,7 +52,7 @@ class Astrometry():
 
         # Determine the precession and nutation
         slalib.slaPrenut.argtypes = [ctypes.c_double,ctypes.c_double, rmat_ptr]
-        slalib.slaPrenut(EP0, Date, rmat)
+        slalib.slaPrenut(EP0, MJD, rmat)
 
 #        self.slalib.slaPrec.argtypes = [ctypes.c_double,ctypes.c_double, rmat_ptr]
 #        Date = 1994.89266306
@@ -66,7 +65,7 @@ class Astrometry():
         raOut,decOut = self.cartesianToSpherical(xyz)
         return raOut,decOut
 
-    def applyProperMotion(self, ra, dec, pm_ra, pm_dec, parallax, v_rad, EP0=2000.0, EP1=2015.0):
+    def applyProperMotion(self, ra, dec, pm_ra, pm_dec, parallax, v_rad, EP0=2000.0, MJD=2015.0):
         """Calculates proper motion between two epochs
         
         Note pm_ra is measured in sky velocity (cos(dec)*dRa/dt). Slalib assumes dRa/dt
@@ -80,6 +79,11 @@ class Astrometry():
         raOut = numpy.zeros(len(ra))
         decOut = numpy.zeros(len(ra))
 
+        # Generate Julian epoch from MJD
+        slalib.slaEpj.argtypes = [ctypes.c_double]
+        slalib.slaEpj.restype = ctypes.c_double
+        julianEpoch = slalib.slaEpj(self.metadata.parameters['Opsim_expmjd'])
+
         #Define proper motion interface
         slalib.slaPm.argtypes = [ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double,
                                       ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double,
@@ -90,7 +94,7 @@ class Astrometry():
         for i,raVal in enumerate(ra):
             if ((math.fabs(pm_ra[i]) > EPSILON) or (math.fabs(pm_dec[i]) > EPSILON)):
                 slalib.slaPm(ra[i], dec[i], pm_ra[i], pm_dec[i]/numpy.cos(dec[i]), parallax[i],
-                                  v_rad[i] ,EP0, EP1, _raOut, _decOut)
+                                  v_rad[i] ,EP0, julianEpoch, _raOut, _decOut)
                 raOut[i] = _raOut.value
                 decOut[i] = _decOut.value
             else:
@@ -99,7 +103,7 @@ class Astrometry():
             
         return raOut,decOut
 
-    def applyMeanApparentPlace(self, ra, dec, pm_ra, pm_dec, parallax, v_rad, Epoch0=2000.0, Date=2015.0):
+    def applyMeanApparentPlace(self, ra, dec, pm_ra, pm_dec, parallax, v_rad, Epoch0=2000.0, MJD=2015.0):
         """Calulate the Mean Apparent Place given an Ra and Dec
 
         Optimized to use slalib mappa routines
@@ -109,7 +113,7 @@ class Astrometry():
         prms = numpy.zeros(21)
         prms_ptr = numpy.ctypeslib.ndpointer(dtype=float, ndim=1, shape=(21))
         slalib.slaMappa.argtypes = [ctypes.c_double,ctypes.c_double, prms_ptr]
-        slalib.slaMappa(Epoch0, Date, prms)
+        slalib.slaMappa(Epoch0, MJD, prms)
 
         #Apply source independent parameters
         slalib.slaMapqk.argtypes = [ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double,
@@ -130,11 +134,10 @@ class Astrometry():
 
         return raOut,decOut
 
-    def applyMeanObservedPlace(self, ra, dec, Date = 2015.):
+    def applyMeanObservedPlace(self, ra, dec, MJD = 2015.):
         """Calculate the Mean Observed Place
 
-        Optimized to use slalib mappa routines
-        Recomputers precession and nutation
+        Optimized to use slalib aoppa routines
         """
 
         # Correct site longitude for polar motion slaPolmo
@@ -150,7 +153,7 @@ class Astrometry():
         # TODO NEED UT1 - UTC to be kept as a function of date.
         # Assume dut = 0.3 (seconds)
         dut = 0.3
-        slalib.slaAoppa(Date, dut,
+        slalib.slaAoppa(MJD, dut,
                         self.site.parameters["longitude"],
                         self.site.parameters["latitude"],
                         self.site.parameters["height"],
@@ -179,7 +182,66 @@ class Astrometry():
         zenith = ctypes.c_double(0.)
         hourAngle = ctypes.c_double(0.)
         for i,raVal in enumerate(ra):
-            slalib.slaAopqk(ra[i], dec[i], obsPrms, azimuth, zenith, hourAngle, _raOut, _decOut)            
+            slalib.slaAopqk(ra[i], dec[i], obsPrms, azimuth, zenith, hourAngle, _decOut, _raOut)            
+            raOut[i] = _raOut.value
+            decOut[i] = _decOut.value
+            
+        return raOut,decOut
+
+    def applyApparentToTrim(self, ra, dec, MJD = 2015.):
+        """ Generate TRIM coordinates
+
+        From the observed coordinates generate the position of the
+        source as observed from the telescope site (required for the
+        trim files). This includes the hour angle, diurnal aberration,
+        alt-az. This does NOT include refraction.
+
+        Optimized to use slalib aoppa_nr routines (no refraction)
+        """
+
+        # Correct site longitude for polar motion slaPolmo
+        obsPrms = numpy.zeros(14)
+        obsPrms_ptr = numpy.ctypeslib.ndpointer(dtype=float, ndim=1, shape=(14))
+        slalib.slaAoppa_nr.argtypes= [ ctypes.c_double, ctypes.c_double, ctypes.c_double,
+                                         ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double,
+                                         ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double,
+                                         ctypes.c_double, obsPrms_ptr]
+
+        wavelength = 5000.
+        #
+        # TODO NEED UT1 - UTC to be kept as a function of date.
+        # Assume dut = 0.3 (seconds)
+        dut = 0.3
+        slalib.slaAoppa_nr(MJD, dut,
+                        self.site.parameters["longitude"],
+                        self.site.parameters["latitude"],
+                        self.site.parameters["height"],
+                        self.site.parameters["xPolar"],
+                        self.site.parameters["yPolar"],
+                        self.site.parameters["meanTemperature"],
+                        self.site.parameters["meanPressure"],
+                        self.site.parameters["meanHumidity"],
+                        wavelength ,
+                        self.site.parameters["lapseRate"],
+                        obsPrms)
+                             
+
+        # slaaopqk to apply to sources self.slalib.slaAopqk.argtypes=
+        slalib.slaAopqk_nr.argtypes= [ctypes.c_double, ctypes.c_double, obsPrms_ptr, ctypes.POINTER(ctypes.c_double),
+                                   ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_double),
+                                   ctypes.POINTER(ctypes.c_double),
+                                   ctypes.POINTER(ctypes.c_double)]
+
+        raOut = numpy.zeros(len(ra))
+        decOut = numpy.zeros(len(ra))
+
+        _raOut = ctypes.c_double(0.)
+        _decOut = ctypes.c_double(0.)
+        azimuth = ctypes.c_double(0.)
+        zenith = ctypes.c_double(0.)
+        hourAngle = ctypes.c_double(0.)
+        for i,raVal in enumerate(ra):
+            slalib.slaAopqk_nr(ra[i], dec[i], obsPrms, azimuth, zenith, hourAngle, _decOut, _raOut)            
             raOut[i] = _raOut.value
             decOut[i] = _decOut.value
             
