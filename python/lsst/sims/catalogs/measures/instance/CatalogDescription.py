@@ -61,15 +61,6 @@ class CatalogDescription (object):
         """Return the list of header data for catalogType"""
         return self.__metadataAttributeList[catalogType]
 
-#    def listTypes(self):
-#        """ Return a list of catalogTypes available"""
-#        return self.__dataAttributeList.keys()
-
-#    def listTypeList(self):
-#        """ Return a list of objectTypes available"""
-#        return self.__objectFormatString.keys()
-
-
     def readRequiredData(self, fileName):
         """ Read in a data file that specifies required attributes/metadata for a given catalog type
         

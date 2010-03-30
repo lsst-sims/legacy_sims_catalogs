@@ -7,14 +7,14 @@ Opsim_moondec float
 Opsim_rotskypos float
 Opsim_rottelpos float
 Opsim_filter int
-Unrefracted_Altitude float
-Unrefracted_Azimuth float
+#Unrefracted_Altitude float
+#Unrefracted_Azimuth float
 Opsim_rawseeing float
 Opsim_sunalt float
 Opsim_moonalt float
 Opsim_dist2moon float
 Opsim_moonphase float
-Slalib_date str
+#Slalib_date str
 Opsim_obshistid l
 Opsim_expmjd float
 

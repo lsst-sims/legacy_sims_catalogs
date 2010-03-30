@@ -1,5 +1,5 @@
 [POINT]
-id,raHelio,decHelio,magNorm,sedFilename,redshift,shearXX,shearYY,magnification,properMotionRa,properMotionDec,spatialmodel,galacticExtinctionModel,galacticAv,galacticRv,internalExtinctionModel "object {0[0]:d} {0[1]:g} {0[2]:g} {0[3]:g} {0[4]:s} {0[5]:g} {0[6]:g} {0[7]:g} {0[8]:g} {0[9]:g} {0[10]:g} {0[11]:s} {0[12]:s} {0[12]:g} {0[14]:g} {0[15]:s}"
+id,raTrim,decTrim,magNorm,sedFilename,redshift,shearXX,shearYY,magnification,properMotionRa,properMotionDec,spatialmodel,galacticExtinctionModel,galacticAv,galacticRv,internalExtinctionModel "object {0[0]:d} {0[1]:g} {0[2]:g} {0[3]:g} {0[4]:s} {0[5]:d} {0[6]:d} {0[7]:d} {0[8]:d} {0[9]:g} {0[10]:g} {0[11]:s} {0[12]:s} {0[13]:g} {0[14]:g} {0[15]:s}"
 
 [MOVINGPOINT]
 id,raHelio,decHelio,magNorm,sedFilename,redshift,shearXX,shearYY,magnification,properMotionRa,properMotionDec,spatialmodel,galacticExtinctionModel,internalExtinctionModel "object {0[0]:d} {0[1]:g} {0[2]:g} {0[3]:g} {0[4]:s} {0[5]:g} {0[6]:g} {0[7]:g} {0[8]:g} {0[9]:g} {0[10]:g} {0[11]:s} {0[12]:s} {0[13]:s}"

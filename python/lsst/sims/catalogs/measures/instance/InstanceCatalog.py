@@ -5,7 +5,7 @@
 
 """
 
-from lsst.sims.measures.astrometry.Astrometry import *
+from lsst.sims.catalogs.measures.astrometry.Astrometry import *
 import SiteDescription
 import numpy
 import warnings
@@ -112,16 +112,10 @@ class InstanceCatalog (Astrometry):
             pass
         elif (catalogType == "TRIM"):
             #write trim file based on objectType
-            print "OUTPUT"
             attributeList = self.catalogDescription.formatString(self.objectType)[0][0].split(',')
             # Added a newline as shlex reads in without this information parsed
             formatString = self.catalogDescription.formatString(self.objectType)[0][1]+"\n"
-            print attributeList
-            print formatString
             for i in range(len(self.dataArray["id"])):
-                print map(lambda x: self.dataArray[x][i],attributeList)
-                print map(lambda x: type(self.dataArray[x][i]),attributeList)
-                print formatString.format(map(lambda x: self.dataArray[x][i],attributeList))
                 # use map to output all attributes in the given format string
                 outputFile.write(formatString.format(map(lambda x: self.dataArray[x][i],attributeList)))
         else:

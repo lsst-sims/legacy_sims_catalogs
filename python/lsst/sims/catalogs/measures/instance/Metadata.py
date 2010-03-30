@@ -69,17 +69,16 @@ class Metadata (object):
         else:
             outputFile = open(filename,"w")
 
-        print 'Params:', self.parameters
         if (catalogType != None):
             attributeList = self.catalogDescription.metadataAttributeList(catalogType)
             formatString = "{0} {1}\n"
             for name in attributeList:
-                print '   Name: ', name
-                outputFile.write(formatString.format(name,self.parameters[name]))
+                #print '   Name: ', name[0]
+                outputFile.write(formatString.format(name[0],self.parameters[name[0]]))
         else:
             formatString = "#{0} {1}\n"
             for name in self.parameters:
-                outputFile.write(formatString.format(name,self.parameters[name]))
+                outputFile.write(formatString.format(name[0],self.parameters[name[0]]))
         outputFile.close()
 
   
