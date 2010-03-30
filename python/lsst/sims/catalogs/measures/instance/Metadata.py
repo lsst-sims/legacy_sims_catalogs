@@ -56,8 +56,8 @@ class Metadata (object):
         else:
             attributeList = self.catalogDescription.metadataAttributeList(dataType)
             for name in attributeList:
-                if ((self.parameters.has_key(name) == False)):
-                    raise ValueError("Entry %s does not exist in data"%name)
+                if ((self.parameters.has_key(name[0]) == False)):
+                    raise ValueError("Entry %s does not exist in data"%name[0])
         return True
 
 
