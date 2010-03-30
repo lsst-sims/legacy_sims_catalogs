@@ -6,7 +6,6 @@
 """
 
 from lsst.sims.measures.astrometry.Astrometry import *
-import slalsst
 import SiteDescription
 import numpy
 import warnings
@@ -113,10 +112,16 @@ class InstanceCatalog (Astrometry):
             pass
         elif (catalogType == "TRIM"):
             #write trim file based on objectType
-            attributeList = self.catalogDescription.formatString(objectType)[0][0].split(',')
+            print "OUTPUT"
+            attributeList = self.catalogDescription.formatString(self.objectType)[0][0].split(',')
             # Added a newline as shlex reads in without this information parsed
-            formatString = self.catalogDescription.formatString(objectType)[0][1]+"\n"
+            formatString = self.catalogDescription.formatString(self.objectType)[0][1]+"\n"
+            print attributeList
+            print formatString
             for i in range(len(self.dataArray["id"])):
+                print map(lambda x: self.dataArray[x][i],attributeList)
+                print map(lambda x: type(self.dataArray[x][i]),attributeList)
+                print formatString.format(map(lambda x: self.dataArray[x][i],attributeList))
                 # use map to output all attributes in the given format string
                 outputFile.write(formatString.format(map(lambda x: self.dataArray[x][i],attributeList)))
         else:
@@ -134,45 +139,69 @@ class InstanceCatalog (Astrometry):
     def makeHelio(self):
         """ Generate Heliocentric coordinates """
 
-        # Generate Julian epoch from MJD
-        julianEpoch = slalsst.slaEpj(self.metadata.parameters['Opsim_expmjd'])
-        print julianEpoch
         # apply precession
-#        raOut, decOut = applyPrecession(cls, cls.dataArray['ra'], cls.dataArray['dec'], EP1=julianEpoch)
         raOut, decOut = self.applyPrecession(self.dataArray['ra'], self.dataArray['dec'],
-                                                   Date = self.metadata.parameters['Opsim_expmjd'])
+                                                   MJD = self.metadata.parameters['Opsim_expmjd'])
 
         # apply proper motion
         raOut, decOut = self.applyProperMotion(raOut, decOut, self.dataArray['properMotionRa'],
                                                self.dataArray['properMotionDec'], self.dataArray['parallax'],
-                                               self.dataArray['radialVelocity'], EP1=julianEpoch)
+                                               self.dataArray['radialVelocity'], MJD = self.metadata.parameters['Opsim_expmjd'])
 
+        # TODO 3/29/2010 convert FK5 to ICRS?
         self.addColumn(raOut, 'raHelio')
         self.addColumn(decOut, 'decHelio')
 
     def makeApparent(self):
-        #if ((("raHelio" in self.dataArray) and 
-        #     ("decHelio" in self.dataArray)) != True):
-        #    self.makeHelio()
-        print self.metadata.parameters['Opsim_expmjd']
+        """ Generate apparent coordinates
+        
+
+        This converts from the J2000 coordinates to the position as
+        viewed from the center of the Earth and includes the effects
+        of light defection (ignored), annual aberration, precession
+        and nutation
+        """
         raOut, decOut = self.applyMeanApparentPlace(self.dataArray['ra'], self.dataArray['dec'],
                                                     self.dataArray['properMotionRa'],
                                                     self.dataArray['properMotionDec'], self.dataArray['parallax'],
                                                     self.dataArray['radialVelocity'],
-                                                    Date=self.metadata.parameters['Opsim_expmjd'])
+                                                    MJD=self.metadata.parameters['Opsim_expmjd'])
 
         self.addColumn(raOut, 'raApp')
         self.addColumn(decOut, 'decApp')
 
     def makeObserved(self):
+        """ Generate Observed coordinates
+
+        From the observed coordinates generate the position of the
+        source as observed from the telescope site. This includes the
+        hour angle, diurnal aberration, alt-az, and refraction. 
+        """
         if ((("raApp" in self.dataArray) and 
              ("decApp" in self.dataArray)) != True):
             self.makeApparent()
         raOut, decOut = self.applyMeanObservedPlace(self.dataArray['raApp'], self.dataArray['decApp'],
-                                                    Date=self.metadata.parameters['Opsim_expmjd'])
+                                                    MJD=self.metadata.parameters['Opsim_expmjd'])
 
         self.addColumn(raOut, 'raObs')
         self.addColumn(decOut, 'decObs')
+
+    def makeTrimCoords(self):
+        """ Generate TRIM coordinates
+
+        From the apparent coordinates generate the position of the
+        source as observed from the telescope site (required for the
+        trim files). This includes the hour angle, diurnal aberration,
+        alt-az. This does NOT include refraction.
+        """
+        if ((("raApp" in self.dataArray) and 
+             ("decApp" in self.dataArray)) != True):
+            self.makeApparent()
+        raOut, decOut = self.applyApparentToTrim(self.dataArray['raApp'], self.dataArray['decApp'],
+                                                    MJD=self.metadata.parameters['Opsim_expmjd'])
+
+        self.addColumn(raOut, 'raTrim')
+        self.addColumn(decOut, 'decTrim')
 
 
 
