@@ -6,11 +6,15 @@
 """
 
 from lsst.sims.catalogs.measures.astrometry.Astrometry import *
+from lsst.sims.catalogs.measures.photometry.Bandpass import *
+from lsst.sims.catalogs.measures.photometry.Sed import *
 import SiteDescription
+from copy import deepcopy
 import numpy
 import warnings
 import CatalogDescription
 import Metadata
+import sys
 
 class CatalogType:
     """Enum types for the catalog type format"""
@@ -30,6 +34,31 @@ class SourceType:
     IMAGE = 4
     ARTEFACT = 5
 
+
+def readBandpasses(bandpassList, dataDir="./"):
+    """ Generate dictionary of bandpasses for the LSST nominal throughputs"""
+
+    bandpassDict = {}
+    for filter in bandpassList:
+        bandpass = Bandpass()
+        bandpass.readThroughput(dataDir + "data/throughputs/" + filter + ".dat")
+        bandpassDict[filter] = bandpass
+    return bandpassDict
+
+def loadSeds(sedList, dataDir = "./"):
+    """Generate dictionary of SEDs required for generating magnitudes"""
+    sedDict={}
+    for sedName in sedList:
+        if sedName in sedDict:
+            continue
+        else:
+            sed = Sed()
+            sed.readSED_flambda(dataDir+"data/seds/"+ sedName)
+            if sed.needResample():
+                sed.resampleSED()             
+            sedDict[sedName] = sed
+
+    return sedDict
 
 class InstanceCatalog (Astrometry):
     """ Class that describes the instance catalog for the simulations. 
@@ -120,6 +149,7 @@ class InstanceCatalog (Astrometry):
             #write all columns
             pass
         elif (catalogType == "TRIM"):
+            '''
             #write trim file based on objectType
             attributeList = self.catalogDescription.formatString(self.objectType)[0][0].split(',')
             # Added a newline as shlex reads in without this information parsed
@@ -127,6 +157,15 @@ class InstanceCatalog (Astrometry):
             for i in range(len(self.dataArray["id"])):
                 # use map to output all attributes in the given format string
                 outputFile.write(formatString.format(map(lambda x: self.dataArray[x][i],attributeList)))
+            '''
+            #write trim file based on objectType
+            attributeList = self.catalogDescription.formatString(self.objectType)[0][0].split(',')
+            # Added a newline as shlex reads in without this information parsed
+            formatString = self.catalogDescription.formatString(self.objectType)[0][1]+"\n"
+            for i in range(len(self.dataArray["id"])):
+                # use map to output all attributes in the given format string
+                # 2.6 outputFile.write(formatString,(map(lambda x: self.dataArray[x][i],attributeList)))
+                outputFile.write(formatString % tuple(map(lambda x: self.dataArray[x][i],attributeList)))
         else:
             #write catalog based on catalogType - format string needs to be parsed
             attributeList = self.catalogDescription.formatString(catalogType)[0][0].split(',')
@@ -135,7 +174,8 @@ class InstanceCatalog (Astrometry):
             # RRG:  changed self.dataArray["ra"].size to len(...)
             for i in range(len(self.dataArray["id"])):
                 # use map to output all attributes in the given format string
-                outputFile.write(formatString.format(map(lambda x: self.dataArray[x][i],attributeList)))
+                # 2.6 outputFile.write(formatString.format(map(lambda x: self.dataArray[x][i],attributeList)))
+                outputFile.write(formatString % tuple(map(lambda x: self.dataArray[x][i],attributeList)))
         outputFile.close()
 
     # Composite astrometry operations
@@ -209,6 +249,65 @@ class InstanceCatalog (Astrometry):
 
 
     # Photometry composite methods
+    def calculateStellarMagnitudes(self, bandpassList, dataDir = "./"):
+        """For stellar sources and a list of bandpass names generate magnitudes"""
+    
+        # load bandpasses
+        bandpassDict = readBandpasses(bandpassList, dataDir = dataDir)
+        
+        #load required SEDs
+        sedDict = loadSeds(self.dataArray["sedFilename"], dataDir=dataDir)
+
+        # Calculate dust parameters for all stars 
+        a_x, b_x = sedDict[self.dataArray["sedFilename"][0]].setupCCMab(wavelen=sedDict[
+            self.dataArray["sedFilename"][0]].wavelen)
+
+        # generate magnitude arrays and set to zero
+        for name,bandpass in bandpassDict.items():
+            self.addColumn(numpy.zeros(len(self.dataArray["id"])), name)
+
+        # loop through magnitudes and calculate   
+        for i,sedName in enumerate(self.dataArray["sedFilename"]):
+            sed = deepcopy(sedDict[sedName])
+            sed.multiplyFluxNorm(10**((self.dataArray["magNorm"][i] + 8.9)/-2.5))
+            sed.addCCMDust(a_x, b_x, A_v=self.dataArray["galacticAv"][i], R_v=self.dataArray["galacticRv"][i])
+            for name,bandpass in bandpassDict.items():
+                self.dataArray[name][i] = sed.calcMag(bandpass)
+            del sed
+
+    def calculateGalaxyMagnitudes(self, bandpassList, dataDir = "./"):
+        """For stellar sources and a list of bandpass names generate magnitudes"""
+    
+        # load bandpasses
+        bandpassDict = readBandpasses(bandpassList, dataDir = dataDir)
+        
+        #load required SEDs
+        sedDict = loadSeds(self.dataArray["sedFilename"], dataDir=dataDir)
+
+        # generate magnitude arrays and set to zero
+        for name,bandpass in bandpassDict.items():
+            self.addColumn(numpy.zeros(len(self.dataArray["id"])), name)
+
+        # loop through magnitudes and calculate   
+        for i,sedName in enumerate(self.dataArray["sedFilename"]):
+            sed = deepcopy(sedDict[sedName])
+            # Calculate dust parameters for all galaxies
+            a_x, b_x = sedDict[self.dataArray["sedFilename"][0]].setupCCMab(wavelen=sedDict[
+                self.dataArray["sedFilename"][0]].wavelen)
+            sed.addCCMDust(a_x, b_x, A_v=self.dataArray["internalAv"][i], R_v=self.dataArray["internalRv"][i])
+
+            sed.multiplyFluxNorm(10**((self.dataArray["magNorm"][i] + 8.9)/-2.5))
+
+            sed.redshiftSED(redshift=self.dataArray["redshift"][i], dimming=False)
+
+            # add dust from our galaxy            
+            a_x, b_x = sed.setupCCMab()
+            # apply dust
+            sed.addCCMDust(a_x, b_x, A_v=self.dataArray["galacticAv"][i], R_v=self.dataArray["galacticRv"][i])
+            for name,bandpass in bandpassDict.items():
+                self.dataArray[name][i] = sed.calcMag(bandpass)
+            del sed
+
 """ TODO (2/18/2010) incorporate the precession routines
     def makeMeasured(self):
         raOut, decOut = self.applyPropermotion(self.dataArray['ra'], 
