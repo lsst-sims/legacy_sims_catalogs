@@ -1,4 +1,6 @@
-setupRequired(numpy >=1.2.1)
+setupRequired(numpy 1.2.1 [>=1.2.1])
+
+envSet(CATALOG_DESCRIPTION_PATH, ${PRODUCT_DIR}/data/requiredFields/)
 
 envPrepend(LD_LIBRARY_PATH, ${PRODUCT_DIR}/lib)
 envPrepend(DYLD_LIBRARY_PATH, ${PRODUCT_DIR}/lib)
