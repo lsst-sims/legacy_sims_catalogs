@@ -1,0 +1,22 @@
+This directory (temporarily) contains copies of "LSST throughput curves". The
+copies in this directory should be identical to the copies in Docushare collection-1777,
+for the individual components. (Calculated 'total*' throughput curves are slightly 
+different due to using a different atmosphere to calculate this total throughput). 
+
+Please note that these throughput curves are subject to change as studies are ongoing of
+detector performance, filter throughput, mirror coatings, etc. 
+These should not be taken as expected LSST performance curves without further 
+discussion with the Camera Team. 
+
+"ideal_*dat" curves represent the filter throughputs alone (without the addition of
+the lenses, mirrors, atmosphere, detector). 
+
+"total*.dat" curves represent the total throughput curve, in other words, the total
+sensitivity of the LSST system. 
+
+"atmos*.dat" curves represent various atmosphere throughputs at different airmasses
+(the 10 = 1.0 airmass, _18 = 1.8 airmass, etc.), using MODTRAN to generate these
+'standard' atmospheres.  
+"atmos.dat" itself is the currently used "standard atmosphere" for LSST. It is 
+approximately the same as the MODTRAN X=1.2 atmosphere. 
+
