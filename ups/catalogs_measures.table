@@ -1,4 +1,5 @@
 setupRequired(numpy 1.2.1 [>=1.2.1])
+setupRequired(throughputs 1.0)
 
 envSet(CATALOG_DESCRIPTION_PATH, ${PRODUCT_DIR}/data/requiredFields/)
 
