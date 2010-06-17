@@ -16,3 +16,9 @@ id,raHelio,decHelio,magNorm,sedFilename,redshift,shearXX,shearYY,magnification,p
 id,ra,dec "%d %g %g"
 #id,ra,dec "{0[0]:d} {0[1]:g} {0[2]:g}"
 
+
+[STARRAW]
+id,ra,dec,raHelio,decHelio,magNorm,fluxNorm,sedFilename,lsst_u,lsst_g,lsst_r,lsst_i,lsst_z,lsst_y,sdss_u,sdss_g,sdss_r,sdss_i,sdss_z "%d,%g,%g,%g,%g,%g,%g,%s,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g"
+
+[GALRAW]
+id,component,ra,dec,sedFilename,fluxNorm,magNorm,raHelio,decHelio,lsst_u,lsst_g,lsst_r,lsst_i,lsst_z,lsst_y "%d,%s,%g,%g,%s,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g"

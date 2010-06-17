@@ -5,13 +5,26 @@ decHelio float
 [MOVINGPOINT]
 raHelio float
 decHelio float
+glon float
+glat float
 
 
 [SERSIC2D]
 raHelio float
 decHelio float
+glon float
+glat float
 
 
 [STUB]
+raHelio float
+decHelio float
+
+
+[GALRAW]
+raHelio float
+decHelio float
+
+[STARRAW]
 raHelio float
 decHelio float
