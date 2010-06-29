@@ -5,60 +5,19 @@
 
 """
 
+import numpy
+import warnings
+import sys
+from copy import deepcopy
+
 from lsst.sims.catalogs.measures.astrometry.Astrometry import *
 from lsst.sims.catalogs.measures.photometry.Bandpass import *
 from lsst.sims.catalogs.measures.photometry.Sed import *
-import SiteDescription
-from copy import deepcopy
-import numpy
-import warnings
-import CatalogDescription
-import Metadata
-import sys
-
-class CatalogType:
-    """Enum types for the catalog type format"""
-    INVALID = 0
-    TRIM = 1
-    DIASOURCE=2
-    PHOTCAL=3
-    SCIENCE=4
-    MISC=5
-    
-class SourceType:
-    """Enum types for the source type used to define trim catalog format"""
-    INVALID = 0
-    POINT = 1
-    SERSEC2D = 2
-    MOVING = 3
-    IMAGE = 4
-    ARTEFACT = 5
-
-
-def readBandpasses(bandpassList, dataDir="./"):
-    """ Generate dictionary of bandpasses for the LSST nominal throughputs"""
-
-    bandpassDict = {}
-    for filter in bandpassList:
-        bandpass = Bandpass()
-        bandpass.readThroughput(dataDir + "data/throughputs/" + filter + ".dat")
-        bandpassDict[filter] = bandpass
-    return bandpassDict
-
-def loadSeds(sedList, dataDir = "./"):
-    """Generate dictionary of SEDs required for generating magnitudes"""
-    sedDict={}
-    for sedName in sedList:
-        if sedName in sedDict:
-            continue
-        else:
-            sed = Sed()
-            sed.readSED_flambda(dataDir+"data/seds/"+ sedName)
-            if sed.needResample():
-                sed.resampleSED()             
-            sedDict[sedName] = sed
-
-    return sedDict
+from lsst.sims.catalogs.measures.photometry.Magnitudes import *
+#from lsst.sims.catalogs.measures.instance.CatalogDescription import *
+from lsst.sims.catalogs.measures.instance.SiteDescription import *
+from lsst.sims.catalogs.measures.instance.Metadata import *
+from CatalogDescription import *
 
 class InstanceCatalog (Astrometry):
     """ Class that describes the instance catalog for the simulations. 
@@ -68,27 +27,27 @@ class InstanceCatalog (Astrometry):
     derived
 
     Catalog types and Object types are defined in the CatalogDescription class
-    catalogType = # TRIM, SCIENCE, PHOTCAL, DIASOURCE, MISC, INVALID
-    objectType # Point, Moving, Sersic, Image, Artefact, MISC
+    catalogType =  TRIM, SCIENCE, PHOTCAL, DIASOURCE, MISC, INVALID
+    objectType = Point, Moving, Sersic, Image, Artefact, MISC
     catalogTable is name of the database table queried
     dataArray dictionary of numpy arrays of data
 
     """
 
-    def __init__(self):
+    def __init__(self, configFile):
         """Create an InstanceClass
 
         Instantiate an InstanceClass with the catalog type set to invalid
         """
-        self.catalogDescription = None
-        
-        self.site = SiteDescription.SiteDescription()
-        self.metadata = Metadata.Metadata()
-        self.catalogType = CatalogType.INVALID
-        self.objectType = ""
+        self.catalogDescription = CatalogDescription(configFile)
+        self.site = SiteDescription()
+        self.metadata = Metadata(configFile)
+
+        self.catalogType = None
+        self.neighborhoodType = None
+        self.objectType = None
         self.catalogTable = ""
         self.dataArray = {}
-
 
     # dataArray operations    
     def addColumn(self, array, name):
@@ -103,33 +62,30 @@ class InstanceCatalog (Astrometry):
         else:
             warnings.warn("Entry %s does not exists in dataArray" % name)
             
-
     # validate that the catalog contains the correct data
-    def validateData(self, catalogType):
+    def validateData(self, catalogType, neighborhoodType, objectType):
         """Validate that the class contains the correct attributes
         
-            This does not test validity of the data
-            This combines searches through the schema and derived attributes"""
-        if (catalogType == None):
-            return True
-        elif (catalogType == "TRIM"):
-            # copy the attribute list so we dont append to the original list
-            attributeList = self.catalogDescription.databaseAttributeList(self.objectType)[:]
-            attributeList.extend(self.catalogDescription.derivedAttributeList(self.objectType))
-            for name in attributeList:
-                if ((self.dataArray.has_key(name[0]) == False)):
-                    raise ValueError("Entry %s does not exist in data"%name[0])
-        else:
-            # copy the attribute list so we dont append to the original list
-            attributeList = self.catalogDescription.databaseAttributeList(catalogType)[:]
-            attributeList.extend(self.catalogDescription.derivedAttributeList(catalogType))
-            for name in attributeList:
-                if ((self.dataArray.has_key(name[0]) == False)):
-                    raise ValueError("Entry %s does not exist in data"%name[0])
+        This does not test validity of the data
+            This combines searches through the required and derived attributes"""
 
+        # validate required and derived data 
+        requiredAttributeList = self.catalogDescription.getRequiredFields(catalogType,
+                                                                          neighborhoodType,
+                                                                          objectType)
+
+        for name in requiredAttributeList:
+            if ((self.dataArray.has_key(name) == False)):
+                raise ValueError("Entry %s does not exist in required data"%name)
+
+        derivedAttributeList = self.catalogDescription.getDerivedFields(catalogType,
+                                                                          neighborhoodType,
+                                                                          objectType)
+        for name in derivedAttributeList:
+            if ((self.dataArray.has_key(name) == False)):
+                raise ValueError("Entry %s does not exist in derived data" % name)
 
         return True
-                
                 
     # Output of formatted data catalogs
     def writeCatalogData(self, filename, catalogType, newfile = False):
@@ -145,37 +101,17 @@ class InstanceCatalog (Astrometry):
             outputFile = open(filename,"w")
 
         # Determine the catalogType and objectType for printing
-        if (catalogType == None):
-            #write all columns
-            pass
-        elif (catalogType == "TRIM"):
-            '''
-            #write trim file based on objectType
-            attributeList = self.catalogDescription.formatString(self.objectType)[0][0].split(',')
-            # Added a newline as shlex reads in without this information parsed
-            formatString = self.catalogDescription.formatString(self.objectType)[0][1]+"\n"
-            for i in range(len(self.dataArray["id"])):
-                # use map to output all attributes in the given format string
-                outputFile.write(formatString.format(map(lambda x: self.dataArray[x][i],attributeList)))
-            '''
-            #write trim file based on objectType
-            attributeList = self.catalogDescription.formatString(self.objectType)[0][0].split(',')
-            # Added a newline as shlex reads in without this information parsed
-            formatString = self.catalogDescription.formatString(self.objectType)[0][1]+"\n"
-            for i in range(len(self.dataArray["id"])):
-                # use map to output all attributes in the given format string
-                # 2.6 outputFile.write(formatString,(map(lambda x: self.dataArray[x][i],attributeList)))
-                outputFile.write(formatString % tuple(map(lambda x: self.dataArray[x][i],attributeList)))
-        else:
-            #write catalog based on catalogType - format string needs to be parsed
-            attributeList = self.catalogDescription.formatString(catalogType)[0][0].split(',')
-            # Added a newline as shlex reads in without this information parsed
-            formatString = self.catalogDescription.formatString(catalogType)[0][1]+"\n"
-            # RRG:  changed self.dataArray["ra"].size to len(...)
-            for i in range(len(self.dataArray["id"])):
-                # use map to output all attributes in the given format string
-                # 2.6 outputFile.write(formatString.format(map(lambda x: self.dataArray[x][i],attributeList)))
-                outputFile.write(formatString % tuple(map(lambda x: self.dataArray[x][i],attributeList)))
+        format, attributeList = self.catalogDescription.getFormat(catalogType, self.objectType)
+
+        #write trim file based on objectType
+        # add newline to format string - configobj does not interpret these correctly
+        format = format +"\n"
+        for i in range(len(self.dataArray["id"])):
+            # use map to output all attributes in the given format string
+            # 2.6 outputFile.write(formatString,(map(lambda x: self.dataArray[x][i],attributeList)))
+            print tuple(map(lambda x: self.dataArray[x][i],attributeList))
+            outputFile.write(format % tuple(map(lambda x: self.dataArray[x][i],attributeList)))
+                
         outputFile.close()
 
     # Composite astrometry operations
@@ -213,6 +149,7 @@ class InstanceCatalog (Astrometry):
         self.addColumn(raOut, 'raApp')
         self.addColumn(decOut, 'decApp')
 
+
     def makeObserved(self):
         """ Generate Observed coordinates
 
@@ -237,6 +174,7 @@ class InstanceCatalog (Astrometry):
         trim files). This includes the hour angle, diurnal aberration,
         alt-az. This does NOT include refraction.
         """
+
         if ((("raApp" in self.dataArray) and 
              ("decApp" in self.dataArray)) != True):
             self.makeApparent()
@@ -253,7 +191,7 @@ class InstanceCatalog (Astrometry):
         """For stellar sources and a list of bandpass names generate magnitudes"""
     
         # load bandpasses
-        bandpassDict = readBandpasses(bandpassList, dataDir = dataDir)
+        bandpassDict = loadBandpasses(bandpassList, dataDir = dataDir)
         
         #load required SEDs
         sedDict = loadSeds(self.dataArray["sedFilename"], dataDir=dataDir)
@@ -269,7 +207,7 @@ class InstanceCatalog (Astrometry):
         # loop through magnitudes and calculate   
         for i,sedName in enumerate(self.dataArray["sedFilename"]):
             sed = deepcopy(sedDict[sedName])
-            sed.multiplyFluxNorm(10**((self.dataArray["magNorm"][i] + 8.9)/-2.5))
+            sed.multiplyFluxNorm(self.dataArray["fluxNorm"][i]*1.e-22)
             sed.addCCMDust(a_x, b_x, A_v=self.dataArray["galacticAv"][i], R_v=self.dataArray["galacticRv"][i])
             for name,bandpass in bandpassDict.items():
                 self.dataArray[name][i] = sed.calcMag(bandpass)
@@ -279,7 +217,7 @@ class InstanceCatalog (Astrometry):
         """For stellar sources and a list of bandpass names generate magnitudes"""
     
         # load bandpasses
-        bandpassDict = readBandpasses(bandpassList, dataDir = dataDir)
+        bandpassDict = loadBandpasses(bandpassList, dataDir = dataDir)
         
         #load required SEDs
         sedDict = loadSeds(self.dataArray["sedFilename"], dataDir=dataDir)
@@ -331,4 +269,6 @@ class InstanceCatalog (Astrometry):
         self.addColumn(raOut, 'raHTopo')
         self.addColumn(decOut, 'decTopo')
      """
+
+
 

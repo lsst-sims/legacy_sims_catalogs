@@ -1,8 +1,6 @@
 """ CatalogDescription Class
 
-    Class is a singleton that defines the attributes of a given catalog
-    On creation it generates an object on further creation it generates 
-    a poitner to the first instance so all versions have the same state
+    Class defines the attributes of a given catalog.
 
     Class is used in the definition of formats and validation
 
@@ -23,63 +21,83 @@
         returns a list of object types in the an instanceCatalog
 
 """
-
-import re
-import shlex
+import os
+from lsst.sims.catalogs.generation.config import ConfigObj
 
 class CatalogDescription (object):
-    """ Singleton class  describes the defintions of types of InstanceClasses"""
+    """Class describes the definitions of types of InstanceClasses"""
 
-    def __init__(cls, requireMetadataFile, requiredSchemaFile, requiredDerivedFile, requiredFormatFile):
-        #        requireMetadataFile, requiredSchemaFile, requiredDerivedFile, requiredFormatFile):
+    def __init__(cls, configFile, configType='CATALOG'):
+        #        requireMetadataFile, requiredFieldsFile, derivedFieldsFile, requiredFormatFile):
         # List the attributes, header information and format string
         # for a given set of catalogTypes
         # Make all attributes private
-        cls.__metadataAttributeList = cls.readRequiredData(requireMetadataFile)
+        config = ConfigObj(configFile)
+        fileName = os.path.join(os.getenv("CATALOG_DESCRIPTION_PATH"),
+                                config[configType]['requiredMetadataFile'])
+        cls.__requiredMetadata = ConfigObj(fileName)
+
+        fileName = os.path.join(os.getenv("CATALOG_DESCRIPTION_PATH"),
+                                config[configType]['derivedMetadataFile'])
+        cls.__derivedMetadata =  ConfigObj(fileName)
+
+        fileName = os.path.join(os.getenv("CATALOG_DESCRIPTION_PATH"),
+                                config[configType]['requiredFieldsFile'])
+        cls.__requiredFields =  ConfigObj(fileName)
+
+        fileName = os.path.join(os.getenv("CATALOG_DESCRIPTION_PATH"),
+                                config[configType]['derivedFieldsFile'])
+        cls.__derivedFields =  ConfigObj(fileName)
+
+        fileName = os.path.join(os.getenv("CATALOG_DESCRIPTION_PATH"),
+                                config[configType]['formatFile'])
+        cls.__format =  ConfigObj(fileName)
+
+
+
+    def getFormat(self, catalogType, objectType):
+        """Return the formatter, attributeList tuple given catalogType and object type"""
+        if ((catalogType in self.__format) == False):
+            raise ValueError("Type %s does not exist in format list"%catalogType)
+
+        if ((objectType in self.__format[catalogType]) == False):
+            raise ValueError("Type %s does not exist in format list"% objectType)
+
+        return self.__format[catalogType][objectType]['fmt'],self.__format[catalogType][objectType]['attributes']
         
-        cls.__databaseAttributeList =  cls.readRequiredData(requiredSchemaFile)
 
-        cls.__derivedAttributeList =  cls.readRequiredData(requiredDerivedFile)
+    def getFields(self, fieldConfig, catalogType, neighborhoodType, objectType):
+        """Return the list of attribute fields"""
+        if ((catalogType in fieldConfig) == False):
+            raise ValueError("Type %s does not exist in format list"%catalogType)
 
-        cls.__formatString =  cls.readRequiredData(requiredFormatFile)
+        if ((neighborhoodType in fieldConfig[catalogType]) == False):
+            raise ValueError("Type %s does not exist in format list"% neighborhoodType)
 
-    def formatString(self, catalogType):
-        """Return the format for the output of the data for catalogType"""
-        if ((catalogType in self.__formatString) == False):
-            raise ValueError("Entry %s does not exist in format list"%catalogType)
-        return self.__formatString[catalogType]
+        if ((objectType in fieldConfig[catalogType][neighborhoodType]) == False):
+            raise ValueError("Type %s does not exist in format list"% objectType)
 
-    def databaseAttributeList(self, catalogType):
+        return fieldConfig[catalogType][neighborhoodType][objectType].keys()
+
+    def getRequiredFields(self, catalogType, neighborhoodType, objectType):
         """Return the list of attributes in dataArray for catalogType"""
-        return self.__databaseAttributeList[catalogType]
+        return self.getFields(self.__requiredFields, catalogType, neighborhoodType, objectType)
 
-    def derivedAttributeList(self, catalogType):
+    def getDerivedFields(self, catalogType, neighborhoodType, objectType):
         """Return the list of attributes in dataArray for catalogType"""
-        return self.__derivedAttributeList[catalogType]
+        return self.getFields(self.__derivedFields, catalogType, neighborhoodType, objectType)
 
-    def metadataAttributeList(self, catalogType):
+
+    def getMetadata(self, fieldConfig, catalogType):
         """Return the list of header data for catalogType"""
-        return self.__metadataAttributeList[catalogType]
+        if ((catalogType in fieldConfig) == False):
+            raise ValueError("Type %s does not exist in format list"%catalogType)
+        return fieldConfig[catalogType].keys()
 
-    def readRequiredData(self, fileName):
-        """ Read in a data file that specifies required attributes/metadata for a given catalog type
-        
-        Given a filename  returns a dictionary of tuples with attribute name and data type
-        """
-        fp = open(fileName,"r")
-        metadata = {}
-        attributeList = None
-        for line in fp:
-            line = line.strip()
-            if line.startswith("["):
-                if (attributeList != None):
-                    metadata[objectType] = attributeList
-                objectType = re.findall(r'\w+',line)[0]
-                attributeList = []
-            elif ((len(line) > 0) and (line.startswith("#") == False)):
-                metadataKey,metadataType = shlex.split(line)
-                attributeList.append((metadataKey,metadataType))
-        
-        metadata[objectType] = attributeList
+    def getRequiredMetadata(self, catalogType):
+        """Return the list of required header data for catalogType"""
+        return self.getMetadata(self.__requiredMetadata, catalogType)
 
-        return metadata
+    def getDerivedMetadata(self, catalogType):
+        """Return the list of required header data for catalogType"""
+        return self.getMetadata(self.__derivedMetadata, catalogType)

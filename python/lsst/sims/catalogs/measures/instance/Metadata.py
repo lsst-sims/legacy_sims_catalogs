@@ -12,14 +12,14 @@
     writeMetadata(filename, catalogType)
 
 """
-import CatalogDescription
 import warnings
+from CatalogDescription import *
 
 class Metadata (object):
     """ Class that describes the metadata for an instanceCatalog"""
     
-    def __init__(self):
-        self.catalogDescription = None
+    def __init__(self, configFile):
+        self.catalogDescription = CatalogDescription(configFile)
         self.parameters = {}
         self.comments = {}
         self.ismerged = 0
@@ -47,17 +47,23 @@ class Metadata (object):
         for name in metadata.parameters:
             self.addMetadata(name,metadata.parameters[name],metadata.comments[name],clobber)
     
-    def validateMetadata(self, dataType):
+    def validateMetadata(self, catalogType):
         """ Validate that the metadata contains the correct attributes
 
         This does not test validity of the data"""
-        if (dataType == None):
-            return True
-        else:
-            attributeList = self.catalogDescription.metadataAttributeList(dataType)
-            for name in attributeList:
-                if ((self.parameters.has_key(name[0]) == False)):
-                    raise ValueError("Entry %s does not exist in data"%name[0])
+
+        # get metadata list for required and derived values
+        attributeList = self.catalogDescription.getRequiredMetadata(catalogType)
+        for name in attributeList:
+            if ((self.parameters.has_key(name) == False)):
+                raise ValueError("Entry %s does not exist in required metadata"%name[0])
+
+        attributeList = self.catalogDescription.getDerivedMetadata(catalogType)
+        for name in attributeList:
+            if ((self.parameters.has_key(name) == False)):
+                raise ValueError("Entry %s does not exist in derived metadata"%name[0])
+
+
         return True
 
 
@@ -69,20 +75,15 @@ class Metadata (object):
         else:
             outputFile = open(filename,"w")
 
-        if (catalogType != None):
-            attributeList = self.catalogDescription.metadataAttributeList(catalogType)
-            #2.6 formatString = "{0} {1}\n"
-            formatString = "%s %s \n"
-            for name in attributeList:
-                #print '   Name: ', name[0]
-                # 2.6 outputFile.write(formatString.format(name[0],self.parameters[name[0]]))
-                outputFile.write(formatString % (name[0],self.parameters[name[0]]))
-        else:
-            #formatString = "#{0} {1}\n"
-            formatString = "%s %s \n"
-            for name in self.parameters:
-                #2.6 outputFile.write(formatString.format(name[0],self.parameters[name[0]]))
-                outputFile.write(formatString % (name[0],self.parameters[name[0]]))
+        format = "%s %s \n"
+        # get required and derived metadata given catalogType
+        attributeList = self.catalogDescription.getRequiredMetadata(catalogType)[:]
+        attributeList.extend(self.catalogDescription.getDerivedMetadata(catalogType))
+        #2.6 formatString = "{0} {1}\n"
+        for name in attributeList:
+            # 2.6 outputFile.write(formatString.format(name[0],self.parameters[name[0]]))
+            outputFile.write(format % (name,self.parameters[name]))
+
         outputFile.close()
 
   
