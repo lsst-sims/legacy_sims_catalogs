@@ -2,8 +2,6 @@ setupRequired(numpy 1.2.1 [>=1.2.1])
 setupRequired(pyfits 1.3 [>=1.3])
 setupRequired(throughputs 1.0)
 
-envSet(CATALOG_DESCRIPTION_PATH, ${PRODUCT_DIR}/data/requiredFields/)
-
 envAppend(LD_LIBRARY_PATH, ${PRODUCT_DIR}/lib)
 envAppend(LD_LIBRARY_PATH, ${CAT_SHARE_DATA}/postgres.8.4.1/lib)
 envAppend(LD_LIBRARY_PATH, ${CAT_SHARE_DATA})
