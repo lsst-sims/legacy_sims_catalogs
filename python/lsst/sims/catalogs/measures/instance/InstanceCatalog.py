@@ -13,7 +13,7 @@ from copy import deepcopy
 from lsst.sims.catalogs.measures.astrometry.Astrometry import *
 from lsst.sims.catalogs.measures.photometry.Bandpass import *
 from lsst.sims.catalogs.measures.photometry.Sed import *
-from lsst.sims.catalogs.measures.photometry.Magnitudes import *
+#from lsst.sims.catalogs.measures.photometry.Magnitudes import *
 #from lsst.sims.catalogs.measures.instance.CatalogDescription import *
 from lsst.sims.catalogs.measures.instance.SiteDescription import *
 from lsst.sims.catalogs.measures.instance.Metadata import *
