@@ -47,27 +47,39 @@ class Metadata (object):
         for name in metadata.parameters:
             self.addMetadata(name,metadata.parameters[name],metadata.comments[name],clobber)
     
-    def validateMetadata(self, catalogType):
+    def validateMetadata(self, catalogType, opsimId):
         """ Validate that the metadata contains the correct attributes
 
         This does not test validity of the data"""
 
-        # get metadata list for required and derived values
-        attributeList = self.catalogDescription.getRequiredMetadata(catalogType)
+        return self.validateRequiredMetadata(catalogType,  opsimId) & self.validateDerivedMetadata(catalogType)
+
+    def validateRequiredMetadata(self, catalogType, opsimId):
+        """ Validate that the required (not derived) metadata contains the correct attributes
+
+        This does not test validity of the data"""
+
+        # get metadata list for required values
+        attributeList = self.catalogDescription.getRequiredMetadata(catalogType, opsimId)
         for name in attributeList:
             if ((self.parameters.has_key(name) == False)):
-                raise ValueError("Entry %s does not exist in required metadata"%name[0])
+                raise ValueError("Entry %s does not exist in required metadata"%name)
+        return True
 
+    def validateDerivedMetadata(self, catalogType):
+        """ Validate that the derived (not required) metadata contains the correct attributes
+
+        This does not test validity of the data"""
+
+        # get metadata list for derived values
         attributeList = self.catalogDescription.getDerivedMetadata(catalogType)
         for name in attributeList:
             if ((self.parameters.has_key(name) == False)):
-                raise ValueError("Entry %s does not exist in derived metadata"%name[0])
-
-
+                raise ValueError("Entry %s does not exist in derived metadata"%name)
         return True
 
 
-    def writeMetadata(self, filename, catalogType, newfile = False):
+    def writeMetadata(self, filename, catalogType, opsimId, newfile = False):
         """Write metadata to file"""
         # open file
         if (newfile == False):
@@ -77,7 +89,7 @@ class Metadata (object):
 
         format = "%s %s \n"
         # get required and derived metadata given catalogType
-        attributeList = self.catalogDescription.getRequiredMetadata(catalogType)[:]
+        attributeList = self.catalogDescription.getRequiredMetadata(catalogType, opsimId)[:]
         attributeList.extend(self.catalogDescription.getDerivedMetadata(catalogType))
         #2.6 formatString = "{0} {1}\n"
         for name in attributeList:

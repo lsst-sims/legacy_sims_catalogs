@@ -88,15 +88,20 @@ class CatalogDescription (object):
         return self.getFields(self.__derivedFields, catalogType, neighborhoodType, objectType)
 
 
-    def getMetadata(self, fieldConfig, catalogType):
+    def getMetadata(self, fieldConfig, catalogType, opsimId=False):
         """Return the list of header data for catalogType"""
         if ((catalogType in fieldConfig) == False):
             raise ValueError("Type %s does not exist in format list"%catalogType)
-        return fieldConfig[catalogType].keys()
+        if opsimId:
+            if ((opsimId in fieldConfig[catalogType]) == False):
+                raise ValueError("opsimId %s does not exist in format list"%opsimId)
+            return fieldConfig[catalogType][opsimId].keys()
+        else:
+            return fieldConfig[catalogType].keys()
 
-    def getRequiredMetadata(self, catalogType):
+    def getRequiredMetadata(self, catalogType, opsimId=False):
         """Return the list of required header data for catalogType"""
-        return self.getMetadata(self.__requiredMetadata, catalogType)
+        return self.getMetadata(self.__requiredMetadata, catalogType, opsimId)
 
     def getDerivedMetadata(self, catalogType):
         """Return the list of required header data for catalogType"""
