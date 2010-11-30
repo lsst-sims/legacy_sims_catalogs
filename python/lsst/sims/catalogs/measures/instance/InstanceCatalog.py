@@ -63,7 +63,7 @@ class InstanceCatalog (Astrometry):
             warnings.warn("Entry %s does not exists in dataArray" % name)
             
     # validate that the catalog contains the correct data
-    def validateData(self, catalogType, neighborhoodType, objectType):
+    def validateData(self, catalogType):
         """Validate that the class contains the correct attributes
         
         This does not test validity of the data
@@ -71,16 +71,16 @@ class InstanceCatalog (Astrometry):
 
         # validate required and derived data 
         requiredAttributeList = self.catalogDescription.getRequiredFields(catalogType,
-                                                                          neighborhoodType,
-                                                                          objectType)
+                                                                          self.neighborhoodType,
+                                                                          self.objectType)
 
         for name in requiredAttributeList:
             if ((self.dataArray.has_key(name) == False)):
                 raise ValueError("Entry %s does not exist in required data"%name)
 
         derivedAttributeList = self.catalogDescription.getDerivedFields(catalogType,
-                                                                          neighborhoodType,
-                                                                          objectType)
+                                                                          self.neighborhoodType,
+                                                                          self.objectType)
         for name in derivedAttributeList:
             if ((self.dataArray.has_key(name) == False)):
                 raise ValueError("Entry %s does not exist in derived data" % name)
@@ -109,9 +109,7 @@ class InstanceCatalog (Astrometry):
         for i in range(len(self.dataArray["id"])):
             # use map to output all attributes in the given format string
             # 2.6 outputFile.write(formatString,(map(lambda x: self.dataArray[x][i],attributeList)))
-            print tuple(map(lambda x: self.dataArray[x][i],attributeList))
             outputFile.write(format % tuple(map(lambda x: self.dataArray[x][i],attributeList)))
-                
         outputFile.close()
 
     # Composite astrometry operations
