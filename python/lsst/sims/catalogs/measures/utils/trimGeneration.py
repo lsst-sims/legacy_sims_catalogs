@@ -32,13 +32,19 @@ def derivedTrimMetadata(instanceCatalog):
 
 
     mjd = float(instanceCatalog.metadata.parameters['Opsim_expmjd'])
+    alt = float(instanceCatalog.metadata.parameters['Opsim_altitude'])
+    az = float(instanceCatalog.metadata.parameters['Opsim_azimuth'])
     
     # slalib_date
     slalib.slaDjcl.argtypes = [ctypes.c_double,ctypes.POINTER(ctypes.c_int),ctypes.POINTER(ctypes.c_int),ctypes.POINTER(ctypes.c_int),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_int)]
     slalib.slaDjcl(mjd, year, month, day, fractionDay, status)
 
     slalibDate = "%4d/%02d/%02d/%.9g" % (year.value,month.value,day.value, fractionDay.value)
-    instanceCatalog.metadata.addMetadata("Slalib_date", slalibDate, "Factional date from Slalib")
+    instanceCatalog.metadata.addMetadata("Slalib_date", slalibDate, "Fractional date from Slalib")
+    instanceCatalog.metadata.addMetadata("Unrefracted_Altitude", alt,\
+            "Opsim value of the altitude of the observation")
+    instanceCatalog.metadata.addMetadata("Unrefracted_Azimuth", az,\
+            "Opsim value of the azimuth of the observation")
 
 #Slalib_date  1994/10/12/0.0945639999991
 #Slalib_expMjd 49637.094564
