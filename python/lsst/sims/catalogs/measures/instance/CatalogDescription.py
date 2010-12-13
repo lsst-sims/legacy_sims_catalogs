@@ -53,6 +53,9 @@ class CatalogDescription (object):
                                 config[configType]['formatFile'])
         cls.__format =  ConfigObj(fileName)
 
+        fileName = os.path.join(os.getenv("FILE_MAP_PATH"),
+                                config[configType]['derivedSEDPaths'])
+        cls.__sedPaths =  ConfigObj(fileName)
 
 
     def getFormat(self, catalogType, objectType):
@@ -106,3 +109,9 @@ class CatalogDescription (object):
     def getDerivedMetadata(self, catalogType):
         """Return the list of required header data for catalogType"""
         return self.getMetadata(self.__derivedMetadata, catalogType)
+
+
+
+    def getPathMap(self, mapName = 'SPECMAP'):
+        """Return the dictionary of SEDs and their relative paths on disk"""
+        return self.__sedPaths[mapName]

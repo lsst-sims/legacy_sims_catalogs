@@ -103,6 +103,11 @@ class InstanceCatalog (Astrometry):
         # Determine the catalogType and objectType for printing
         format, attributeList = self.catalogDescription.getFormat(catalogType, self.objectType)
 
+        #manipulate sedFilename to add path for file on disk
+        sedPaths = self.catalogDescription.getPathMap()
+        self.addColumn(map(lambda x: sedPaths[x], self.dataArray['sedFilename']),'sedFilename')
+        
+
         #write trim file based on objectType
         # add newline to format string - configobj does not interpret these correctly
         format = format +"\n"
