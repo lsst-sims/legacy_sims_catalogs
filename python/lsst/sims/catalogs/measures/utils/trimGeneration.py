@@ -30,10 +30,11 @@ def derivedTrimMetadata(instanceCatalog):
     fractionDay=ctypes.c_double(0.0)
     status=ctypes.c_int(0)
 
-
+    filtMap = {'u':0, 'g':1, 'r':2, 'i':3, 'z':4, 'y':5}
     mjd = float(instanceCatalog.metadata.parameters['Opsim_expmjd'])
     alt = float(instanceCatalog.metadata.parameters['Opsim_altitude'])
     az = float(instanceCatalog.metadata.parameters['Opsim_azimuth'])
+    filt = filtMap[instanceCatalog.metadata.parameters['Opsim_filter']]
     
     # slalib_date
     slalib.slaDjcl.argtypes = [ctypes.c_double,ctypes.POINTER(ctypes.c_int),ctypes.POINTER(ctypes.c_int),ctypes.POINTER(ctypes.c_int),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_int)]
@@ -45,6 +46,7 @@ def derivedTrimMetadata(instanceCatalog):
             "Opsim value of the altitude of the observation")
     instanceCatalog.metadata.addMetadata("Unrefracted_Azimuth", az,\
             "Opsim value of the azimuth of the observation")
+    instanceCatalog.metadata.addMetadata("Opsim_filter", filt, "Remapped filter %s to the integer %i"%(instanceCatalog.metadata.parameters['Opsim_filter'], filt), clobber=True)
 
 #Slalib_date  1994/10/12/0.0945639999991
 #Slalib_expMjd 49637.094564
