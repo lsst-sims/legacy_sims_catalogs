@@ -106,7 +106,12 @@ class InstanceCatalog (Astrometry):
         #manipulate sedFilename to add path for file on disk
         sedPaths = self.catalogDescription.getPathMap()
         self.addColumn(map(lambda x: sedPaths[x], self.dataArray['sedFilename']),'sedFilename')
-        
+
+        # generate degrees column for ra and dec
+        self.addColumn(raTrim*180./math.pi,'raTrim_deg')
+        self.addColumn(decTrim*180./math.pi,'decTrim_deg')
+
+
 
         #write trim file based on objectType
         # add newline to format string - configobj does not interpret these correctly
@@ -177,16 +182,49 @@ class InstanceCatalog (Astrometry):
         trim files). This includes the hour angle, diurnal aberration,
         alt-az. This does NOT include refraction.
         """
+        #Calculate pointing of telescope in observed frame and the rotation matrix for this
+        raCenter, decCenter = self.transformPointingToObserved(
+            self.metadata.parameters['Unrefracted_RA'],
+            self.metadata.parameters['Unrefracted_Dec'])
+
+        #print self.metadata.parameters['Opsim_expmjd']
+        #print raCenter, decCenter, self.metadata.parameters['Unrefracted_RA'],self.metadata.parameters['Unrefracted_Dec']
+        xyzJ2000 = self.sphericalToCartesian(self.metadata.parameters['Unrefracted_RA'],
+                                           self.metadata.parameters['Unrefracted_Dec'])
+        xyzJ2000 /= math.sqrt(numpy.dot(xyzJ2000, xyzJ2000))
+
+        xyzObs = self.sphericalToCartesian(raCenter, decCenter)
+        xyzObs /= math.sqrt(numpy.dot(xyzObs, xyzObs))
+
+        rotationMatrix = self.rotationMatrixFromVectors(xyzObs, xyzJ2000)
 
         if ((("raApp" in self.dataArray) and 
              ("decApp" in self.dataArray)) != True):
             self.makeApparent()
-        raOut, decOut = self.applyApparentToTrim(self.dataArray['raApp'], self.dataArray['decApp'],
-                                                    MJD=self.metadata.parameters['Opsim_expmjd'])
+            raOut, decOut = self.applyApparentToTrim(self.dataArray['raApp'],
+                                                     self.dataArray['decApp'],
+                                                     MJD=self.metadata.parameters['Opsim_expmjd'])
+
+
+        # correct for pointing of the telescope (so only have differential offsets)
+        # and set output as ICRS
+        xyz = self.sphericalToCartesian(raOut, decOut).transpose()
+        for i,_xyz in enumerate(xyz):
+            xyzNew = numpy.dot(rotationMatrix,_xyz)
+            raOut[i], decOut[i] = self.cartesianToSpherical(xyzNew)
 
         self.addColumn(raOut, 'raTrim')
         self.addColumn(decOut, 'decTrim')
 
+    def transformPointingToObserved(self, ra, dec):
+        """Take an LSST central pointing and determine is observed position on the sky
+        (excluding refraction)"""
+        raOut, decOut = self.applyMeanApparentPlace([ra], [dec], [0.], [0.],[0.], [0.],
+                                                    MJD=self.metadata.parameters['Opsim_expmjd'])
+        print ra,dec,raOut, decOut,self.metadata.parameters['Opsim_expmjd']
+        raObs, decObs = self.applyApparentToTrim(raOut, decOut,
+                                                    MJD=self.metadata.parameters['Opsim_expmjd'])
+        return raObs[0], decObs[0]
 
 
     # Photometry composite methods
