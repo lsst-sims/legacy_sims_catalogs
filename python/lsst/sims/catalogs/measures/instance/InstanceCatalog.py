@@ -108,8 +108,8 @@ class InstanceCatalog (Astrometry):
         self.addColumn(map(lambda x: sedPaths[x], self.dataArray['sedFilename']),'sedFilename')
 
         # generate degrees column for ra and dec
-        self.addColumn(raTrim*180./math.pi,'raTrim_deg')
-        self.addColumn(decTrim*180./math.pi,'decTrim_deg')
+        self.addColumn(self.dataArray['raTrim']*180./math.pi,'raTrim_deg')
+        self.addColumn(self.dataArray['decTrim']*180./math.pi,'decTrim_deg')
 
 
 
