@@ -182,13 +182,11 @@ class InstanceCatalog (Astrometry):
         trim files). This includes the hour angle, diurnal aberration,
         alt-az. This does NOT include refraction.
         """
-        #Calculate pointing of telescope in observed frame and the rotation matrix for this
+        #Calculate pointing of telescope in observed frame and the rotation matrix to transform to this position
         raCenter, decCenter = self.transformPointingToObserved(
             self.metadata.parameters['Unrefracted_RA'],
             self.metadata.parameters['Unrefracted_Dec'])
 
-        #print self.metadata.parameters['Opsim_expmjd']
-        #print raCenter, decCenter, self.metadata.parameters['Unrefracted_RA'],self.metadata.parameters['Unrefracted_Dec']
         xyzJ2000 = self.sphericalToCartesian(self.metadata.parameters['Unrefracted_RA'],
                                            self.metadata.parameters['Unrefracted_Dec'])
         xyzJ2000 /= math.sqrt(numpy.dot(xyzJ2000, xyzJ2000))
@@ -198,6 +196,7 @@ class InstanceCatalog (Astrometry):
 
         rotationMatrix = self.rotationMatrixFromVectors(xyzObs, xyzJ2000)
 
+        #convert positions of sources from reference to observed
         if ((("raApp" in self.dataArray) and 
              ("decApp" in self.dataArray)) != True):
             self.makeApparent()
