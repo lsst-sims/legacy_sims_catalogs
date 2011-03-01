@@ -51,6 +51,12 @@ def derivedTrimMetadata(instanceCatalog):
 #Slalib_date  1994/10/12/0.0945639999991
 #Slalib_expMjd 49637.094564
 
+    #add new keywords for imsim configuration (3/1/2011)
+    instanceCatalog.metadata.addMetadata("SIM_MINSOURCE", 1, "Minimum sources per chip for full_focalplane to consider simulating that chip", clobber=True)
+    instanceCatalog.metadata.addMetadata("SIM_TELCONFIG", 0, "Configuration of the telescope.0 mean normal, 1 shutter is closed (i.e. for darks), 2 dome is illuminated", clobber=True)
+    instanceCatalog.metadata.addMetadata("SIM_VISTIME", 32., "Effective dwell time of a visit", clobber=True)
+
+
 if __name__ == '__main__':
     derivedTrimMetadata()
     
