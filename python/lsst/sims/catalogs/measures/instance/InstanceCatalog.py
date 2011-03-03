@@ -183,10 +183,17 @@ class InstanceCatalog (Astrometry):
         alt-az. This does NOT include refraction.
         """
         #Calculate pointing of telescope in observed frame and the rotation matrix to transform to this position
-        raCenter, decCenter = self.transformPointingToObserved(
+        raCenter, decCenter, altCenter, azCenter = self.transformPointingToObserved(
             self.metadata.parameters['Unrefracted_RA'],
-            self.metadata.parameters['Unrefracted_Dec'])
+            self.metadata.parameters['Unrefracted_Dec'],
+            includeRefraction = False)
 
+        #Update the meta data for ALt-Az
+        self.metadata.addMetadata("Unrefracted_Altitude", altCenter,\
+                                             "Opsim value of the altitude of the observation")
+        self.metadata.addMetadata("Unrefracted_Azimuth", azCenter,\
+                                             "Opsim value of the azimuth of the observation")
+        
         xyzJ2000 = self.sphericalToCartesian(self.metadata.parameters['Unrefracted_RA'],
                                            self.metadata.parameters['Unrefracted_Dec'])
         xyzJ2000 /= math.sqrt(numpy.dot(xyzJ2000, xyzJ2000))
@@ -200,9 +207,10 @@ class InstanceCatalog (Astrometry):
         if ((("raApp" in self.dataArray) and 
              ("decApp" in self.dataArray)) != True):
             self.makeApparent()
-            raOut, decOut = self.applyApparentToTrim(self.dataArray['raApp'],
+            raOut, decOut = self.applyMeanObservedPlace(self.dataArray['raApp'],
                                                      self.dataArray['decApp'],
-                                                     MJD=self.metadata.parameters['Opsim_expmjd'])
+                                                     MJD=self.metadata.parameters['Opsim_expmjd'],
+                                                     altAzHr=False, includeRefraction=False)
 
 
         # correct for pointing of the telescope (so only have differential offsets)
@@ -215,15 +223,16 @@ class InstanceCatalog (Astrometry):
         self.addColumn(raOut, 'raTrim')
         self.addColumn(decOut, 'decTrim')
 
-    def transformPointingToObserved(self, ra, dec):
+    def transformPointingToObserved(self, ra, dec, includeRefraction = False):
         """Take an LSST central pointing and determine is observed position on the sky
         (excluding refraction)"""
         raOut, decOut = self.applyMeanApparentPlace([ra], [dec], [0.], [0.],[0.], [0.],
                                                     MJD=self.metadata.parameters['Opsim_expmjd'])
-        print ra,dec,raOut, decOut,self.metadata.parameters['Opsim_expmjd']
-        raObs, decObs = self.applyApparentToTrim(raOut, decOut,
-                                                    MJD=self.metadata.parameters['Opsim_expmjd'])
-        return raObs[0], decObs[0]
+        #print ra,dec,raOut, decOut,self.metadata.parameters['Opsim_expmjd']
+        raObs, decObs, altObs, azObs = self.applyMeanObservedPlace(raOut, decOut, MJD=self.metadata.parameters['Opsim_expmjd'],
+                                                                   altAzHr=True, includeRefraction = includeRefraction)
+
+        return raObs[0], decObs[0], altObs[0], azObs[0]
 
 
     # Photometry composite methods
