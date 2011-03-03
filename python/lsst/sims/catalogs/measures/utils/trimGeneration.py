@@ -32,8 +32,8 @@ def derivedTrimMetadata(instanceCatalog):
 
     filtMap = {'u':0, 'g':1, 'r':2, 'i':3, 'z':4, 'y':5}
     mjd = float(instanceCatalog.metadata.parameters['Opsim_expmjd'])
-    alt = float(instanceCatalog.metadata.parameters['Opsim_altitude'])
-    az = float(instanceCatalog.metadata.parameters['Opsim_azimuth'])
+    #alt = float(instanceCatalog.metadata.parameters['Opsim_altitude'])
+    #az = float(instanceCatalog.metadata.parameters['Opsim_azimuth'])
     filt = filtMap[instanceCatalog.metadata.parameters['Opsim_filter']]
     
     # slalib_date
@@ -42,10 +42,6 @@ def derivedTrimMetadata(instanceCatalog):
 
     slalibDate = "%4d/%02d/%02d/%.9g" % (year.value,month.value,day.value, fractionDay.value)
     instanceCatalog.metadata.addMetadata("Slalib_date", slalibDate, "Fractional date from Slalib")
-    instanceCatalog.metadata.addMetadata("Unrefracted_Altitude", alt,\
-            "Opsim value of the altitude of the observation")
-    instanceCatalog.metadata.addMetadata("Unrefracted_Azimuth", az,\
-            "Opsim value of the azimuth of the observation")
     instanceCatalog.metadata.addMetadata("Opsim_filter", filt, "Remapped filter %s to the integer %i"%(instanceCatalog.metadata.parameters['Opsim_filter'], filt), clobber=True)
 
 #Slalib_date  1994/10/12/0.0945639999991
