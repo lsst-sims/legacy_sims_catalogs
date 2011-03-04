@@ -13,7 +13,7 @@ from copy import deepcopy
 from lsst.sims.catalogs.measures.astrometry.Astrometry import *
 from lsst.sims.catalogs.measures.photometry.Bandpass import *
 from lsst.sims.catalogs.measures.photometry.Sed import *
-#from lsst.sims.catalogs.measures.photometry.Magnitudes import *
+import lsst.sims.catalogs.measures.photometry.EBV as ebv
 #from lsst.sims.catalogs.measures.instance.CatalogDescription import *
 from lsst.sims.catalogs.measures.instance.SiteDescription import *
 from lsst.sims.catalogs.measures.instance.Metadata import *
@@ -182,6 +182,18 @@ class InstanceCatalog (Astrometry):
         trim files). This includes the hour angle, diurnal aberration,
         alt-az. This does NOT include refraction.
         """
+        # calculate E(B-V) parameters if Extragalactic
+        print self.neighborhoodType
+        if (self.neighborhoodType == 'EXTRAGALACTIC'):
+            Rv = 3.1
+            datadir = os.environ.get("CAT_SHARE_DATA")
+            ebvMapNorth = ebv.EbvMap()
+            ebvMapNorth.readMapFits(os.path.join(datadir, "data/Dust/SFD_dust_4096_ngp.fits"))
+            ebvMapSouth = ebv.EbvMap()
+            ebvMapSouth.readMapFits(os.path.join(datadir, "data/Dust/SFD_dust_4096_sgp.fits"))
+            self.addColumn(ebv.calculateEbv(glon, glat, ebvMapNorth, ebvMapSouth, interp = True)*Rv, '"galacticAv')
+
+
         #Calculate pointing of telescope in observed frame and the rotation matrix to transform to this position
         raCenter, decCenter, altCenter, azCenter = self.transformPointingToObserved(
             self.metadata.parameters['Unrefracted_RA'],
@@ -236,6 +248,10 @@ class InstanceCatalog (Astrometry):
 
 
     # Photometry composite methods
+
+
+
+
     def calculateStellarMagnitudes(self, bandpassList, dataDir = "./"):
         """For stellar sources and a list of bandpass names generate magnitudes"""
     
