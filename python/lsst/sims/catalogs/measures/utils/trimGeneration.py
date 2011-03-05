@@ -44,8 +44,11 @@ def derivedTrimMetadata(instanceCatalog):
     instanceCatalog.metadata.addMetadata("Slalib_date", slalibDate, "Fractional date from Slalib")
     instanceCatalog.metadata.addMetadata("Opsim_filter", filt, "Remapped filter %s to the integer %i"%(instanceCatalog.metadata.parameters['Opsim_filter'], filt), clobber=True)
 
-#Slalib_date  1994/10/12/0.0945639999991
-#Slalib_expMjd 49637.094564
+    #Slalib_date  1994/10/12/0.0945639999991
+    #Slalib_expMjd 49637.094564
+    #Calculate the Altitude and Azimuth of pointing
+    instanceCatalog.calculateUnrefractedAltAz()
+
 
     #add new keywords for imsim configuration (3/1/2011)
     instanceCatalog.metadata.addMetadata("SIM_MINSOURCE", 1, "Minimum sources per chip for full_focalplane to consider simulating that chip", clobber=True)

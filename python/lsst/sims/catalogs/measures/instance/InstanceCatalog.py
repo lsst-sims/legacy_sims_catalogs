@@ -216,10 +216,10 @@ class InstanceCatalog (Astrometry):
             includeRefraction = False)
 
         #Update the meta data for ALt-Az
-        self.metadata.addMetadata("Unrefracted_Altitude", altCenter,\
-                                  "Opsim value of the altitude of the observation")
-        self.metadata.addMetadata("Unrefracted_Azimuth", azCenter,\
-                                  "Opsim value of the azimuth of the observation")
+#        self.metadata.addMetadata("Unrefracted_Altitude", altCenter,\
+#                                  "Opsim value of the altitude of the observation")
+#        self.metadata.addMetadata("Unrefracted_Azimuth", azCenter,\
+#                                  "Opsim value of the azimuth of the observation")
         
         
         xyzJ2000 = self.sphericalToCartesian(self.metadata.parameters['Unrefracted_RA'],
