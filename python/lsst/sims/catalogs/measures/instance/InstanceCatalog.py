@@ -174,6 +174,21 @@ class InstanceCatalog (Astrometry):
         self.addColumn(raOut, 'raObs')
         self.addColumn(decOut, 'decObs')
 
+    def calculateUnrefractedAltAz(self):
+        '''Calculate the unrefracted AltAz for the telescope given the ra dec opsim pointing'''
+        #Calculate pointing of telescope in observed frame and the rotation matrix to transform to this position
+        raCenter, decCenter, altCenter, azCenter = self.transformPointingToObserved(
+            self.metadata.parameters['Unrefracted_RA'],
+            self.metadata.parameters['Unrefracted_Dec'],
+            includeRefraction = False)
+
+        #Update the meta data for ALt-Az
+        self.metadata.addMetadata("Unrefracted_Altitude", altCenter,\
+                                  "Opsim value of the altitude of the observation")
+        self.metadata.addMetadata("Unrefracted_Azimuth", azCenter,\
+                                  "Opsim value of the azimuth of the observation")
+
+
     def makeTrimCoords(self):
         """ Generate TRIM coordinates
 
@@ -202,9 +217,10 @@ class InstanceCatalog (Astrometry):
 
         #Update the meta data for ALt-Az
         self.metadata.addMetadata("Unrefracted_Altitude", altCenter,\
-                                             "Opsim value of the altitude of the observation")
+                                  "Opsim value of the altitude of the observation")
         self.metadata.addMetadata("Unrefracted_Azimuth", azCenter,\
-                                             "Opsim value of the azimuth of the observation")
+                                  "Opsim value of the azimuth of the observation")
+        
         
         xyzJ2000 = self.sphericalToCartesian(self.metadata.parameters['Unrefracted_RA'],
                                            self.metadata.parameters['Unrefracted_Dec'])
