@@ -108,10 +108,9 @@ class InstanceCatalog (Astrometry):
         self.addColumn(map(lambda x: sedPaths[x], self.dataArray['sedFilename']),'sedFilename')
 
         # generate degrees column for ra and dec
-        self.addColumn(self.dataArray['raTrim']*180./math.pi,'raTrim_deg')
-        self.addColumn(self.dataArray['decTrim']*180./math.pi,'decTrim_deg')
-
-
+        if (catalogType == 'TRIM'):
+            self.addColumn(self.dataArray['raTrim']*180./math.pi,'raTrim_deg')
+            self.addColumn(self.dataArray['decTrim']*180./math.pi,'decTrim_deg')
 
         #write trim file based on objectType
         # add newline to format string - configobj does not interpret these correctly
@@ -199,7 +198,7 @@ class InstanceCatalog (Astrometry):
         """
         # calculate E(B-V) parameters if Extragalactic
         print self.neighborhoodType
-        if (self.neighborhoodType == 'EXTRAGALACTIC'):
+        if (self.neighborhoodType == 'EXTRAGALACTIC'): 
             Rv = 3.1
             glon, glat = self.equatorialToGalactic(self.dataArray['raJ2000'],self.dataArray['decJ2000'])
             datadir = os.environ.get("CAT_SHARE_DATA")
@@ -207,7 +206,8 @@ class InstanceCatalog (Astrometry):
             ebvMapNorth.readMapFits(os.path.join(datadir, "data/Dust/SFD_dust_4096_ngp.fits"))
             ebvMapSouth = ebv.EbvMap()
             ebvMapSouth.readMapFits(os.path.join(datadir, "data/Dust/SFD_dust_4096_sgp.fits"))
-            self.addColumn(ebv.calculateEbv(glon, glat, ebvMapNorth, ebvMapSouth, interp = True)*Rv, 'galacticAv')
+			            
+	    self.addColumn(ebv.calculateEbv(glon, glat, ebvMapNorth, ebvMapSouth, interp = True)*Rv, 'galacticAv')
             self.addColumn(numpy.ones(len(self.dataArray['galacticAv']))*Rv, 'galacticRv')
             self.addColumn(numpy.array(['CCM' for val in
                 range(len(self.dataArray['galacticAv']))]),
@@ -254,6 +254,19 @@ class InstanceCatalog (Astrometry):
 
         self.addColumn(raOut, 'raTrim')
         self.addColumn(decOut, 'decTrim')
+
+
+    def makeReferenceCoords(self):
+        '''Generate reference file attributes'''
+
+        # generate trim coordinates
+        self.makeTrimCoords()
+        # include ra,dec J2000 coords (degrees)
+        self.addColumn(self.dataArray['ra']*180./math.pi,'ra_deg')
+        self.addColumn(self.dataArray['dec']*180./math.pi,'dec_deg')
+
+        # generate photometry
+
 
     def transformPointingToObserved(self, ra, dec, includeRefraction = False):
         """Take an LSST central pointing and determine is observed position on the sky
