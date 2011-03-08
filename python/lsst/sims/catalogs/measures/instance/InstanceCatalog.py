@@ -127,7 +127,7 @@ class InstanceCatalog (Astrometry):
         """ Generate Heliocentric coordinates """
 
         # apply precession
-        raOut, decOut = self.applyPrecession(self.dataArray['ra'], self.dataArray['dec'],
+        raOut, decOut = self.applyPrecession(self.dataArray['raJ2000'], self.dataArray['decJ2000'],
                                                    MJD = self.metadata.parameters['Opsim_expmjd'])
 
         # apply proper motion
@@ -148,7 +148,7 @@ class InstanceCatalog (Astrometry):
         of light defection (ignored), annual aberration, precession
         and nutation
         """
-        raOut, decOut = self.applyMeanApparentPlace(self.dataArray['ra'], self.dataArray['dec'],
+        raOut, decOut = self.applyMeanApparentPlace(self.dataArray['raJ2000'], self.dataArray['decJ2000'],
                                                     self.dataArray['properMotionRa'],
                                                     self.dataArray['properMotionDec'], self.dataArray['parallax'],
                                                     self.dataArray['radialVelocity'],
@@ -201,13 +201,17 @@ class InstanceCatalog (Astrometry):
         print self.neighborhoodType
         if (self.neighborhoodType == 'EXTRAGALACTIC'):
             Rv = 3.1
+            glon, glat = self.equatorialToGalactic(self.dataArray['raJ2000'],self.dataArray['decJ2000'])
             datadir = os.environ.get("CAT_SHARE_DATA")
             ebvMapNorth = ebv.EbvMap()
             ebvMapNorth.readMapFits(os.path.join(datadir, "data/Dust/SFD_dust_4096_ngp.fits"))
             ebvMapSouth = ebv.EbvMap()
             ebvMapSouth.readMapFits(os.path.join(datadir, "data/Dust/SFD_dust_4096_sgp.fits"))
-            self.addColumn(ebv.calculateEbv(glon, glat, ebvMapNorth, ebvMapSouth, interp = True)*Rv, '"galacticAv')
-
+            self.addColumn(ebv.calculateEbv(glon, glat, ebvMapNorth, ebvMapSouth, interp = True)*Rv, 'galacticAv')
+            self.addColumn(numpy.ones(len(self.dataArray['galacticAv']))*Rv, 'galacticRv')
+            self.addColumn(numpy.array(['CCM' for val in
+                range(len(self.dataArray['galacticAv']))]),
+                'galacticExtinctionModel')
 
         #Calculate pointing of telescope in observed frame and the rotation matrix to transform to this position
         raCenter, decCenter, altCenter, azCenter = self.transformPointingToObserved(
@@ -329,8 +333,8 @@ class InstanceCatalog (Astrometry):
 
 """ TODO (2/18/2010) incorporate the precession routines
     def makeMeasured(self):
-        raOut, decOut = self.applyPropermotion(self.dataArray['ra'], 
-                                    self.dataArray['dec'])
+        raOut, decOut = self.applyPropermotion(self.dataArray['raJ2000'], 
+                                    self.dataArray['decJ2000'])
         raOut, decOut = self.applyParallax(raOut, decOut)
         self.addColumn(raOut, 'raMeasured')
         self.addColumn(decOut, 'decMeasured')
