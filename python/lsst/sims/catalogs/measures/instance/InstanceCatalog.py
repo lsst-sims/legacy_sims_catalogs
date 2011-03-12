@@ -11,9 +11,11 @@ import sys
 from copy import deepcopy
 
 from lsst.sims.catalogs.measures.astrometry.Astrometry import *
+import lsst.sims.catalogs.measures.photometry as phot
 from lsst.sims.catalogs.measures.photometry.Bandpass import *
 from lsst.sims.catalogs.measures.photometry.Sed import *
 import lsst.sims.catalogs.measures.photometry.EBV as ebv
+import lsst.sims.catalogs.measures.photometry.Variability as variability 
 #from lsst.sims.catalogs.measures.instance.CatalogDescription import *
 from lsst.sims.catalogs.measures.instance.SiteDescription import *
 from lsst.sims.catalogs.measures.instance.Metadata import *
@@ -197,7 +199,6 @@ class InstanceCatalog (Astrometry):
         alt-az. This does NOT include refraction.
         """
         # calculate E(B-V) parameters if Extragalactic
-        print self.neighborhoodType
         if (self.neighborhoodType == 'EXTRAGALACTIC'): 
             Rv = 3.1
             glon, glat = self.equatorialToGalactic(self.dataArray['raJ2000'],self.dataArray['decJ2000'])
@@ -343,6 +344,24 @@ class InstanceCatalog (Astrometry):
             for name,bandpass in bandpassDict.items():
                 self.dataArray[name][i] = sed.calcMag(bandpass)
             del sed
+
+    def applyVariability(self):
+        """Apply variability models to magnitude normalization constants.
+        The name of the method defined in the Variability class along with 
+        the parameters for applying the variability are stored in the database
+        as serialized dictionary objects
+        """
+        var = phot.Variability(cache=True)
+
+        #Map to translate filter character to filter integer.
+        filterMap = {1:"u", 2:"g", 3:"r", 4:"i", 5:"z", 6:"y"}
+        
+        #Apply variability to an entire array of magnitude normalization
+        #constants.
+        self.dataArray["magNorm"] += [eval("var.%s(d['pars'], \
+            self.metadata.parameters['Opsim_expmjd'])[filterMap[%i]]"%\
+            (d['varMethodName'],self.metadata.parameters['Opsim_filter']))\
+            for d in self.dataArray['variabilityParameters']]
 
 """ TODO (2/18/2010) incorporate the precession routines
     def makeMeasured(self):
