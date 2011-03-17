@@ -351,17 +351,27 @@ class InstanceCatalog (Astrometry):
         the parameters for applying the variability are stored in the database
         as serialized dictionary objects
         """
-        var = phot.Variability(cache=True)
-
+        var = variability.Variability(cache=True)
+        filters = ['u', 'g', 'r', 'i', 'z', 'y','U','G','R','I','Z','Y']
         #Map to translate filter character to filter integer.
-        filterMap = {1:"u", 2:"g", 3:"r", 4:"i", 5:"z", 6:"y"}
+        filterMap = {0:"u", 1:"g", 2:"r", 3:"i", 4:"z", 5:"y"}
+        filt = ''
+        if self.metadata.parameters['Opsim_filter'] in filters:
+            filt =  self.metadata.parameters['Opsim_filter'].lower()
+        elif filterMap.has_key(self.metadata.parameters['Opsim_filter']):
+            filt =  filterMap[self.metadata.parameters['Opsim_filter']]
+        else:
+            raise Exception("Filter %s does not match the LSST filter list"\
+                    %(str(self.metadata.parameters['Opsim_filter'])))
         
         #Apply variability to an entire array of magnitude normalization
         #constants.
-        self.dataArray["magNorm"] += [eval("var.%s(d['pars'], \
-            self.metadata.parameters['Opsim_expmjd'])[filterMap[%i]]"%\
-            (d['varMethodName'],self.metadata.parameters['Opsim_filter']))\
-            for d in self.dataArray['variabilityParameters']]
+        inds = numpy.where(self.dataArray['variabilityParameters'] is not None)
+        if len(inds) > 0:
+            self.dataArray["magNorm"][inds] += [eval("var.%s(d['pars'], \
+                self.metadata.parameters['Opsim_expmjd'])['%s']"%\
+                (d['varMethodName'],filt))\
+                for d in self.dataArray['variabilityParameters'][inds]]
 
 """ TODO (2/18/2010) incorporate the precession routines
     def makeMeasured(self):
