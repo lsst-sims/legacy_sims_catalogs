@@ -66,7 +66,7 @@ class CatalogDescription (object):
         if ((objectType in self.__format[catalogType]) == False):
             raise ValueError("Type %s does not exist in format list"% objectType)
 
-        return self.__format[catalogType][objectType]['fmt'],self.__format[catalogType][objectType]['attributes']
+        return self.__format[catalogType][objectType]['fmt'],self.__format[catalogType][objectType]['attributes'],self.__format[catalogType][objectType]['conv']
         
 
     def getFields(self, fieldConfig, catalogType, neighborhoodType, objectType):
@@ -110,6 +110,24 @@ class CatalogDescription (object):
         """Return the list of required header data for catalogType"""
         return self.getMetadata(self.__derivedMetadata, catalogType)
 
+    def getMetadataDataFormat(self, fieldConfig, catalogType, opsimId=False):
+        """Return the list of header data for catalogType"""
+        if ((catalogType in fieldConfig) == False):
+            raise ValueError("Type %s does not exist in format list"%catalogType)
+        if opsimId:
+            if ((opsimId in fieldConfig[catalogType]) == False):
+                raise ValueError("opsimId %s does not exist in format list"%opsimId)
+            return [x[2] for x in fieldConfig[catalogType][opsimId].values()]
+        else:
+            return [x[2] for x in fieldConfig[catalogType].values()]
+
+    def getRequiredMetadataDataFormat(self, catalogType, opsimId=False):
+        """Return the list of required header data for catalogType"""
+        return self.getMetadataDataFormat(self.__requiredMetadata, catalogType, opsimId)
+
+    def getDerivedMetadataDataFormat(self, catalogType):
+        """Return the list of required header data for catalogType"""
+        return self.getMetadataDataFormat(self.__derivedMetadata, catalogType)
 
 
     def getPathMap(self, mapName = 'SPECMAP'):

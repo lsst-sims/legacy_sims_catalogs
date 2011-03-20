@@ -13,6 +13,7 @@
 
 """
 import warnings
+import math
 from CatalogDescription import *
 
 class Metadata (object):
@@ -21,6 +22,7 @@ class Metadata (object):
     def __init__(self, configFile):
         self.catalogDescription = CatalogDescription(configFile)
         self.parameters = {}
+        self.conversion = {}
         self.comments = {}
         self.ismerged = 0
 
@@ -39,13 +41,14 @@ class Metadata (object):
         if ((name in self.parameters) == True):
             del self.parameters[name]
             del self.comments[name]
+            del self.conversion[name]
         else:
             raise ValueError("Entry %s does not exist in metadata"%name)
         
     def mergeMetadata(self, metadata, clobber=True):
         """ Loop through a metadata class and add parameters to existing metadata"""
         for name in metadata.parameters:
-            self.addMetadata(name,metadata.parameters[name],metadata.comments[name],clobber)
+            self.addMetadata(name,metadata.parameters[name],metadata.conversion[name], metadata.comments[name],clobber)
     
     def validateMetadata(self, catalogType, opsimId):
         """ Validate that the metadata contains the correct attributes
@@ -78,7 +81,6 @@ class Metadata (object):
                 raise ValueError("Entry %s does not exist in derived metadata"%name)
         return True
 
-
     def writeMetadata(self, filename, catalogType, opsimId, newfile = False):
         """Write metadata to file"""
         # open file
@@ -87,15 +89,20 @@ class Metadata (object):
         else:
             outputFile = open(filename,"w")
 
-        format = "%s %s \n"
         # get required and derived metadata given catalogType
         attributeList = self.catalogDescription.getRequiredMetadata(catalogType, opsimId)[:]
-        attributeList.extend(self.catalogDescription.getDerivedMetadata(catalogType))
-        #2.6 formatString = "{0} {1}\n"
-        for name in attributeList:
-            # 2.6 outputFile.write(formatString.format(name[0],self.parameters[name[0]]))
-            outputFile.write(format % (name,self.parameters[name]))
+        conversion = self.catalogDescription.getRequiredMetadataDataFormat(catalogType, opsimId)[:]
 
+        attributeList.extend(self.catalogDescription.getDerivedMetadata(catalogType))
+        conversion.extend(self.catalogDescription.getDerivedMetadataDataFormat(catalogType))
+
+        print conversion
+        format = "%s %s \n"
+        #2.6 formatString = "{0} {1}\n"
+        for name,conv in zip(attributeList,conversion):
+            # 2.6 outputFile.write(formatString.format(name[0],self.parameters[name[0]]))
+            x = self.parameters[name]
+            outputFile.write(format%(name,eval(conv)))
         outputFile.close()
 
   
