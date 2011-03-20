@@ -11,7 +11,7 @@ import sys
 from copy import deepcopy
 
 from lsst.sims.catalogs.measures.astrometry.Astrometry import *
-import lsst.sims.catalogs.measures.photometry as phot
+import lsst.sims.catalogs.measures.photometry.photUtils as phot
 from lsst.sims.catalogs.measures.photometry.Bandpass import *
 from lsst.sims.catalogs.measures.photometry.Sed import *
 import lsst.sims.catalogs.measures.photometry.EBV as ebv
@@ -64,6 +64,12 @@ class InstanceCatalog (Astrometry):
         else:
             warnings.warn("Entry %s does not exists in dataArray" % name)
             
+    def makeFilePaths(self):
+        '''manipulate sedFilename to add path for file on disk'''
+        sedPaths = self.catalogDescription.getPathMap()
+        self.addColumn(map(lambda x: sedPaths[x] + ".gz", self.dataArray['sedFilename']),'sedFilename')
+
+
     # validate that the catalog contains the correct data
     def validateData(self, catalogType):
         """Validate that the class contains the correct attributes
@@ -88,7 +94,18 @@ class InstanceCatalog (Astrometry):
                 raise ValueError("Entry %s does not exist in derived data" % name)
 
         return True
-                
+
+
+    def formatData(self, conversion):
+        '''Format data based on conversion function
+
+        conversion is a tuple of (attribute, function for conversion, array of indices in dataArray'''
+
+        # extract data value for attribute
+        x = self.dataArray[conversion[0]][conversion[2]]
+        return eval(conversion[1])
+        
+        
     # Output of formatted data catalogs
     def writeCatalogData(self, filename, catalogType, newfile = False):
         """Write an instanceCatalog dataArray based on the catalog type given
@@ -103,24 +120,19 @@ class InstanceCatalog (Astrometry):
             outputFile = open(filename,"w")
 
         # Determine the catalogType and objectType for printing
-        format, attributeList = self.catalogDescription.getFormat(catalogType, self.objectType)
-
-        #manipulate sedFilename to add path for file on disk
-        sedPaths = self.catalogDescription.getPathMap()
-        self.addColumn(map(lambda x: sedPaths[x], self.dataArray['sedFilename']),'sedFilename')
-
-        # generate degrees column for ra and dec
-        if (catalogType == 'TRIM'):
-            self.addColumn(self.dataArray['raTrim']*180./math.pi,'raTrim_deg')
-            self.addColumn(self.dataArray['decTrim']*180./math.pi,'decTrim_deg')
+        format, attributeList, conversion = self.catalogDescription.getFormat(catalogType, self.objectType)
 
         #write trim file based on objectType
         # add newline to format string - configobj does not interpret these correctly
         format = format +"\n"
         for i in range(len(self.dataArray["id"])):
-            # use map to output all attributes in the given format string
+            # use list comprehension to output all attributes in the given format string
             # 2.6 outputFile.write(formatString,(map(lambda x: self.dataArray[x][i],attributeList)))
-            outputFile.write(format % tuple(map(lambda x: self.dataArray[x][i],attributeList)))
+            # outputFile.write(format % tuple(map(lambda x: self.dataArray[x][i],attributeList)))
+            outputFile.write(format % tuple([self.formatData(x) for x in
+                                             zip(attributeList,conversion,numpy.ones(len(attributeList),dtype=int)*i)]))
+
+
         outputFile.close()
 
     # Composite astrometry operations
@@ -189,6 +201,24 @@ class InstanceCatalog (Astrometry):
         self.metadata.addMetadata("Unrefracted_Azimuth", azCenter,\
                                   "Opsim value of the azimuth of the observation")
 
+    def makeEBV(self, Rv=3.1):
+        '''Populate E(B-V) values from gLon, gLat'''
+
+        glon, glat = self.equatorialToGalactic(self.dataArray['raJ2000'],self.dataArray['decJ2000'])
+
+        datadir = os.environ.get("CAT_SHARE_DATA")
+
+        ebvMapNorth = ebv.EbvMap()
+        ebvMapNorth.readMapFits(os.path.join(datadir, "data/Dust/SFD_dust_4096_ngp.fits"))
+
+        ebvMapSouth = ebv.EbvMap()
+        ebvMapSouth.readMapFits(os.path.join(datadir, "data/Dust/SFD_dust_4096_sgp.fits"))
+			            
+        self.addColumn(ebv.calculateEbv(glon, glat, ebvMapNorth, ebvMapSouth, interp = True)*Rv, 'galacticAv')
+        self.addColumn(numpy.ones(len(self.dataArray['galacticAv']))*Rv, 'galacticRv')
+        self.addColumn(numpy.array(['CCM' for val in
+                                    range(len(self.dataArray['galacticAv']))]),
+                       'galacticExtinctionModel')
 
     def makeTrimCoords(self):
         """ Generate TRIM coordinates
@@ -198,27 +228,19 @@ class InstanceCatalog (Astrometry):
         trim files). This includes the hour angle, diurnal aberration,
         alt-az. This does NOT include refraction.
         """
+        
         # calculate E(B-V) parameters if Extragalactic
         if (self.neighborhoodType == 'EXTRAGALACTIC'): 
-            Rv = 3.1
-            glon, glat = self.equatorialToGalactic(self.dataArray['raJ2000'],self.dataArray['decJ2000'])
-            datadir = os.environ.get("CAT_SHARE_DATA")
-            ebvMapNorth = ebv.EbvMap()
-            ebvMapNorth.readMapFits(os.path.join(datadir, "data/Dust/SFD_dust_4096_ngp.fits"))
-            ebvMapSouth = ebv.EbvMap()
-            ebvMapSouth.readMapFits(os.path.join(datadir, "data/Dust/SFD_dust_4096_sgp.fits"))
-			            
-	    self.addColumn(ebv.calculateEbv(glon, glat, ebvMapNorth, ebvMapSouth, interp = True)*Rv, 'galacticAv')
-            self.addColumn(numpy.ones(len(self.dataArray['galacticAv']))*Rv, 'galacticRv')
-            self.addColumn(numpy.array(['CCM' for val in
-                range(len(self.dataArray['galacticAv']))]),
-                'galacticExtinctionModel')
-
+            makeEBV()
+                
         #Calculate pointing of telescope in observed frame and the rotation matrix to transform to this position
         raCenter, decCenter, altCenter, azCenter = self.transformPointingToObserved(
             self.metadata.parameters['Unrefracted_RA'],
             self.metadata.parameters['Unrefracted_Dec'],
             includeRefraction = False)
+
+        # update file paths for place on disk
+        self.makeFilePaths()
 
         #Update the meta data for ALt-Az
 #        self.metadata.addMetadata("Unrefracted_Altitude", altCenter,\
@@ -260,13 +282,19 @@ class InstanceCatalog (Astrometry):
     def makeReferenceCoords(self):
         '''Generate reference file attributes'''
 
-        # generate trim coordinates
-        self.makeTrimCoords()
+        # generate file paths for SEDS
+        self.makeFilePaths()
+
         # include ra,dec J2000 coords (degrees)
-        self.addColumn(self.dataArray['ra']*180./math.pi,'ra_deg')
-        self.addColumn(self.dataArray['dec']*180./math.pi,'dec_deg')
+        self.addColumn(self.dataArray['raJ2000']*180./math.pi,'ra_deg')
+        self.addColumn(self.dataArray['decJ2000']*180./math.pi,'dec_deg')
 
         # generate photometry
+        datadir = os.environ.get("CAT_SHARE_DATA")
+        if (self.neighborhoodType == 'GALACTIC'):
+            self.calculateStellarMagnitudes(dataDir=datadir)
+        elif (self.neighborhoodType == 'EXTRAGALACTIC'):
+            self.calculateGalaxyMagnitudes(dataDir=datadir)
 
 
     def transformPointingToObserved(self, ra, dec, includeRefraction = False):
@@ -283,66 +311,102 @@ class InstanceCatalog (Astrometry):
 
     # Photometry composite methods
 
-
-
-
-    def calculateStellarMagnitudes(self, bandpassList, dataDir = "./"):
+    def calculateStellarMagnitudes(self, filterList=('u', 'g', 'r', 'i', 'z', 'y'),
+                                   dataDir = None, filterroot='total_'):
         """For stellar sources and a list of bandpass names generate magnitudes"""
     
         # load bandpasses
-        bandpassDict = loadBandpasses(bandpassList, dataDir = dataDir)
+        bandpassDict = phot.loadBandpasses(filterlist=filterList, dataDir = None)
         
         #load required SEDs
-        sedDict = loadSeds(self.dataArray["sedFilename"], dataDir=dataDir)
+        sedDict = phot.loadSeds(self.dataArray["sedFilename"], dataDir=dataDir)
 
-        # Calculate dust parameters for all stars 
-        a_x, b_x = sedDict[self.dataArray["sedFilename"][0]].setupCCMab(wavelen=sedDict[
-            self.dataArray["sedFilename"][0]].wavelen)
+        # pick one SED to be reference - randomly choose #1 sed
+        refsed = sedDict[self.dataArray["sedFilename"][0]]
+        if (refsed.needResample(wavelen_match=bandpassDict[filterList[0]].wavelen)):
+            refsed.resampleSED(wavelen_match=bandpassDict[filterList[0]].wavelen)
+
+        # need to put all SEDs on same wavelength grid
+        for sed in sedDict.values():
+            if (sed.needResample(wavelen_match=refsed.wavelen)):
+                sed.resampleSED(wavelen_match=refsed.wavelen)
+
+        # Calculate dust parameters for all stars  (a_x/b_x have implicit wavelength dep)
+        a_x, b_x = refsed.setupCCMab()
 
         # generate magnitude arrays and set to zero
         for name,bandpass in bandpassDict.items():
-            self.addColumn(numpy.zeros(len(self.dataArray["id"])), name)
+            self.addColumn(numpy.zeros(len(self.dataArray["id"])), name+"Derived")
+
+        # set up for calculating mags in all bandpasses
+        phiarray, wavelenstep = phot.setupPhiArray_dict(bandpassDict, filterList)
 
         # loop through magnitudes and calculate   
         for i,sedName in enumerate(self.dataArray["sedFilename"]):
             sed = deepcopy(sedDict[sedName])
-            sed.multiplyFluxNorm(self.dataArray["fluxNorm"][i]*1.e-22)
-            sed.addCCMDust(a_x, b_x, A_v=self.dataArray["galacticAv"][i], R_v=self.dataArray["galacticRv"][i])
-            for name,bandpass in bandpassDict.items():
-                self.dataArray[name][i] = sed.calcMag(bandpass)
+            sed.addCCMDust(a_x, b_x, A_v=self.dataArray["galacticAv"][i], R_v=float(self.dataArray["galacticRv"][i]))
+            sed.multiplyFluxNorm(self.dataArray["fluxNorm"][i])
+            sed.flambdaTofnu()
+
+            mags = sed.manyMagCalc(phiarray, wavelenstep)
+            for j,name in enumerate(bandpassDict.keys()):
+                self.dataArray[name+"Derived"][i] = mags[j]
             del sed
 
-    def calculateGalaxyMagnitudes(self, bandpassList, dataDir = "./"):
-        """For stellar sources and a list of bandpass names generate magnitudes"""
-    
+    def calculateGalaxyMagnitudes(self, filterList=('u', 'g', 'r', 'i', 'z', 'y'),
+                                   dataDir = None, filterroot='total_'):
+        """For galaxy sources and a list of bandpass names generate magnitudes"""
+
         # load bandpasses
-        bandpassDict = loadBandpasses(bandpassList, dataDir = dataDir)
+        bandpassDict = phot.loadBandpasses(filterlist=filterList, dataDir = None)
         
         #load required SEDs
-        sedDict = loadSeds(self.dataArray["sedFilename"], dataDir=dataDir)
+        sedDict = phot.loadSeds(self.dataArray["bulgeSedFilename"], dataDir=dataDir)
+        sedDict.update(phot.loadSeds(self.dataArray["diskSedFilename"], dataDir=dataDir))
+        sedDict.update(phot.loadSeds(self.dataArray["agnSedFilename"], dataDir=dataDir))
+        print sedDict.keys()
+
+        # pick one SED to be reference - randomly choose #1 sed
+        refsed = sedDict[self.dataArray["sedFilename"][0]]
+        if (refsed.needResample(wavelen_match=bandpassDict[filterList[0]].wavelen)):
+            refsed.resampleSED(wavelen_match=bandpassDict[filterList[0]].wavelen)
+
+        # need to put all SEDs on same wavelength grid
+        for sed in sedDict.values():
+            if (sed.needResample(wavelen_match=refsed.wavelen)):
+                sed.resampleSED(wavelen_match=refsed.wavelen)
 
         # generate magnitude arrays and set to zero
         for name,bandpass in bandpassDict.items():
-            self.addColumn(numpy.zeros(len(self.dataArray["id"])), name)
+            self.addColumn(numpy.zeros(len(self.dataArray["id"])), name+"Derived")
+
+        # set up for calculating mags in all bandpasses
+        phiarray, wavelenstep = phot.setupPhiArray_dict(bandpassDict, filterList)
+
+        # Calculate dust parameters for all stars  (a_x/b_x have implicit wavelength dep)
+        a_x, b_x = refsed.setupCCMab()
 
         # loop through magnitudes and calculate   
         for i,sedName in enumerate(self.dataArray["sedFilename"]):
             sed = deepcopy(sedDict[sedName])
             # Calculate dust parameters for all galaxies
-            a_x, b_x = sedDict[self.dataArray["sedFilename"][0]].setupCCMab(wavelen=sedDict[
-                self.dataArray["sedFilename"][0]].wavelen)
             sed.addCCMDust(a_x, b_x, A_v=self.dataArray["internalAv"][i], R_v=self.dataArray["internalRv"][i])
 
-            sed.multiplyFluxNorm(10**((self.dataArray["magNorm"][i] + 8.9)/-2.5))
+            sed.multiplyFluxNorm(self.dataArray["fluxNorm"][i])
 
             sed.redshiftSED(redshift=self.dataArray["redshift"][i], dimming=False)
 
-            # add dust from our galaxy            
-            a_x, b_x = sed.setupCCMab()
-            # apply dust
-            sed.addCCMDust(a_x, b_x, A_v=self.dataArray["galacticAv"][i], R_v=self.dataArray["galacticRv"][i])
-            for name,bandpass in bandpassDict.items():
-                self.dataArray[name][i] = sed.calcMag(bandpass)
+            a_mw, b_mw = sed.setupCCMab()
+            sed.addCCMDust(a_x, b_x, A_v=self.dataArray["galacticAv"][i], R_v=float(self.dataArray["galacticRv"][i]))
+            mags = sed.manyMagCalc(phiarray, wavelenstep)
+            for j,name in enumerate(bandpassDict.keys()):
+                self.dataArray[name+"Derived"][i] = mags[j]
+            del sed
+
+            mag = sed.calcMag(self.bands[k])
+
+            flux = sed.calcADU(self.bands[k], gain=1.0)
+ 
             del sed
 
     def applyVariability(self):
