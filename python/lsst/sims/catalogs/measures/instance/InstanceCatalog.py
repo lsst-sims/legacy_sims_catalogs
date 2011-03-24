@@ -231,7 +231,7 @@ class InstanceCatalog (Astrometry):
         
         # calculate E(B-V) parameters if Extragalactic
         if (self.neighborhoodType == 'EXTRAGALACTIC'): 
-            makeEBV()
+            self.makeEBV()
                 
         #Calculate pointing of telescope in observed frame and the rotation matrix to transform to this position
         raCenter, decCenter, altCenter, azCenter = self.transformPointingToObserved(
@@ -430,12 +430,15 @@ class InstanceCatalog (Astrometry):
         
         #Apply variability to an entire array of magnitude normalization
         #constants.
-        inds = numpy.where(self.dataArray['variabilityParameters'] is not None)
-        if len(inds) > 0:
-            self.dataArray["magNorm"][inds] += [eval("var.%s(d['pars'], \
+        if not self.dataArray.has_key('variabilityParameters'):
+            raise Exception("Cannot apply variability without parameters")
+        numVar = len(self.dataArray['variabilityParameters'])
+        magOffset = numpy.zeros(numVar)
+        for ind,d in zip(range(numVar),self.dataArray['variabilityParameters']):
+            magOffset[ind] = eval("var.%s(d['pars'], \
                 self.metadata.parameters['Opsim_expmjd'])['%s']"%\
-                (d['varMethodName'],filt))\
-                for d in self.dataArray['variabilityParameters'][inds]]
+                (d['varMethodName'],filt))
+        self.dataArray["magNorm"] += magOffset
 
 """ TODO (2/18/2010) incorporate the precession routines
     def makeMeasured(self):
