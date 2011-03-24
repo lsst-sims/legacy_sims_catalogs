@@ -435,6 +435,8 @@ class InstanceCatalog (Astrometry):
         numVar = len(self.dataArray['variabilityParameters'])
         magOffset = numpy.zeros(numVar)
         for ind,d in zip(range(numVar),self.dataArray['variabilityParameters']):
+            if d is None:
+                continue
             magOffset[ind] = eval("var.%s(d['pars'], \
                 self.metadata.parameters['Opsim_expmjd'])['%s']"%\
                 (d['varMethodName'],filt))
