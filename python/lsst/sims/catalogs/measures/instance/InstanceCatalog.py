@@ -364,7 +364,6 @@ class InstanceCatalog (Astrometry):
         sedDict = phot.loadSeds(self.dataArray["bulgeSedFilename"], dataDir=dataDir)
         sedDict.update(phot.loadSeds(self.dataArray["diskSedFilename"], dataDir=dataDir))
         sedDict.update(phot.loadSeds(self.dataArray["agnSedFilename"], dataDir=dataDir))
-        print sedDict.keys()
 
         # pick one SED to be reference - randomly choose #1 sed
         refsed = sedDict[self.dataArray["sedFilename"][0]]

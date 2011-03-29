@@ -22,7 +22,6 @@ class Metadata (object):
     def __init__(self, configFile):
         self.catalogDescription = CatalogDescription(configFile)
         self.parameters = {}
-        self.conversion = {}
         self.comments = {}
         self.ismerged = 0
 
@@ -41,14 +40,13 @@ class Metadata (object):
         if ((name in self.parameters) == True):
             del self.parameters[name]
             del self.comments[name]
-            del self.conversion[name]
         else:
             raise ValueError("Entry %s does not exist in metadata"%name)
         
     def mergeMetadata(self, metadata, clobber=True):
         """ Loop through a metadata class and add parameters to existing metadata"""
         for name in metadata.parameters:
-            self.addMetadata(name,metadata.parameters[name],metadata.conversion[name], metadata.comments[name],clobber)
+            self.addMetadata(name, metadata.parameters[name], metadata.comments[name],clobber)
     
     def validateMetadata(self, catalogType, opsimId):
         """ Validate that the metadata contains the correct attributes
@@ -96,7 +94,6 @@ class Metadata (object):
         attributeList.extend(self.catalogDescription.getDerivedMetadata(catalogType))
         conversion.extend(self.catalogDescription.getDerivedMetadataDataFormat(catalogType))
 
-        print conversion
         format = "%s %s \n"
         #2.6 formatString = "{0} {1}\n"
         for name,conv in zip(attributeList,conversion):
