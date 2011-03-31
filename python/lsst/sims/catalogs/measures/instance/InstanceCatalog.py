@@ -433,9 +433,11 @@ class InstanceCatalog (Astrometry):
             raise Exception("Cannot apply variability without parameters")
         numVar = len(self.dataArray['variabilityParameters'])
         magOffset = numpy.zeros(numVar)
-        for ind,d in zip(range(numVar),self.dataArray['variabilityParameters']):
-            if d is None:
+        for ind,dstr in zip(range(numVar),self.dataArray['variabilityParameters']):
+            dstr = str(dstr)
+            if dstr == 'None' or dstr == '':
                 continue
+            d = eval(dstr)
             magOffset[ind] = eval("var.%s(d['pars'], \
                 self.metadata.parameters['Opsim_expmjd'])['%s']"%\
                 (d['varMethodName'],filt))
