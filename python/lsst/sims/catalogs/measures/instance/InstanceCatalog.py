@@ -36,14 +36,20 @@ class InstanceCatalog (Astrometry):
 
     """
 
-    def __init__(self, configFile):
+    def __init__(self, configFile=None, cd=None, md=None):
         """Create an InstanceClass
 
         Instantiate an InstanceClass with the catalog type set to invalid
         """
-        self.catalogDescription = CatalogDescription(configFile)
+        if cd is None:
+            self.catalogDescription = CatalogDescription(configFile)
+        else:
+            self.catalogDescription = cd
         self.site = SiteDescription()
-        self.metadata = Metadata(configFile)
+        if md is None:
+            self.metadata = Metadata(configFile)
+        else:
+            self.metadata = md
 
         self.catalogType = None
         self.neighborhoodType = None
