@@ -8,6 +8,7 @@
 import numpy
 import warnings
 import sys
+import gzip
 from copy import deepcopy
 
 from lsst.sims.catalogs.measures.astrometry.Astrometry import *
@@ -113,17 +114,23 @@ class InstanceCatalog (Astrometry):
         
         
     # Output of formatted data catalogs
-    def writeCatalogData(self, filename, catalogType, newfile = False):
+    def writeCatalogData(self, filename, catalogType, newfile = False, compress = False):
         """Write an instanceCatalog dataArray based on the catalog type given
 
            If the catalogType is TRIM use the objectType to determine the output format
            Provide the option to clobber the file
         """
         # open file
-        if (newfile == False):
-            outputFile = open(filename,"a")
+        if compress:
+  	    if (newfile == False):
+	        outputFile = gzip.open(filename+".gz","a")
+	    else:
+	        outputFile = gzip.open(filename+".gz","w")
         else:
-            outputFile = open(filename,"w")
+  	    if (newfile == False):
+	        outputFile = open(filename,"a")
+	    else:
+	        outputFile = open(filename,"w")
 
         # Determine the catalogType and objectType for printing
         format, attributeList, conversion = self.catalogDescription.getFormat(catalogType, self.objectType)

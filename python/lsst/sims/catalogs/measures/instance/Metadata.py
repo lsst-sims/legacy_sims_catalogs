@@ -14,6 +14,7 @@
 """
 import warnings
 import math
+import gzip
 from CatalogDescription import *
 
 class Metadata (object):
@@ -79,13 +80,19 @@ class Metadata (object):
                 raise ValueError("Entry %s does not exist in derived metadata"%name)
         return True
 
-    def writeMetadata(self, filename, catalogType, opsimId, newfile = False):
+    def writeMetadata(self, filename, catalogType, opsimId, newfile = False, filelist = None, compress = False):
         """Write metadata to file"""
         # open file
-        if (newfile == False):
-            outputFile = open(filename,"a")
+        if compress:
+            if (newfile == False):
+                outputFile = gzip.open(filename+".gz","a")
+            else:
+                outputFile = gzip.open(filename+".gz","w")
         else:
-            outputFile = open(filename,"w")
+            if (newfile == False):
+                outputFile = open(filename,"a")
+            else:
+                outputFile = open(filename,"w")
 
         # get required and derived metadata given catalogType
         attributeList = self.catalogDescription.getRequiredMetadata(catalogType, opsimId)[:]
@@ -100,6 +107,9 @@ class Metadata (object):
             # 2.6 outputFile.write(formatString.format(name[0],self.parameters[name[0]]))
             x = self.parameters[name]
             outputFile.write(format%(name,eval(conv)))
+        if filelist is not None:
+            for file in filelist:
+                outputFile.write("includeobj %s\n"%(file))
         outputFile.close()
 
   
