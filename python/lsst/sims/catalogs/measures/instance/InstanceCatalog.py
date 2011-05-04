@@ -8,6 +8,7 @@
 import numpy
 import warnings
 import sys
+import itertools
 import gzip
 from copy import deepcopy
 
@@ -71,10 +72,23 @@ class InstanceCatalog (Astrometry):
         else:
             warnings.warn("Entry %s does not exists in dataArray" % name)
             
-    def makeFilePaths(self):
+    def noneCheck(self, sedPaths, sedFile):
+        '''Parse any None in the sedFilenames'''
+        try:
+            return "%s.gz"%sedPaths[sedFile]
+        except KeyError:
+            return None
+            
+    def makeFilePaths(self, fileName):
         '''manipulate sedFilename to add path for file on disk'''
         sedPaths = self.catalogDescription.getPathMap()
-        self.addColumn(map(lambda x: sedPaths[x] + ".gz", self.dataArray['sedFilename']),'sedFilename')
+        self.addColumn([self.noneCheck(sedPaths, x) for x in  self.dataArray[fileName]], fileName)
+        
+#        print "FILEPATHS"
+#        print self.dataArray[fileName]
+
+#        print [x for x in self.dataArray[fileName] if x != None]
+#        self.addColumn(map(lambda x: sedPaths[x] + ".gz", self.dataArray[fileName]),fileName)
 
 
     # validate that the catalog contains the correct data
@@ -106,10 +120,15 @@ class InstanceCatalog (Astrometry):
     def formatData(self, conversion):
         '''Format data based on conversion function
 
-        conversion is a tuple of (attribute, function for conversion, array of indices in dataArray'''
+        conversion is a tuple of (attribute, function for conversion, array of indices in dataArray)
+        '''
 
         # extract data value for attribute
         x = self.dataArray[conversion[0]][conversion[2]]
+#        print x
+#        if (x == None):
+#            x=0
+#        print conversion[0],conversion[1],eval(conversion[1]),conversion[2]
         return eval(conversion[1])
         
         
@@ -142,6 +161,9 @@ class InstanceCatalog (Astrometry):
             # use list comprehension to output all attributes in the given format string
             # 2.6 outputFile.write(formatString,(map(lambda x: self.dataArray[x][i],attributeList)))
             # outputFile.write(format % tuple(map(lambda x: self.dataArray[x][i],attributeList)))
+#            print attributeList
+#            print conversion
+#            print format
             outputFile.write(format % tuple([self.formatData(x) for x in
                                              zip(attributeList,conversion,numpy.ones(len(attributeList),dtype=int)*i)]))
 
@@ -156,9 +178,9 @@ class InstanceCatalog (Astrometry):
         raOut, decOut = self.applyPrecession(self.dataArray['raJ2000'], self.dataArray['decJ2000'],
                                                    MJD = self.metadata.parameters['Opsim_expmjd'])
 
-        # apply proper motion
+        # apply proper motion (note parallax is converted to arcseconds)
         raOut, decOut = self.applyProperMotion(raOut, decOut, self.dataArray['properMotionRa'],
-                                               self.dataArray['properMotionDec'], self.dataArray['parallax'],
+                                               self.dataArray['properMotionDec'], self.dataArray['parallax']/1000.,
                                                self.dataArray['radialVelocity'], MJD = self.metadata.parameters['Opsim_expmjd'])
 
         # TODO 3/29/2010 convert FK5 to ICRS?
@@ -174,9 +196,10 @@ class InstanceCatalog (Astrometry):
         of light defection (ignored), annual aberration, precession
         and nutation
         """
+        # (note parallax is converted to arcseconds)
         raOut, decOut = self.applyMeanApparentPlace(self.dataArray['raJ2000'], self.dataArray['decJ2000'],
                                                     self.dataArray['properMotionRa'],
-                                                    self.dataArray['properMotionDec'], self.dataArray['parallax'],
+                                                    self.dataArray['properMotionDec'], self.dataArray['parallax']/1000.,
                                                     self.dataArray['radialVelocity'],
                                                     MJD=self.metadata.parameters['Opsim_expmjd'])
 
@@ -222,10 +245,10 @@ class InstanceCatalog (Astrometry):
         datadir = os.environ.get("CAT_SHARE_DATA")
 
         ebvMapNorth = ebv.EbvMap()
-        ebvMapNorth.readMapFits(os.path.join(datadir, "data/Dust/SFD_dust_4096_ngp.fits"))
+        ebvMapNorth.readMapFits(os.path.join(datadir, "Dust/SFD_dust_4096_ngp.fits"))
 
         ebvMapSouth = ebv.EbvMap()
-        ebvMapSouth.readMapFits(os.path.join(datadir, "data/Dust/SFD_dust_4096_sgp.fits"))
+        ebvMapSouth.readMapFits(os.path.join(datadir, "Dust/SFD_dust_4096_sgp.fits"))
 			            
         self.addColumn(ebv.calculateEbv(glon, glat, ebvMapNorth, ebvMapSouth, interp = True)*Rv, 'galacticAv')
         self.addColumn(numpy.ones(len(self.dataArray['galacticAv']))*Rv, 'galacticRv')
@@ -253,7 +276,7 @@ class InstanceCatalog (Astrometry):
             includeRefraction = False)
 
         # update file paths for place on disk
-        self.makeFilePaths()
+        self.makeFilePaths('sedFilename')
 
         #Update the meta data for ALt-Az
 #        self.metadata.addMetadata("Unrefracted_Altitude", altCenter,\
@@ -295,18 +318,21 @@ class InstanceCatalog (Astrometry):
     def makeReferenceCoords(self):
         '''Generate reference file attributes'''
 
-        # generate file paths for SEDS
-        self.makeFilePaths()
-
-        # include ra,dec J2000 coords (degrees)
-        self.addColumn(self.dataArray['raJ2000']*180./math.pi,'ra_deg')
-        self.addColumn(self.dataArray['decJ2000']*180./math.pi,'dec_deg')
 
         # generate photometry
         datadir = os.environ.get("CAT_SHARE_DATA")
         if (self.neighborhoodType == 'GALACTIC'):
+            # generate file paths for SEDS
+            self.makeFilePaths('sedFilename')
             self.calculateStellarMagnitudes(dataDir=datadir)
         elif (self.neighborhoodType == 'EXTRAGALACTIC'):
+            #generate EBV,Av, values
+            #self.makeEBV()
+            #derive filepaths:
+            self.makeFilePaths('bulgeSedFilename')
+            self.makeFilePaths('diskSedFilename')
+            self.makeFilePaths('agnSedFilename')
+            #generate magnitudes
             self.calculateGalaxyMagnitudes(dataDir=datadir)
 
 
@@ -357,14 +383,15 @@ class InstanceCatalog (Astrometry):
         # loop through magnitudes and calculate   
         for i,sedName in enumerate(self.dataArray["sedFilename"]):
             sed = deepcopy(sedDict[sedName])
-            sed.addCCMDust(a_x, b_x, A_v=self.dataArray["galacticAv"][i], R_v=float(self.dataArray["galacticRv"][i]))
             sed.multiplyFluxNorm(self.dataArray["fluxNorm"][i])
+            sed.addCCMDust(a_x, b_x, A_v=self.dataArray["galacticAv"][i], R_v=float(self.dataArray["galacticRv"][i]))
             sed.flambdaTofnu()
 
             mags = sed.manyMagCalc(phiarray, wavelenstep)
-            for j,name in enumerate(bandpassDict.keys()):
+            for j,name in enumerate(filterList):
                 self.dataArray[name+"Derived"][i] = mags[j]
             del sed
+
 
     def calculateGalaxyMagnitudes(self, filterList=('u', 'g', 'r', 'i', 'z', 'y'),
                                    dataDir = None, filterroot='total_'):
@@ -373,17 +400,13 @@ class InstanceCatalog (Astrometry):
         # load bandpasses
         bandpassDict = phot.loadBandpasses(filterlist=filterList, dataDir = None)
         
-        #load required SEDs
+        #load required SEDs ignore None
         sedDict = phot.loadSeds(self.dataArray["bulgeSedFilename"], dataDir=dataDir)
         sedDict.update(phot.loadSeds(self.dataArray["diskSedFilename"], dataDir=dataDir))
         sedDict.update(phot.loadSeds(self.dataArray["agnSedFilename"], dataDir=dataDir))
 
-        # pick one SED to be reference - randomly choose #1 sed
-        refsed = sedDict[self.dataArray["sedFilename"][0]]
-        if (refsed.needResample(wavelen_match=bandpassDict[filterList[0]].wavelen)):
-            refsed.resampleSED(wavelen_match=bandpassDict[filterList[0]].wavelen)
-
-        # need to put all SEDs on same wavelength grid
+        # pick one SED to be reference and grid all to common wavelength
+        refsed = sedDict.values()[0]
         for sed in sedDict.values():
             if (sed.needResample(wavelen_match=refsed.wavelen)):
                 sed.resampleSED(wavelen_match=refsed.wavelen)
@@ -395,30 +418,95 @@ class InstanceCatalog (Astrometry):
         # set up for calculating mags in all bandpasses
         phiarray, wavelenstep = phot.setupPhiArray_dict(bandpassDict, filterList)
 
-        # Calculate dust parameters for all stars  (a_x/b_x have implicit wavelength dep)
-        a_x, b_x = refsed.setupCCMab()
-
         # loop through magnitudes and calculate   
-        for i,sedName in enumerate(self.dataArray["sedFilename"]):
-            sed = deepcopy(sedDict[sedName])
-            # Calculate dust parameters for all galaxies
-            sed.addCCMDust(a_x, b_x, A_v=self.dataArray["internalAv"][i], R_v=self.dataArray["internalRv"][i])
+        for i,id in enumerate(self.dataArray["id"]):
+            try:
+                sedBulge = deepcopy(sedDict[self.dataArray["bulgeSedFilename"][i]])
+                sedBulge.multiplyFluxNorm(self.dataArray["bulgeFluxNorm"][i])
+                a_x, b_x = sedBulge.setupCCMab()
+                sedBulge.addCCMDust(a_x, b_x, A_v=self.dataArray["internalAv_b"][i])
+                sedBulge.redshiftSED(redshift=self.dataArray["redshift"][i], dimming=True)
+#                print sedBulge.wavelen.min(),sedBulge.wavelen.max()
+                sedBulge.resampleSED(wavelen_match=bandpassDict['u'].wavelen)
+#                print "BULGE EXISTS",self.dataArray["bulgeSedFilename"][i]
+#                print "DUST", self.dataArray["internalAv_b"][i]
+            except KeyError:
+                sedBulge = None
 
-            sed.multiplyFluxNorm(self.dataArray["fluxNorm"][i])
+            try:
+                sedDisk = deepcopy(sedDict[self.dataArray["diskSedFilename"][i]])
+                sedDisk.multiplyFluxNorm(self.dataArray["diskFluxNorm"][i])
+                a_x, b_x = sedDisk.setupCCMab()
+                sedDisk.addCCMDust(a_x, b_x, A_v=self.dataArray["internalAv_d"][i])
+                sedDisk.redshiftSED(redshift=self.dataArray["redshift"][i], dimming=True)
+#                print sedDisk.wavelen.min(),sedDisk.wavelen.max()
+                sedDisk.resampleSED(wavelen_match=bandpassDict['u'].wavelen)
+#                print "DISK EXISTS",self.dataArray["diskSedFilename"][i]
+#                print "DUST", self.dataArray["internalAv_d"][i]
+            except KeyError:
+                sedDisk = None
 
-            sed.redshiftSED(redshift=self.dataArray["redshift"][i], dimming=False)
+            try:
+                sedAgn = deepcopy(sedDict[self.dataArray["agnSedFilename"][i]])
+                #IS THIS CORRECT
+                if (self.dataArray["agnFluxNorm"][i] > 90.):
+                    self.dataArray["agnFluxNorm"][i] = 0.0
+                    sedAgn = None
+                sedAgn.multiplyFluxNorm(self.dataArray["agnFluxNorm"][i])
+                sedAgn.redshiftSED(redshift=self.dataArray["redshift"][i], dimming=True)
+                sedAgn.resampleSED(wavelen_match=bandpassDict['u'].wavelen)
+#                print "AGN EXISTS",self.dataArray["agnSedFilename"][i]
 
-            a_mw, b_mw = sed.setupCCMab()
-            sed.addCCMDust(a_x, b_x, A_v=self.dataArray["galacticAv"][i], R_v=float(self.dataArray["galacticRv"][i]))
+            except KeyError:
+                sedAgn = None
+                
+
+            #print "Galactic"
+            #print self.dataArray["galacticAv"][i]
+            # add disk and agn to bulge - allow for None in data
+
+            sedList = [sedBulge, sedDisk, sedAgn]
+            sedListNoNone = [x for x in sedList if x != None] 
+            sed = sedListNoNone[0]
+#            print "SED LIST", sedList
+#            print "SED NoNone LIST",sedListNoNone
+
+            if (sedDisk != None):
+                sedDisk.flambdaTofnu()
+#                print "DISK MAG", sedDisk.manyMagCalc(phiarray, wavelenstep)
+#                print "DISK g MAG", sedDisk.calcMag(bandpassDict['g'])
+                
+            if (sedBulge != None):
+                sedBulge.flambdaTofnu()
+#                print "BULGE MAG", sedBulge.manyMagCalc(phiarray, wavelenstep)
+#                print "BULGE g MAG", sedBulge.calcMag(bandpassDict['g'])
+
+            if (sedAgn != None):
+                sedAgn.flambdaTofnu()
+#                print "AGN MAG", sedAgn.manyMagCalc(phiarray, wavelenstep)
+#                print "AGN  g MAG", sedAgn.calcMag(bandpassDict['g'])
+
+            #print sed.flambda.mean()
+            #print mags
+#            print "SUMMING"
+#            print "INITIAL",sed.flambda.mean()
+            for nextSed in sedListNoNone[1:]:
+#                print nextSed.flambda.mean()
+                sed.flambda += nextSed.flambda
+                sed.fnu += nextSed.fnu
+#            print "FINAL",sed.flambda.mean()
+
+            # apply galactic extinction
+            #a_mw, b_mw = sed.setupCCMab()
+            #sed.addCCMDust(a_mw, b_mw, A_v=self.dataArray["galacticAv"][i])
+            #sed.flambdaTofnu()
+            
             mags = sed.manyMagCalc(phiarray, wavelenstep)
-            for j,name in enumerate(bandpassDict.keys()):
+#            print "SUMMED MAGS", mags
+
+#            print "DB MAGS", self.dataArray["id"][i],self.dataArray["u"][i],self.dataArray["g"][i],self.dataArray["r"][i],self.dataArray["i"][i],self.dataArray["z"][i],self.dataArray["y"][i]
+            for j,name in enumerate(filterList):
                 self.dataArray[name+"Derived"][i] = mags[j]
-            del sed
-
-            mag = sed.calcMag(self.bands[k])
-
-            flux = sed.calcADU(self.bands[k], gain=1.0)
- 
             del sed
 
     def applyVariability(self):
