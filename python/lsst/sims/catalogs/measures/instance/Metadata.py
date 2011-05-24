@@ -100,8 +100,11 @@ class Metadata (object):
 
         attributeList.extend(self.catalogDescription.getDerivedMetadata(catalogType))
         conversion.extend(self.catalogDescription.getDerivedMetadataDataFormat(catalogType))
-
-        format = "%s %s \n"
+        
+        if catalogType == 'TRIM':
+            format = "%s %s \n"
+        else:
+            format = "# %s %s \n"
         #2.6 formatString = "{0} {1}\n"
         for name,conv in zip(attributeList,conversion):
             # 2.6 outputFile.write(formatString.format(name[0],self.parameters[name[0]]))
