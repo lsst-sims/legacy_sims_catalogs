@@ -155,6 +155,14 @@ class InstanceCatalog (Astrometry):
         format, attributeList, conversion = self.catalogDescription.getFormat(catalogType, self.objectType)
 
         #write trim file based on objectType
+
+
+        #output header info for reference catalog
+        if (catalogType == 'REFERENCECATALOG'):
+            outputFile.write("# ")
+            outputFile.write(" ".join(attributeList))
+            outputFile.write("\n")
+        
         # add newline to format string - configobj does not interpret these correctly
         format = format +"\n"
         for i in range(len(self.dataArray["id"])):
@@ -314,18 +322,38 @@ class InstanceCatalog (Astrometry):
         self.addColumn(raOut, 'raTrim')
         self.addColumn(decOut, 'decTrim')
 
-
     def makeReferenceCoords(self):
         '''Generate reference file attributes'''
 
-
-        # generate photometry
-        datadir = os.environ.get("CAT_SHARE_DATA")
+        # generate photometry and objid
+        datadir = os.path.join(os.environ.get("CAT_SHARE_DATA"),"data")
         if (self.neighborhoodType == 'GALACTIC'):
             # generate file paths for SEDS
             self.makeFilePaths('sedFilename')
             self.calculateStellarMagnitudes(dataDir=datadir)
+            #generate isVar - use varsimobjid (check for None), bit shift id<<10 and subtract to get variability number
+            variableArray = [x[0] if x[0] is not None else x[1]<<10 for x in zip(self.dataArray['varsimobjid'],
+                                                                self.dataArray['id'])]
+#            print self.dataArray['varsimobjid'][0:10]
+#            print variableArray
+#            print self.dataArray['id'][0:10]
+            self.addColumn((variableArray  - (self.dataArray['id']<<10)),'isVar')
+
+            #generate ID and isVar - id is simobjid <<10 + appendint
+            self.dataArray['id'] = (self.dataArray['id']  << 10) + self.dataArray['appendint']
+            
+
+            
         elif (self.neighborhoodType == 'EXTRAGALACTIC'):
+            # generate isVar - use varsimobjid (check for None), bit shift id<<10
+            # and subtract to get variability number
+            variableArray = [x[0] if x[0] is not None else x[1]<<10 for x in zip(self.dataArray['varsimobjid'],
+                                                                                     self.dataArray['id'])]
+            self.addColumn((variableArray  - (self.dataArray['id']<<10)),'isVar')
+
+            #generate ID for galaxies - id is simobjid <<10 + appendint
+            self.dataArray['galtileid'] = (self.dataArray['galtileid']  << 10) + self.dataArray['appendint']
+
             #generate EBV,Av, values
             #self.makeEBV()
             #derive filepaths:
