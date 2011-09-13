@@ -545,13 +545,28 @@ class InstanceCatalog (Astrometry):
         """
         var = variability.Variability(cache=True)
         filters = ['u', 'g', 'r', 'i', 'z', 'y','U','G','R','I','Z','Y']
-        #Map to translate filter character to filter integer.
+        #Map to translate filter integer to filter character.
         filterMap = {0:"u", 1:"g", 2:"r", 3:"i", 4:"z", 5:"y"}
         filt = ''
-        if self.metadata.parameters['Opsim_filter'] in filters:
-            filt =  self.metadata.parameters['Opsim_filter'].lower()
-        elif filterMap.has_key(self.metadata.parameters['Opsim_filter']):
-            filt =  filterMap[self.metadata.parameters['Opsim_filter']]
+        expmjd = None
+        if self.metadata.parameters.has_key('Opsim_filter'):
+            filt = self.metadata.parameters['Opsim_filter']
+        elif self.metadata.parameters.has_key('filter'):
+            filt = self.metadata.parameters['filter']
+        else:
+            raise Exception("Need filter information in metadata to procede with variability application")
+
+        if self.metadata.parameters.has_key('Opsim_expmjd'):
+            expmjd = self.metadata.parameters['Opsim_expmjd']
+        elif self.metadata.parameters.has_key('expmjd'):
+            expmjd = self.metadata.parameters['expmjd']
+        else:
+            raise Exception("Need time information in metadata to procede with variability application")
+
+        if filt in filters:
+            filt = filt.lower()
+        elif filterMap.has_key(filt):
+            filt = filterMap[filt]
         else:
             raise Exception("Filter %s does not match the LSST filter list"\
                     %(str(self.metadata.parameters['Opsim_filter'])))
@@ -568,8 +583,8 @@ class InstanceCatalog (Astrometry):
                 continue
             d = eval(dstr)
             magOffset[ind] = eval("var.%s(d['pars'], \
-                self.metadata.parameters['Opsim_expmjd'])['%s']"%\
-                (d['varMethodName'],filt))
+                %f)['%s']"%\
+                (d['varMethodName'],expmjd,filt))
         self.dataArray["magNorm"] += magOffset
 
 """ TODO (2/18/2010) incorporate the precession routines
