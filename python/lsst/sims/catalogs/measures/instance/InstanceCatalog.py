@@ -253,10 +253,10 @@ class InstanceCatalog (Astrometry):
         datadir = os.environ.get("CAT_SHARE_DATA")
 
         ebvMapNorth = ebv.EbvMap()
-        ebvMapNorth.readMapFits(os.path.join(datadir, "Dust/SFD_dust_4096_ngp.fits"))
+        ebvMapNorth.readMapFits(os.path.join(datadir, "data/Dust/SFD_dust_4096_ngp.fits"))
 
         ebvMapSouth = ebv.EbvMap()
-        ebvMapSouth.readMapFits(os.path.join(datadir, "Dust/SFD_dust_4096_sgp.fits"))
+        ebvMapSouth.readMapFits(os.path.join(datadir, "data/Dust/SFD_dust_4096_sgp.fits"))
 			            
         self.addColumn(ebv.calculateEbv(glon, glat, ebvMapNorth, ebvMapSouth, interp = True)*Rv, 'galacticAv')
         self.addColumn(numpy.ones(len(self.dataArray['galacticAv']))*Rv, 'galacticRv')
