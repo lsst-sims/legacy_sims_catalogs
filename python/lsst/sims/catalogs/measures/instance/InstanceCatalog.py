@@ -272,11 +272,10 @@ class InstanceCatalog (Astrometry):
         theWL.initialize()
 
         shear1, shear2, kappa = theWL.calc(self.dataArray['raJ2000'], self.dataArray['decJ2000'], self.dataArray["redshift"])
-        print shear1[100]
+
         self.addColumn(shear1, 'shear1')
         self.addColumn(shear2, 'shear2')
         self.addColumn(kappa, 'kappa')
-        self.addColumn(numpy.array(187.0), 'test')
 
         
     def makeTrimCoords(self):
@@ -292,9 +291,8 @@ class InstanceCatalog (Astrometry):
         if (self.neighborhoodType == 'EXTRAGALACTIC'): 
             self.makeEBV()
 
-
+        # interpolate shear parameters to the object position
         self.makeShear()
-        print self.dataArray['shear1']
 
         
         #Calculate pointing of telescope in observed frame and the rotation matrix to transform to this position
