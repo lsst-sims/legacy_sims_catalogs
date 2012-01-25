@@ -18,10 +18,12 @@ from lsst.sims.catalogs.measures.photometry.Bandpass import *
 from lsst.sims.catalogs.measures.photometry.Sed import *
 import lsst.sims.catalogs.measures.photometry.EBV as ebv
 import lsst.sims.catalogs.measures.photometry.Variability as variability 
+import lsst.sims.catalogs.measures.weakLensing.weakLensing as weakLensing
 #from lsst.sims.catalogs.measures.instance.CatalogDescription import *
 from lsst.sims.catalogs.measures.instance.SiteDescription import *
 from lsst.sims.catalogs.measures.instance.Metadata import *
 from CatalogDescription import *
+
 
 class InstanceCatalog (Astrometry):
     """ Class that describes the instance catalog for the simulations. 
@@ -263,7 +265,20 @@ class InstanceCatalog (Astrometry):
         self.addColumn(numpy.array(['CCM' for val in
                                     range(len(self.dataArray['galacticAv']))]),
                        'galacticExtinctionModel')
+        
+        
+    def makeShear(self):
+        theWL = weakLensing.WL()
+        theWL.initialize()
 
+        shear1, shear2, kappa = theWL.calc(self.dataArray['raJ2000'], self.dataArray['decJ2000'], self.dataArray["redshift"])
+        print shear1[100]
+        self.addColumn(shear1, 'shear1')
+        self.addColumn(shear2, 'shear2')
+        self.addColumn(kappa, 'kappa')
+        self.addColumn(numpy.array(187.0), 'test')
+
+        
     def makeTrimCoords(self):
         """ Generate TRIM coordinates
 
@@ -276,7 +291,12 @@ class InstanceCatalog (Astrometry):
         # calculate E(B-V) parameters if Extragalactic
         if (self.neighborhoodType == 'EXTRAGALACTIC'): 
             self.makeEBV()
-                
+
+
+        self.makeShear()
+        print self.dataArray['shear1']
+
+        
         #Calculate pointing of telescope in observed frame and the rotation matrix to transform to this position
         raCenter, decCenter, altCenter, azCenter = self.transformPointingToObserved(
             self.metadata.parameters['Unrefracted_RA'],
