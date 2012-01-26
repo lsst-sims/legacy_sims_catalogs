@@ -94,32 +94,33 @@ def get_interpolated_value(imagearray, nx, ny, x1, x2):
 
 
 def get_linear_interpolated_value(x, x1, y1, x2, y2):
+    """ If the redshift of the object is less than 1.0 or greater than 2.0,
+    then there will be an extrapolation based on the redshift planes we actually do have.
+    This may (or may not) be a problem - but there's not much to be done about it!
+    """
     y = y1 + (x-x1)*(y2-y1)/(x2-x1)
-    if x<x1 and x<x2:
-        print "warning! linear interpolation out of range, extrapolation used on lower end"
-    if x>x1 and x>x2:
-        print "warning! linear interpolation out of range, extrapolation used on upper end"
-        
+    
+    #if x<x1 and x<x2:
+    #    print "warning! linear interpolation out of range, extrapolation used on lower end"
+    #if x>x1 and x>x2:
+    #    print "warning! linear interpolation out of range, extrapolation used on upper end"
+    
     return y
 
 
 def spline(x, y, n, yp1, ypn, y2):
    
-    ### indices 1 or 0?? 1 in c code, but we all know how well that's going gor me. 
-## inputs from darkenergy : x=ap, y=DEp[0], n=kount, yp1=DEp[0][0], ypn=DEp[0][kount], y2=y2y2
-
-#### TEMP FAKE COS KONT IS BROKEN
     u = []
     for i in range(0,n):
         u.append(0)
     
     if yp1>0.99e30:
-        y2[0] = u[0] = 0.0 ## first index
+        y2[0] = u[0] = 0.0 
     else:
         y2[0] = -0.5
-        u[0] = (3.0 / (x[2] - x[0])) * ((y[2]-y[0]) / (x[2]-x[0]) - yp1) ## first index
+        u[0] = (3.0 / (x[2] - x[0])) * ((y[2]-y[0]) / (x[2]-x[0]) - yp1) 
         
-    for i in range(1, n-1): ## middle indecies
+    for i in range(1, n-1): 
         sig = (x[i] - x[i-1]) / (x[i+1]-x[i-1])
         p = sig*y2[i-1] + 2.0
         y2[i] = (sig - 1.0) / p
@@ -149,7 +150,7 @@ def splint(xa, ya, y2a, n, x):
             klo = k
     h = xa[khi] - xa[klo]
     if h == 0:
-        print "bad things are happeneing in teh eplint routine!"
+        print "bad things are happeneing in the splint routine!"
     a = (xa[khi]-x)/h
     b = (x-xa[klo])/h
     y = a*ya[klo] + b*ya[khi] + ( (a*a*a - a)*y2a[klo] + (b*b*b-b)*y2a[khi]) * (h*h)/6.0

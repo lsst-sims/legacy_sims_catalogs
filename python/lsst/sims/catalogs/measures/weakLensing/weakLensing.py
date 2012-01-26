@@ -6,7 +6,12 @@ from comoving_distance import *
 class WL:
     """ Class for obtaining the shear parameters for a galaxy. 
     The shear parameters are read in from the WL maps, and 
-    interpolated to the galaxy position in ra/dec/redshift
+    interpolated to the galaxy position in ra/dec/redshift.
+    The WL maps used in this version consist of one original
+    map, mirrored and repeated over the whole sky. This is a
+    nonsense, cosmologically, but small areas (pointings)
+    of the sky are usable (preferably if not crossing a map
+    boundary). 
     """
 
     ### some constants. 
@@ -25,7 +30,8 @@ class WL:
         """ To start with, we should get some of the info required
         from the WL maps, set up some variables and initialize this and that. 
         """
-        hdulist = pyfits.open("/astro/net/pogo3/jkratoch/Weak_Lensing_Archive/m-series/m-512b240_Om0.260_Ol0.740_w-1.000_ns0.960_si0.798/FITS/WL-shear1_m-512b240_Om0.260_Ol0.740_w-1.000_ns0.960_si0.798_4096xy_0001r_0029p_0100z_og.gre.fit")
+
+        hdulist = pyfits.open("/astro/net/lsst1/shared/djbard/mirrored/WL-shear1_m-512b240_Om0.260_Ol0.740_w-1.000_ns0.960_si0.798_4096xy_0001r_0029p_0100z_og.gre_X4_smaller.fit")
         
         
         hdr = hdulist[0].header
@@ -40,10 +46,11 @@ class WL:
         self.survey_angle = hdr['ANGLE']
         hdulist.close()
 
-        ### there are only three redshift planes - hardcode them. 
+        ### there are only three redshift planes - hardcode them.
+        ## Can also access them from the WL map header files.
         self.source_redshift = [1.0, 1.5, 2.0] 
         self.last_plane = [29, 38, 46]
-        self.comoving_distance = [1000, 2000, 3000] ##### NOT RIGHT!! 
+        self.comoving_distance = [2370.3, 3152.481, 3759.214] 
 
         ### load in the WL maps! this takes some time. 
 
@@ -150,23 +157,39 @@ class WL:
         """
 
         redshift_tag = int(math.floor(100*self.source_redshift[z]))
-        filename = "/astro/net/pogo3/jkratoch/Weak_Lensing_Archive/m-series/m-512b240_Om0.260_Ol0.740_w-1.000_ns0.960_si0.798/FITS/WL-"+basename+"_m-512b240_Om0.260_Ol0.740_w-1.000_ns0.960_si0.798_4096xy_0001r_00"+str(self.last_plane[z])+"p_0"+str(redshift_tag)+"z_og.gre.fit"
+        filename = "/astro/net/lsst1/shared/djbard/mirrored/WL-"+basename+"_m-512b240_Om0.260_Ol0.740_w-1.000_ns0.960_si0.798_4096xy_0001r_00"+str(self.last_plane[z])+"p_0"+str(redshift_tag)+"z_og.gre_X4_smaller.fit"
+
         return filename
+
+
 
     
     def get_pixel_coordinates(self, ra, dec):
-        """ At some point, this is gonna have to cover the whole sky. 
-        Not just teh area of the map. Make it periodic. 
+        """ Returns pixel coord for WL maps. Note that we repeat the 
+        same WL map periodically across the sky - not ideal! 
         """
         MINSIZE = 1.0e-8
         if ra>=12:
             ra-= 24.0
-        x = ra* (360.0/24.0) * (self.NbinsX/self.survey_angle) + (self.NbinsX/2.0)
-        y = dec * (self.NbinsY/self.survey_angle) + (self.NbinsX/2.0)
-    
-        if x<(1.0-MINSIZE) or x>=(self.NbinsX - 2.0+MINSIZE) or y<(1.0-MINSIZE) or y>=(self.NbinsY - 2.0+MINSIZE):
-            print "galaxy position excedes range of maps"
-        ### maps don't cover whole focal plane - this is likely to happen sometimes? 
+        xx = ra* (360.0/24.0) * (self.NbinsX/self.survey_angle) + (self.NbinsX/2.0)
+        yy = dec * (self.NbinsY/self.survey_angle) + (self.NbinsX/2.0)
+
+ ### make it periodic....
+        multiple = math.floor(xx/self.NbinsX)
+        x = xx - multiple*self.NbinsX 
+        multiple = math.floor(yy/self.NbinsX)
+        y = yy - multiple*self.NbinsX
+
+
+        ## this can happen if an object is *right* on the edge of a map.
+        ## i.e. within a pixel or two.
+        ## It's not really out of range of the map, though.
+        #if x<(1.0-MINSIZE) or x>=(self.NbinsX - 2.0+MINSIZE):
+        #    print "galaxy ra position excedes range of WL maps", ra, xx, x
+        #if y<(1.0-MINSIZE) or y>=(self.NbinsY - 2.0+MINSIZE):
+        #    print "galaxy dec position excedes range of WL maps", dec, yy, y
+       
+        
         if x<1.0:
             x = 1.0
         if x>= self.NbinsX-2.0+MINSIZE:
