@@ -92,8 +92,8 @@ class WL:
             del(temp_shear2map)
             del(temp_convmap)
                         
-            ### initialize dark energy. 
-            initialize_darkenergy(self.w0, self.wa)
+        ### initialize dark energy. 
+        initialize_darkenergy(self.w0, self.wa)
 
 
     def calc(self, ra, dec, z):
@@ -136,8 +136,8 @@ class WL:
             conv_far = get_interpolated_value(convmap_far, self.NbinsX, self.NbinsY, gal_x, gal_y)
         
 
-            
-            gal_comoving_distance = calculate_comoving_distance( 1.0/(1.0+z[g]), self.Omega_m, self.Omega_Lambda, self.w0, self.wa)
+            ## this is not used for anything. So leave it out for now. 
+            ##gal_comoving_distance = calculate_comoving_distance( 1.0/(1.0+z[g]), self.Omega_m, self.Omega_Lambda, self.w0, self.wa)
             
             shear1[g] = weight_shear_2(z[g], gal_z_close, gal_z_far, shear1_close, shear1_far)
             shear2[g] = weight_shear_2(z[g], gal_z_close, gal_z_far, shear2_close, shear2_far)
@@ -183,6 +183,7 @@ class WL:
 
         ## this can happen if an object is *right* on the edge of a map.
         ## i.e. within a pixel or two.
+        ## it's because the bicubic interpolation breaks at the edge of a map. 
         ## It's not really out of range of the map, though.
         #if x<(1.0-MINSIZE) or x>=(self.NbinsX - 2.0+MINSIZE):
         #    print "galaxy ra position excedes range of WL maps", ra, xx, x
