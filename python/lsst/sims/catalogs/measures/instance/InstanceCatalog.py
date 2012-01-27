@@ -291,8 +291,8 @@ class InstanceCatalog (Astrometry):
         if (self.neighborhoodType == 'EXTRAGALACTIC'): 
             self.makeEBV()
 
-        # interpolate shear parameters to the object position
-        self.makeShear()
+            # interpolate shear parameters to the object position, if Extragalactic. 
+            self.makeShear()
 
         
         #Calculate pointing of telescope in observed frame and the rotation matrix to transform to this position
