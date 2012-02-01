@@ -55,6 +55,9 @@ class WL:
         ### load in the WL maps! this takes some time. 
 
         ### can I avoid initializing? 
+        self.shear1map=[]
+        self.shear2map = []
+        self.convmap = []
         
         for i in range(0, self.number_of_maps):
             self.shear1map.append([])
@@ -142,13 +145,22 @@ class WL:
             shear1[g] = weight_shear_2(z[g], gal_z_close, gal_z_far, shear1_close, shear1_far)
             shear2[g] = weight_shear_2(z[g], gal_z_close, gal_z_far, shear2_close, shear2_far)
             conv[g] = weight_shear_2(z[g], gal_z_close, gal_z_far, conv_close, conv_far)
-            
 
+            del(shear1map_close)
+            del(shear2map_close)
+            del(convmap_close)
+            del(shear1map_far)
+            del(shear2map_far)
+            del(convmap_far)
+
+        #self.shear1map = []
+        #self.shear2map = []
+        #self.convmap = []
         return shear1, shear2, conv
 
 
 
-
+    
 
 
     def get_filename(self, basename, z):
