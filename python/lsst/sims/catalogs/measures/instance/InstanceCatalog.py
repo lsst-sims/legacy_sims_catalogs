@@ -84,8 +84,11 @@ class InstanceCatalog (Astrometry):
     def makeFilePaths(self, fileName):
         '''manipulate sedFilename to add path for file on disk'''
         sedPaths = self.catalogDescription.getPathMap()
-        self.addColumn([self.noneCheck(sedPaths, x) for x in  self.dataArray[fileName]], fileName)
-        
+        if (fileName in self.dataArray):
+            self.addColumn([self.noneCheck(sedPaths, x) for x in  self.dataArray[fileName]], fileName)
+        else:
+            warnings.warn("Entry %s does not exist in dataArray" % fileName)
+
 #        print "FILEPATHS"
 #        print self.dataArray[fileName]
 
@@ -128,8 +131,8 @@ class InstanceCatalog (Astrometry):
         # extract data value for attribute
         x = self.dataArray[conversion[0]][conversion[2]]
 #        print x
-#        if (x == None):
-#            x=0
+        if (x == None):
+            x=0
 #        print conversion[0],conversion[1],eval(conversion[1]),conversion[2]
         return eval(conversion[1])
         
@@ -159,6 +162,7 @@ class InstanceCatalog (Astrometry):
         #write trim file based on objectType
 
 
+        print format, attributeList, conversion, catalogType, self.objectType
         #output header info for reference catalog
         if (catalogType == 'REFERENCECATALOG'):
             outputFile.write("# ")
@@ -292,7 +296,7 @@ class InstanceCatalog (Astrometry):
             self.makeEBV()
 
             # interpolate shear parameters to the object position, if Extragalactic. 
-            self.makeShear()
+            # self.makeShear()
 
         
         #Calculate pointing of telescope in observed frame and the rotation matrix to transform to this position
@@ -357,24 +361,29 @@ class InstanceCatalog (Astrometry):
 #            print self.dataArray['id'][0:10]
             self.addColumn((variableArray  - (self.dataArray['id']<<10)),'isVar')
 
-            #generate ID and isVar - id is simobjid <<10 + appendint
+            #generate ID and isVar - id is simobjid <<10 + appendint then append <<1 for stars
             self.dataArray['id'] = (self.dataArray['id']  << 10) + self.dataArray['appendint']
+            self.dataArray['id'] = (self.dataArray['id']  << 1)
             
 
             
         elif (self.neighborhoodType == 'EXTRAGALACTIC'):
+            print type(self.dataArray['id'][0])
+            print type(self.dataArray['varsimobjid'][0])
             # generate isVar - use varsimobjid (check for None), bit shift id<<10
             # and subtract to get variability number
             variableArray = [x[0] if x[0] is not None else x[1]<<10 for x in zip(self.dataArray['varsimobjid'],
                                                                                      self.dataArray['id'])]
             self.addColumn((variableArray  - (self.dataArray['id']<<10)),'isVar')
 
-            #generate ID for galaxies - id is simobjid <<10 + appendint
+            #generate ID for galaxies - id is simobjid <<10 + appendint then append <<1 +1 for stars
             self.dataArray['galtileid'] = (self.dataArray['galtileid']  << 10) + self.dataArray['appendint']
+            self.dataArray['galtileid'] = self.dataArray['galtileid'] << 1 + 1
 
             #generate EBV,Av, values
             #self.makeEBV()
             #derive filepaths:
+
             self.makeFilePaths('bulgeSedFilename')
             self.makeFilePaths('diskSedFilename')
             self.makeFilePaths('agnSedFilename')
@@ -447,9 +456,13 @@ class InstanceCatalog (Astrometry):
         bandpassDict = phot.loadBandpasses(filterlist=filterList, dataDir = None)
         
         #load required SEDs ignore None
-        sedDict = phot.loadSeds(self.dataArray["bulgeSedFilename"], dataDir=dataDir)
-        sedDict.update(phot.loadSeds(self.dataArray["diskSedFilename"], dataDir=dataDir))
-        sedDict.update(phot.loadSeds(self.dataArray["agnSedFilename"], dataDir=dataDir))
+        sedDict ={}
+        if ("bulgeSedFilename" in self.dataArray):
+            sedDict.update(phot.loadSeds(self.dataArray["bulgeSedFilename"], dataDir=dataDir))
+        if ("diskSedFilename" in self.dataArray):
+            sedDict.update(phot.loadSeds(self.dataArray["diskSedFilename"], dataDir=dataDir))
+        if ("agnSedFilename" in self.dataArray):
+            sedDict.update(phot.loadSeds(self.dataArray["agnSedFilename"], dataDir=dataDir))
 
         # pick one SED to be reference and grid all to common wavelength
         refsed = sedDict.values()[0]
@@ -472,7 +485,6 @@ class InstanceCatalog (Astrometry):
                 a_x, b_x = sedBulge.setupCCMab()
                 sedBulge.addCCMDust(a_x, b_x, A_v=self.dataArray["internalAv_b"][i])
                 sedBulge.redshiftSED(redshift=self.dataArray["redshift"][i], dimming=True)
-#                print sedBulge.wavelen.min(),sedBulge.wavelen.max()
                 sedBulge.resampleSED(wavelen_match=bandpassDict['u'].wavelen)
 #                print "BULGE EXISTS",self.dataArray["bulgeSedFilename"][i]
 #                print "DUST", self.dataArray["internalAv_b"][i]
@@ -512,8 +524,12 @@ class InstanceCatalog (Astrometry):
             # add disk and agn to bulge - allow for None in data
 
             sedList = [sedBulge, sedDisk, sedAgn]
-            sedListNoNone = [x for x in sedList if x != None] 
-            sed = sedListNoNone[0]
+            try:
+                sedListNoNone = [x for x in sedList if x != None] 
+                sed = sedListNoNone[0]
+            except:
+                print "No SEDs in List"
+                exit()
 #            print "SED LIST", sedList
 #            print "SED NoNone LIST",sedListNoNone
 
