@@ -622,34 +622,34 @@ class InstanceCatalog (Astrometry):
                 (d['varMethodName'],expmjd,filt))
         self.dataArray["magNorm"] += magOffset
 
-""" TODO (2/18/2010) incorporate the precession routines
+    """ TODO (2/18/2010) incorporate the precession routines
     def makeMeasured(self):
-        raOut, decOut = self.applyPropermotion(self.dataArray['raJ2000'], 
-                                    self.dataArray['decJ2000'])
-        raOut, decOut = self.applyParallax(raOut, decOut)
-        self.addColumn(raOut, 'raMeasured')
-        self.addColumn(decOut, 'decMeasured')
+    raOut, decOut = self.applyPropermotion(self.dataArray['raJ2000'], 
+    self.dataArray['decJ2000'])
+    raOut, decOut = self.applyParallax(raOut, decOut)
+    self.addColumn(raOut, 'raMeasured')
+    self.addColumn(decOut, 'decMeasured')
     def makeGeo(self):
-        if ((("raHelio" in self.dataArray) and 
-             ("decHelio" in self.dataArray)) != True):
-            self.makeHelio()
-        raOut, decOut = self.applyParallax()
-        raOut, decOut = self.applyAberration()
-        self.addColumn(raOut, 'raGeo')
-        self.addColumn(decOut, 'decGeo')
+    if ((("raHelio" in self.dataArray) and 
+    ("decHelio" in self.dataArray)) != True):
+    self.makeHelio()
+    raOut, decOut = self.applyParallax()
+    raOut, decOut = self.applyAberration()
+    self.addColumn(raOut, 'raGeo')
+    self.addColumn(decOut, 'decGeo')
     def makeTopo(self):
-        if ((("raGeo" in self.dataArray) and 
-             ("decGeo" in self.dataArray)) != True):
-            self.makeGeo()
-        raOut, decOut = self.applyAbsoluteRefraction(raPar, decPar)
-        self.addColumn(raOut, 'raHTopo')
-        self.addColumn(decOut, 'decTopo')
-     """
+    if ((("raGeo" in self.dataArray) and 
+    ("decGeo" in self.dataArray)) != True):
+    self.makeGeo()
+    raOut, decOut = self.applyAbsoluteRefraction(raPar, decPar)
+    self.addColumn(raOut, 'raHTopo')
+    self.addColumn(decOut, 'decTopo')
+    """
 
-
-    def calculateStellarCounts(self, cameraGeomRef, sedDir):
+        
+    def calculateCalibCounts(self, cameraGeomRef, sedDir):
         """For stellar sources, generate counts for each star depending on location in the focal plane.
-
+        
         sedDir = root directory of SED files on disk
         flatDir = root directory of wavelength-dependent and gray-scale flat files on disk
         base throughput directory (for mirrors/optics) is taken from environment variable LSST_THROUGHPUTS_DEFAULT
