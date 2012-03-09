@@ -34,7 +34,6 @@ class InstanceCatalog (Astrometry):
 
     Catalog types and Object types are defined in the CatalogDescription class
     catalogType =  TRIM, SCIENCE, PHOTCAL, DIASOURCE, MISC, INVALID
-# DO WE HAVE TO ADD A CATALOG TYPE?
     objectType = Point, Moving, Sersic, Image, Artefact, MISC
     catalogTable is name of the database table queried
     dataArray dictionary of numpy arrays of data
@@ -408,7 +407,7 @@ class InstanceCatalog (Astrometry):
 
     def calculateStellarMagnitudes(self, filterList=('u', 'g', 'r', 'i', 'z', 'y'),
                                    dataDir = None, filterroot='total_'):
-        """For stellar sources and a list of bandpass names generate magnitudes in the standard bandpass."""
+        """For stellar sources and a list of bandpass names generate magnitudes"""
     
         # load bandpasses
         bandpassDict = phot.loadBandpasses(filterlist=filterList, dataDir = None)
@@ -622,91 +621,29 @@ class InstanceCatalog (Astrometry):
                 (d['varMethodName'],expmjd,filt))
         self.dataArray["magNorm"] += magOffset
 
-    """ TODO (2/18/2010) incorporate the precession routines
+""" TODO (2/18/2010) incorporate the precession routines
     def makeMeasured(self):
-    raOut, decOut = self.applyPropermotion(self.dataArray['raJ2000'], 
-    self.dataArray['decJ2000'])
-    raOut, decOut = self.applyParallax(raOut, decOut)
-    self.addColumn(raOut, 'raMeasured')
-    self.addColumn(decOut, 'decMeasured')
+        raOut, decOut = self.applyPropermotion(self.dataArray['raJ2000'], 
+                                    self.dataArray['decJ2000'])
+        raOut, decOut = self.applyParallax(raOut, decOut)
+        self.addColumn(raOut, 'raMeasured')
+        self.addColumn(decOut, 'decMeasured')
     def makeGeo(self):
-    if ((("raHelio" in self.dataArray) and 
-    ("decHelio" in self.dataArray)) != True):
-    self.makeHelio()
-    raOut, decOut = self.applyParallax()
-    raOut, decOut = self.applyAberration()
-    self.addColumn(raOut, 'raGeo')
-    self.addColumn(decOut, 'decGeo')
+        if ((("raHelio" in self.dataArray) and 
+             ("decHelio" in self.dataArray)) != True):
+            self.makeHelio()
+        raOut, decOut = self.applyParallax()
+        raOut, decOut = self.applyAberration()
+        self.addColumn(raOut, 'raGeo')
+        self.addColumn(decOut, 'decGeo')
     def makeTopo(self):
-    if ((("raGeo" in self.dataArray) and 
-    ("decGeo" in self.dataArray)) != True):
-    self.makeGeo()
-    raOut, decOut = self.applyAbsoluteRefraction(raPar, decPar)
-    self.addColumn(raOut, 'raHTopo')
-    self.addColumn(decOut, 'decTopo')
-    """
+        if ((("raGeo" in self.dataArray) and 
+             ("decGeo" in self.dataArray)) != True):
+            self.makeGeo()
+        raOut, decOut = self.applyAbsoluteRefraction(raPar, decPar)
+        self.addColumn(raOut, 'raHTopo')
+        self.addColumn(decOut, 'decTopo')
+     """
 
-        
-    def calculateCalibCounts(self, cameraGeomRef, sedDir):
-        """For stellar sources, generate counts for each star depending on location in the focal plane.
-        
-        sedDir = root directory of SED files on disk
-        flatDir = root directory of wavelength-dependent and gray-scale flat files on disk
-        base throughput directory (for mirrors/optics) is taken from environment variable LSST_THROUGHPUTS_DEFAULT
-        """
-        # self.dataArray = stellar data information
-        # self.  = metadata information
-        
-    
-        # Generate throughput curves for each amplifier in the focal plane, according to metadata.
-        # Note this is for one filter at a time only - as this is for one visit.
-        # The dictionary here will be keyed to CameraGeom amp names.
-        # ampnames = query from CameraGeom
-        ampnames = ['CCD1:amp1', ]
-        bandpassDict = {}
-        # GENERATE THROUGHPUT CURVES FOR EACH AMP USING METADATA INFORMATION
-        # THIS WILL BE THROUGHPUT CURVE WITHOUT CLOUD EXTINCTION (which will be added later, as it
-        #  varies on a finer scale than amp-level)
-        
-        #load required SEDs
-        sedDict = phot.loadSeds(self.dataArray["sedFilename"], dataDir=dataDir)
 
-        # pick one SED to be reference - randomly choose #1 sed
-        refsed = sedDict[self.dataArray["sedFilename"][0]]
-        if (refsed.needResample(wavelen_match=bandpassDict[ampnames[0]].wavelen)):
-            refsed.resampleSED(wavelen_match=bandpassDict[ampnames[0]].wavelen)
-        # need to put all SEDs on same wavelength grid (for optimized calculations)
-        for sed in sedDict.values():
-            if (sed.needResample(wavelen_match=refsed.wavelen)):
-                sed.resampleSED(wavelen_match=refsed.wavelen)
 
-        # Calculate dust parameters for all stars  (a_x/b_x have implicit wavelength dep)
-        a_x, b_x = refsed.setupCCMab()
-
-        # generate count arrays and set to zero
-        self.addColumn(numpy.zeros(len(self.dataArray["id"])), 'countsDerived')
-        # have to check with Simon if this modification is ok
-
-        # loop through stars and calculate counts
-        for i,sedName in enumerate(self.dataArray["sedFilename"]):
-            # Copy the un-reddened SED, as we will modify it. 
-            sed = deepcopy(sedDict[sedName])
-            # Multiply by the catalog fluxnorm so the star has the appropriate brightness.
-            sed.multiplyFluxNorm(self.dataArray["fluxNorm"][i])
-            # Add the galactic dust reddening.
-            sed.addCCMDust(a_x, b_x, A_v=self.dataArray["galacticAv"][i], R_v=float(self.dataArray["galacticRv"][i]))
-            # Calculate where the star is in the focal plane.
-            #   GET STAR RA/DEC & BORESIGHT RA/DEC ->  WCS mm/mm in focal plane
-            
-            #   TRANSLATE WCS mm/mm in focal plane into amp location/name with CameraGeom (also get x/y for clouds)
-            
-            amp = 'CCD1:amp1'
-            counts = sed.calcADU(bandpass[amp], exptime=30, gain=self.metadata.gain[amp])
-            # NOW APPLY POWER SPECTRUM CLOUDS
-            # OK TO ADD THIS DEPENDENCY ON atmos/clouds?
-            # counts  = counts modified by clouds
-            
-            self.dataArray['countsDerived'][i] = counts
-            del sed
-
-        return
