@@ -1,5 +1,5 @@
-setupRequired(python 2.5.2 [>=2.5.2])
-setupRequired(throughputs 1.0)
+setupRequired(python)
+setupRequired(throughputs)
 setupRequired(pyfits)
 
 envAppend(LD_LIBRARY_PATH, ${PRODUCT_DIR}/lib)
