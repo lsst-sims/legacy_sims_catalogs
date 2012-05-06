@@ -130,10 +130,11 @@ class InstanceCatalog (Astrometry):
 
         # extract data value for attribute
         x = self.dataArray[conversion[0]][conversion[2]]
-#        print x
+        #print x
+        
         if (x == None):
             x=0
-#        print conversion[0],conversion[1],eval(conversion[1]),conversion[2]
+        #print conversion[0],conversion[1],conversion[2]
         return eval(conversion[1])
         
         
@@ -298,7 +299,7 @@ class InstanceCatalog (Astrometry):
             # interpolate shear parameters to the object position, if Extragalactic. 
             # self.makeShear()
 
-        
+
         #Calculate pointing of telescope in observed frame and the rotation matrix to transform to this position
         raCenter, decCenter, altCenter, azCenter = self.transformPointingToObserved(
             self.metadata.parameters['Unrefracted_RA'],
@@ -349,6 +350,12 @@ class InstanceCatalog (Astrometry):
 
         # generate photometry and objid
         datadir = os.path.join(os.environ.get("CAT_SHARE_DATA"),"data")
+	# add glon and glat if they do not exist
+        if ((("glon" in self.dataArray) and 
+             ("glat" in self.dataArray)) != True):
+            glon, glat = self.equatorialToGalactic(self.dataArray['raJ2000'],self.dataArray['decJ2000'])
+	    self.addColumn(glon, 'glon')
+	    self.addColumn(glat, 'glat')
         if (self.neighborhoodType == 'GALACTIC'):
             # generate file paths for SEDS
             self.makeFilePaths('sedFilename')
@@ -356,9 +363,9 @@ class InstanceCatalog (Astrometry):
             #generate isVar - use varsimobjid (check for None), bit shift id<<10 and subtract to get variability number
             variableArray = [x[0] if x[0] is not None else x[1]<<10 for x in zip(self.dataArray['varsimobjid'],
                                                                 self.dataArray['id'])]
-#            print self.dataArray['varsimobjid'][0:10]
-#            print variableArray
-#            print self.dataArray['id'][0:10]
+            #print self.dataArray['varsimobjid'][0:10]
+            #print variableArray
+            #print self.dataArray['id'][0:10]
             self.addColumn((variableArray  - (self.dataArray['id']<<10)),'isVar')
 
             #generate ID and isVar - id is simobjid <<10 + appendint then append <<1 for stars
@@ -401,6 +408,15 @@ class InstanceCatalog (Astrometry):
                                                                    altAzHr=True, includeRefraction = includeRefraction)
 
         return raObs[0], decObs[0], altObs[0], azObs[0]
+
+    def recalculatePointingInfo(self, dithra, dithdec, moonra, moondec, expmjd, rottel):
+        alt, az = self.equatorialToHorizontal(dithra, dithdec, expmjd)
+        print alt, az, dithra, dithdec, expmjd
+        rotsky = math.pi - self.paralacticAngle(az, dithdec) + rottel
+        rotsky = rotsky%360.
+        dist2moon = self.angularSeparation(dithra, dithdec, moonra, moondec)
+        print dist2moon, dithra, dithdec, moonra, moondec
+        return alt, az, rotsky, dist2moon
 
 
     # Photometry composite methods
