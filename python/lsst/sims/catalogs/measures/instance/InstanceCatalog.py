@@ -163,7 +163,6 @@ class InstanceCatalog (Astrometry):
         #write trim file based on objectType
 
 
-        print format, attributeList, conversion, catalogType, self.objectType
         #output header info for reference catalog
         if (catalogType == 'REFERENCECATALOG'):
             outputFile.write("# ")
@@ -375,8 +374,6 @@ class InstanceCatalog (Astrometry):
 
             
         elif (self.neighborhoodType == 'EXTRAGALACTIC'):
-            print type(self.dataArray['id'][0])
-            print type(self.dataArray['varsimobjid'][0])
             # generate isVar - use varsimobjid (check for None), bit shift id<<10
             # and subtract to get variability number
             variableArray = [x[0] if x[0] is not None else x[1]<<10 for x in zip(self.dataArray['varsimobjid'],
@@ -411,11 +408,9 @@ class InstanceCatalog (Astrometry):
 
     def recalculatePointingInfo(self, dithra, dithdec, moonra, moondec, expmjd, rottel):
         alt, az = self.equatorialToHorizontal(dithra, dithdec, expmjd)
-        print alt, az, dithra, dithdec, expmjd
         rotsky = math.pi - self.paralacticAngle(az, dithdec) + rottel
         rotsky = rotsky%360.
         dist2moon = self.angularSeparation(dithra, dithdec, moonra, moondec)
-        print dist2moon, dithra, dithdec, moonra, moondec
         return alt, az, rotsky, dist2moon
 
 
