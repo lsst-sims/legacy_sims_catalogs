@@ -77,14 +77,14 @@ class InstanceCatalog (Astrometry):
     def noneCheck(self, sedPaths, sedFile):
         '''Parse any None in the sedFilenames'''
         try:
-            return "%s.gz"%sedPaths[sedFile]
+            return "%s.gz"%sedPaths[sedFile.strip()]
         except KeyError:
             return None
             
     def makeFilePaths(self, fileName):
         '''manipulate sedFilename to add path for file on disk'''
         sedPaths = self.catalogDescription.getPathMap()
-        if (fileName in self.dataArray):
+        if (fileName in self.dataArray.keys()):
             self.addColumn([self.noneCheck(sedPaths, x) for x in  self.dataArray[fileName]], fileName)
         else:
             warnings.warn("Entry %s does not exist in dataArray" % fileName)
