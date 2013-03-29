@@ -205,19 +205,9 @@ class PhotometryMixin(object):
         return u - g
 
     def get_gr_color(self):
-        g = self.column_by_name('umag')
-        r = self.column_by_name('gmag')
+        g = self.column_by_name('gmag')
+        r = self.column_by_name('rmag')
         return g - r
-
-    def get_ri_color(self):
-        r = self.column_by_name('umag')
-        i = self.column_by_name('gmag')
-        return r - i
-
-    def get_iz_color(self):
-        i = self.column_by_name('umag')
-        z = self.column_by_name('gmag')
-        return i - z
 
 
 class AstrometryMixin(object):
