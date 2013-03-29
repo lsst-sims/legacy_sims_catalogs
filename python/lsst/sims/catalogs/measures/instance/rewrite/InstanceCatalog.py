@@ -114,7 +114,7 @@ class InstanceCatalog(object):
         columns.update([func.strip('get_') for func in getfuncs])
         return list(columns)
 
-    def required_columns(self):
+    def db_required_columns(self):
         """Get the list of columns required to be in the database object."""
         saved_chunk = self._current_chunk
         self._current_chunk = _MimicRecordArray()
@@ -122,10 +122,10 @@ class InstanceCatalog(object):
         for column in self.column_outputs:
             col = self.column_by_name(column)
 
-        required_columns = list(self._current_chunk.referenced_columns)
+        db_required_columns = list(self._current_chunk.referenced_columns)
         self._current_chunk = saved_chunk
 
-        return required_columns
+        return db_required_columns
 
     def column_by_name(self, col_name, *args, **kwargs):
         getfunc = "get_%s" % col_name
@@ -139,7 +139,7 @@ class InstanceCatalog(object):
         """Check whether the supplied db_obj has the necessary column names"""
         missing_cols = []
 
-        for col in self.required_columns():
+        for col in self.db_required_columns():
             if col not in self.db_obj.requirements:
                 missing_cols.append(col)
 
@@ -165,7 +165,7 @@ class InstanceCatalog(object):
         return self.delimiter.join(templ_list) + self.endline
 
     def write_catalog(self, filename, chunk_size=None):
-        required_columns = self.required_columns()
+        db_required_columns = self.db_required_columns()
         template = None
 
         file_handle = open(filename, 'w')
@@ -192,21 +192,52 @@ class InstanceCatalog(object):
                                    for line in zip(*chunk_cols))
         
         file_handle.close()
+
+
+#----------------------------------------------------------------------
+# Some example uses
+
+
+class PhotometryMixin(object):
+    def get_ug_color(self):
+        u = self.column_by_name('umag')
+        g = self.column_by_name('gmag')
+        return u - g
+
+    def get_gr_color(self):
+        g = self.column_by_name('umag')
+        r = self.column_by_name('gmag')
+        return g - r
+
+    def get_ri_color(self):
+        r = self.column_by_name('umag')
+        i = self.column_by_name('gmag')
+        return r - i
+
+    def get_iz_color(self):
+        i = self.column_by_name('umag')
+        z = self.column_by_name('gmag')
+        return i - z
+
+
+class AstrometryMixin(object):
+    def get_ra_corr(self):
+        raJ2000 = self.column_by_name('raJ2000')
+        return raJ2000 + 0.001  # do something useful here
+
+    def get_dec_corr(self):
+        decJ2000 = self.column_by_name('decJ2000')
+        return decJ2000 + 0.001  # do something useful here
         
 
-class TrimCatalog(InstanceCatalog):
+class TrimCatalog(InstanceCatalog, AstrometryMixin, PhotometryMixin):
     catalog_type = 'trim_catalog'
-    column_outputs = ['raJ2000', 'decJ2000', 'ug_color']
+    column_outputs = ['ra_corr', 'dec_corr', 'gmag', 'ug_color']
     explicit_column_formats = {'raJ2000':'%4.2f',
                                'decJ2000':'%6.4f'}
 
     metadata_outputs = []
     metadata_formats = {}
-    
-    def get_ug_color(self):
-        u = self.column_by_name('umag')
-        g = self.column_by_name('gmag')
-        return u - g
 
 
 if __name__ == '__main__':
@@ -221,6 +252,14 @@ if __name__ == '__main__':
     t = TrimCatalog(star,
                     obs_metadata=obs_metadata,
                     constraint="rmag < 21.")
+
+    print
+    print "These are the required columns from the database:"
+    print t.db_required_columns()
+    print
+    print "These are the columns that will be output to the file:"
+    print t.column_outputs
+    print
 
     filename = 'catalog_test.dat'
     print "querying and writing catalog to %s:" % filename
