@@ -223,8 +223,8 @@ class AstrometryMixin(object):
 class TrimCatalog(InstanceCatalog, AstrometryMixin, PhotometryMixin):
     catalog_type = 'trim_catalog'
     column_outputs = ['ra_corr', 'dec_corr', 'gmag', 'ug_color']
-    explicit_column_formats = {'raJ2000':'%4.2f',
-                               'decJ2000':'%6.4f'}
+    explicit_column_formats = {'ra_corr':'%4.2f',
+                               'dec_corr':'%6.4f'}
 
     metadata_outputs = []
     metadata_formats = {}
