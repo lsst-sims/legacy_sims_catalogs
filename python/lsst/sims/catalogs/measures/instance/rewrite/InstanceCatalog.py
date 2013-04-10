@@ -109,7 +109,7 @@ class InstanceCatalog(object):
         Return a list of all available column names, from those provided
         by the instance catalog and those provided by the database
         """
-        columns = set(self.db_obj.requirements.keys())
+        columns = set(self.db_obj.columnMap.keys())
         getfuncs = [func for func in dir(self) if func.startswith('get_')]
         columns.update([func.strip('get_') for func in getfuncs])
         return list(columns)
@@ -140,7 +140,7 @@ class InstanceCatalog(object):
         missing_cols = []
 
         for col in self.db_required_columns():
-            if col not in self.db_obj.requirements:
+            if col not in self.db_obj.columnMap.keys():
                 missing_cols.append(col)
 
         if len(missing_cols) > 0:
@@ -223,25 +223,82 @@ class AstrometryMixin(object):
 class TrimCatalog(InstanceCatalog, AstrometryMixin, PhotometryMixin):
     catalog_type = 'trim_catalog'
     column_outputs = ['ra_corr', 'dec_corr', 'gmag', 'ug_color']
-    explicit_column_formats = {'ra_corr':'%4.2f',
+    default_formats = {'S':'%s', 'f':'%.9g', 'i':'%i'}
+    override_formats = {'ra_corr':'%4.2f',
                                'dec_corr':'%6.4f'}
 
     metadata_outputs = []
     metadata_formats = {}
 
+class TrimCatalogSersic2D(InstanceCatalog, AstrometryMixin, PhotometryMixin):
+    catalog_type = 'trim_catalog_SERSIC2D'
+    column_outputs = ['objectid','raTrim','decTrim','magNorm','sedFilename',
+                      'redshift','shear1','shear2','kappa','raOffset','decOffset',
+                      'spatialmodel','majorAxis','minorAxis','positionAngle','sindex',
+                      'galacticExtinctionModel','galacticAv','galacticRv',
+                      'internalExtinctionModel','internalAv','internalRv']
+    default_formats = {'S':'%s', 'f':'%.9g', 'i':'%i'}
+    override_formats = {'objectid':'%.2f'}
+
+    metadata_outputs = []
+    metadata_formats = {}
+    def get_objectid(self):
+        return self.column_by_name('galtileid')+self.column_by_name('appendint')
+    def get_appendint(self):
+        chunkiter = xrange(len(self.column_by_name('galtileid')))
+        return np.array([self.db_obj.appendint for i in chunkiter], dtype=float)
+    def get_raTrim(self):
+        return self.column_by_name('ra_corr')
+    def get_decTrim(self):
+        return self.column_by_name('dec_corr')
+    def get_shear1(self):
+        chunklen = len(self.column_by_name('galtileid'))
+        return np.zeros(chunklen, dtype=float)
+    def get_shear2(self):
+        chunklen = len(self.column_by_name('galtileid'))
+        return np.zeros(chunklen, dtype=float)
+    def get_kappa(self):
+        chunklen = len(self.column_by_name('galtileid'))
+        return np.zeros(chunklen, dtype=float)
+    def get_raOffset(self):
+        chunklen = len(self.column_by_name('galtileid'))
+        return np.zeros(chunklen, dtype=float)
+    def get_decOffset(self):
+        chunklen = len(self.column_by_name('galtileid'))
+        return np.zeros(chunklen, dtype=float)
+    def get_spatialmodel(self):
+        chunkiter = xrange(len(self.column_by_name('galtileid')))
+        return np.array([self.db_obj.spatialModel for i in
+               chunkiter], dtype=(str, 7))
+    def get_galacticExtinctionModel(self):
+        chunkiter = xrange(len(self.column_by_name('galtileid')))
+        return np.array(['CCM' for i in chunkiter], dtype=(str, 3))
+    def get_galacticAv(self):
+        chunkiter = xrange(len(self.column_by_name('galtileid')))
+        #This is a HACK until we get the real values in here
+        return np.array([0.1 for i in chunkiter], dtype=float)
+    def get_galacticRv(self):
+        chunkiter = xrange(len(self.column_by_name('galtileid')))
+        return np.array([3.1 for i in chunkiter], dtype=float)
+
 
 if __name__ == '__main__':
-    from lsst.sims.catalogs.generation.db.rewrite.dbConnection import\
-        StarObj, ObservationMetaData
+    from lsst.sims.catalogs.generation.db.rewrite import\
+        DBObject, ObservationMetaData
+    obsMD = DBObject.from_objid('opsim3_61')
+    obs_metadata_gal = obsMD.getObservationMetaData(88544919, 0.1, makeCircBounds=True)
+    gal_bulge = DBObject.from_objid('galaxyBulge')
+                
 
-    star = StarObj()
+    star = DBObject.from_objid('msstars')
     obs_metadata = ObservationMetaData(circ_bounds=dict(ra=2.0,
                                                         dec=5.0,
                                                         radius=1.0))
 
-    t = TrimCatalog(star,
-                    obs_metadata=obs_metadata,
-                    constraint="rmag < 21.")
+    t = TrimCatalogSersic2D(gal_bulge,
+                    obs_metadata=obs_metadata_gal,)
+#                    constraint="rmag < 21.")
+
 
     print
     print "These are the required columns from the database:"
