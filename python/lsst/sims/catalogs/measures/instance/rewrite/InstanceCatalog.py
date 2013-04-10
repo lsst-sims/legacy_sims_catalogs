@@ -243,10 +243,10 @@ class TrimCatalogSersic2D(InstanceCatalog, AstrometryMixin, PhotometryMixin):
     metadata_outputs = []
     metadata_formats = {}
     def get_objectid(self):
-        return self.column_by_name('galtileid')+self.column_by_name('appendint')
-    def get_appendint(self):
+        return self.column_by_name('galtileid')+self.column_by_name('objTypeId')
+    def get_objTypeId(self):
         chunkiter = xrange(len(self.column_by_name('galtileid')))
-        return np.array([self.db_obj.appendint for i in chunkiter], dtype=float)
+        return np.array([self.db_obj.getObjectTypeId() for i in chunkiter], dtype=float)
     def get_raTrim(self):
         return self.column_by_name('ra_corr')
     def get_decTrim(self):
@@ -268,7 +268,7 @@ class TrimCatalogSersic2D(InstanceCatalog, AstrometryMixin, PhotometryMixin):
         return np.zeros(chunklen, dtype=float)
     def get_spatialmodel(self):
         chunkiter = xrange(len(self.column_by_name('galtileid')))
-        return np.array([self.db_obj.spatialModel for i in
+        return np.array([self.db_obj.getSpatialModel() for i in
                chunkiter], dtype=(str, 7))
     def get_galacticExtinctionModel(self):
         chunkiter = xrange(len(self.column_by_name('galtileid')))
