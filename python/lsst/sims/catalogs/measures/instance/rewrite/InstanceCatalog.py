@@ -74,6 +74,7 @@ class InstanceCatalog(object):
     column_outputs = 'all'
     default_formats = {'S':'%s', 'f':'%.4g', 'i':'%i'}
     override_formats = {}
+    transformations = {}
     delimiter = ", "
     endline = "\n"
 
@@ -179,7 +180,9 @@ class InstanceCatalog(object):
 
         for chunk in query_result:
             self._current_chunk = chunk
-            chunk_cols = [self.column_by_name(col)
+            chunk_cols = [self.transformations[col](self.column_by_name(col))
+                          if col in self.transformations.keys() else
+                          self.column_by_name(col)
                           for col in self.column_outputs]
 
             # Create the template with the first chunk
@@ -220,12 +223,13 @@ class AstrometryMixin(object):
         return decJ2000 + 0.001  # do something useful here
         
 
-class TrimCatalog(InstanceCatalog, AstrometryMixin, PhotometryMixin):
-    catalog_type = 'trim_catalog'
-    column_outputs = ['ra_corr', 'dec_corr', 'gmag', 'ug_color']
+class TestCatalog(InstanceCatalog, AstrometryMixin, PhotometryMixin):
+    catalog_type = 'test_catalog'
+    column_outputs = ['raJ2000', 'decJ2000', 'galid']
     default_formats = {'S':'%s', 'f':'%.9g', 'i':'%i'}
     override_formats = {'ra_corr':'%4.2f',
                                'dec_corr':'%6.4f'}
+    transformations = {'raJ2000':np.degrees, 'decJ2000':np.degrees}
 
     metadata_outputs = []
     metadata_formats = {}
@@ -238,15 +242,20 @@ class TrimCatalogSersic2D(InstanceCatalog, AstrometryMixin, PhotometryMixin):
                       'galacticExtinctionModel','galacticAv','galacticRv',
                       'internalExtinctionModel','internalAv','internalRv']
     default_formats = {'S':'%s', 'f':'%.9g', 'i':'%i'}
+    delimiter = " "
     override_formats = {'objectid':'%.2f'}
+    transformations = {'raTrim':np.degrees, 'decTrim':np.degrees, 'positionAngle':np.degrees, 
+                       'majorAxis':np.degrees, 'minorAxis':np.degrees} 
 
     metadata_outputs = []
     metadata_formats = {}
     def get_objectid(self):
         return self.column_by_name('galtileid')+self.column_by_name('objTypeId')
     def get_objTypeId(self):
+        #We want the object type to end up in the decimal portion, so:
+        fac = 10**(int(np.log10(self.db_obj.getObjectTypeId())) + 1)
         chunkiter = xrange(len(self.column_by_name('galtileid')))
-        return np.array([self.db_obj.getObjectTypeId() for i in chunkiter], dtype=float)
+        return np.array([float(self.db_obj.getObjectTypeId())/fac for i in chunkiter], dtype=float)
     def get_raTrim(self):
         return self.column_by_name('ra_corr')
     def get_decTrim(self):
@@ -282,33 +291,3 @@ class TrimCatalogSersic2D(InstanceCatalog, AstrometryMixin, PhotometryMixin):
         return np.array([3.1 for i in chunkiter], dtype=float)
 
 
-if __name__ == '__main__':
-    from lsst.sims.catalogs.generation.db.rewrite import\
-        DBObject, ObservationMetaData
-    obsMD = DBObject.from_objid('opsim3_61')
-    obs_metadata_gal = obsMD.getObservationMetaData(88544919, 0.1, makeCircBounds=True)
-    gal_bulge = DBObject.from_objid('galaxyBulge')
-                
-
-    star = DBObject.from_objid('msstars')
-    obs_metadata = ObservationMetaData(circ_bounds=dict(ra=2.0,
-                                                        dec=5.0,
-                                                        radius=1.0))
-
-    t = TrimCatalogSersic2D(gal_bulge,
-                    obs_metadata=obs_metadata_gal,)
-#                    constraint="rmag < 21.")
-
-
-    print
-    print "These are the required columns from the database:"
-    print t.db_required_columns()
-    print
-    print "These are the columns that will be output to the file:"
-    print t.column_outputs
-    print
-
-    filename = 'catalog_test.dat'
-    print "querying and writing catalog to %s:" % filename
-    t.write_catalog(filename)
-    print " - finished"
