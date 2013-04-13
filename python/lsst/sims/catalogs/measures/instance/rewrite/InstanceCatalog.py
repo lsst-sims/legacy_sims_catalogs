@@ -72,6 +72,8 @@ class InstanceCatalog(object):
     # These are the class attributes to be specified in any derived class:
     catalog_type = 'instance_catalog'
     column_outputs = 'all'
+    default_columns = []
+    refIdCol = None
     default_formats = {'S':'%s', 'f':'%.4g', 'i':'%i'}
     override_formats = {}
     transformations = {}
@@ -102,6 +104,10 @@ class InstanceCatalog(object):
         
         if self.column_outputs == 'all':
             self.column_outputs = self._all_columns()
+
+        # add stubs for default columns
+        for default in self.default_columns:
+            setattr(self, 'get_%s'%(default[0]), lambda:None)
 
         self._check_requirements()
 
@@ -135,6 +141,16 @@ class InstanceCatalog(object):
             return getattr(self, getfunc)(*args, **kwargs)
         else:
             return self._current_chunk[col_name]
+
+    def set_attr(self, name, value, dtype, chunkiter):
+        setattr(self, 'get_%s'%(name), lambda:np.array([value for i in chunkiter], dtype=dtype))
+        
+    def create_default_columns(self): 
+        chunkiter = xrange(len(self.column_by_name(self.refIdCol)))
+        for default in self.default_columns:
+            self.set_attr(default[0], default[1], default[2], chunkiter)
+
+    
 
     def _check_requirements(self):
         """Check whether the supplied db_obj has the necessary column names"""
@@ -180,6 +196,8 @@ class InstanceCatalog(object):
 
         for chunk in query_result:
             self._current_chunk = chunk
+            self.create_default_columns()
+            chunkiter = xrange(len(self.column_by_name(self.refIdCol)))
             chunk_cols = [self.transformations[col](self.column_by_name(col))
                           if col in self.transformations.keys() else
                           self.column_by_name(col)
@@ -227,6 +245,7 @@ class TestCatalog(InstanceCatalog, AstrometryMixin, PhotometryMixin):
     catalog_type = 'test_catalog'
     column_outputs = ['raJ2000', 'decJ2000', 'galid']
     default_formats = {'S':'%s', 'f':'%.9g', 'i':'%i'}
+    refIdCol = 'galid'
     override_formats = {'ra_corr':'%4.2f',
                                'dec_corr':'%6.4f'}
     transformations = {'raJ2000':np.degrees, 'decJ2000':np.degrees}
@@ -234,13 +253,78 @@ class TestCatalog(InstanceCatalog, AstrometryMixin, PhotometryMixin):
     metadata_outputs = []
     metadata_formats = {}
 
-class TrimCatalogSersic2D(InstanceCatalog, AstrometryMixin, PhotometryMixin):
+class TrimCatalogPoint(InstanceCatalog, AstrometryMixin, PhotometryMixin):
+    catalog_type = 'trim_catalog_POINT'
+    column_outputs = ['prefix', 'objectid','raTrim','decTrim','magNorm','sedFilename',
+                      'redshift','shear1','shear2','kappa','raOffset','decOffset',
+                      'spatialmodel','galacticExtinctionModel','galacticAv','galacticRv',
+                      'internalExtinctionModel']
+    default_columns = [('redshift', 0., float),('shear1', 0., float), ('shear2', 0., float), 
+                       ('kappa', 0., float), ('raOffset', 0., float), ('decOffset', 0., float), 
+                       ('galacticExtinctionModel', 'CCM', (str,3)), ('galacticRv', 3.1, float),
+                       ('internalExtinctionModel', 'none', (str,4))]
+    refIdCol = 'id'
+    default_formats = {'S':'%s', 'f':'%.9g', 'i':'%i'}
+    delimiter = " "
+    override_formats = {'objectid':'%.2f'}
+    transformations = {'raTrim':np.degrees, 'decTrim':np.degrees}
+
+    metadata_outputs = []
+    metadata_formats = {}
+    def get_prefix(self):
+        chunkiter = xrange(len(self.column_by_name(self.refIdCol)))
+        return np.array(['object' for i in chunkiter], dtype=(str, 6))
+    def get_objectid(self):
+        return self.column_by_name(self.refIdCol)+self.column_by_name('objTypeId')
+    def get_objTypeId(self):
+        #We want the object type to end up in the decimal portion, so:
+        fac = 10**(int(np.log10(self.db_obj.getObjectTypeId())) + 1)
+        chunkiter = xrange(len(self.column_by_name(self.refIdCol)))
+        return np.array([float(self.db_obj.getObjectTypeId())/fac for i in chunkiter], dtype=float)
+    def get_raTrim(self):
+        return self.column_by_name('ra_corr')
+    def get_decTrim(self):
+        return self.column_by_name('dec_corr')
+    def get_spatialmodel(self):
+        chunkiter = xrange(len(self.column_by_name(self.refIdCol)))
+        return np.array([self.db_obj.getSpatialModel() for i in
+               chunkiter], dtype=(str, 7))
+
+class TrimCatalogZPoint(TrimCatalogPoint, AstrometryMixin, PhotometryMixin):
+    catalog_type = 'trim_catalog_ZPOINT'
+    column_outputs = ['prefix', 'objectid','raTrim','decTrim','magNorm','sedFilename',
+                      'redshift','shear1','shear2','kappa','raOffset','decOffset',
+                      'spatialmodel','galacticExtinctionModel','galacticAv','galacticRv',
+                      'internalExtinctionModel']
+    default_columns = [('shear1', 0., float), ('shear2', 0., float), ('kappa', 0., float),
+                       ('raOffset', 0., float), ('decOffset', 0., float), 
+                       ('galacticExtinctionModel', 'CCM', (str,3)), ('galacticRv', 3.1, float),
+                       ('internalExtinctionModel', 'none', (str,4))]
+    refIdCol = 'galtileid'
+    default_formats = {'S':'%s', 'f':'%.9g', 'i':'%i'}
+    delimiter = " "
+    override_formats = {'objectid':'%.2f'}
+    transformations = {'raTrim':np.degrees, 'decTrim':np.degrees}
+
+    metadata_outputs = []
+    metadata_formats = {}
+
+    def get_galacticAv(self):
+        chunkiter = xrange(len(self.column_by_name(self.refIdCol)))
+        #This is a HACK until we get the real values in here
+        return np.array([0.1 for i in chunkiter], dtype=float)
+
+class TrimCatalogSersic2D(TrimCatalogZPoint, AstrometryMixin, PhotometryMixin):
     catalog_type = 'trim_catalog_SERSIC2D'
-    column_outputs = ['objectid','raTrim','decTrim','magNorm','sedFilename',
+    column_outputs = ['prefix', 'objectid','raTrim','decTrim','magNorm','sedFilename',
                       'redshift','shear1','shear2','kappa','raOffset','decOffset',
                       'spatialmodel','majorAxis','minorAxis','positionAngle','sindex',
                       'galacticExtinctionModel','galacticAv','galacticRv',
                       'internalExtinctionModel','internalAv','internalRv']
+    default_columns = [('shear1', 0., float), ('shear2', 0., float), ('kappa', 0., float),
+                       ('raOffset', 0., float), ('decOffset', 0., float), 
+                       ('galacticExtinctionModel', 'CCM', (str,3)), ('galacticRv', 3.1, float)]
+    refIdCol = 'galtileid'
     default_formats = {'S':'%s', 'f':'%.9g', 'i':'%i'}
     delimiter = " "
     override_formats = {'objectid':'%.2f'}
@@ -249,45 +333,4 @@ class TrimCatalogSersic2D(InstanceCatalog, AstrometryMixin, PhotometryMixin):
 
     metadata_outputs = []
     metadata_formats = {}
-    def get_objectid(self):
-        return self.column_by_name('galtileid')+self.column_by_name('objTypeId')
-    def get_objTypeId(self):
-        #We want the object type to end up in the decimal portion, so:
-        fac = 10**(int(np.log10(self.db_obj.getObjectTypeId())) + 1)
-        chunkiter = xrange(len(self.column_by_name('galtileid')))
-        return np.array([float(self.db_obj.getObjectTypeId())/fac for i in chunkiter], dtype=float)
-    def get_raTrim(self):
-        return self.column_by_name('ra_corr')
-    def get_decTrim(self):
-        return self.column_by_name('dec_corr')
-    def get_shear1(self):
-        chunklen = len(self.column_by_name('galtileid'))
-        return np.zeros(chunklen, dtype=float)
-    def get_shear2(self):
-        chunklen = len(self.column_by_name('galtileid'))
-        return np.zeros(chunklen, dtype=float)
-    def get_kappa(self):
-        chunklen = len(self.column_by_name('galtileid'))
-        return np.zeros(chunklen, dtype=float)
-    def get_raOffset(self):
-        chunklen = len(self.column_by_name('galtileid'))
-        return np.zeros(chunklen, dtype=float)
-    def get_decOffset(self):
-        chunklen = len(self.column_by_name('galtileid'))
-        return np.zeros(chunklen, dtype=float)
-    def get_spatialmodel(self):
-        chunkiter = xrange(len(self.column_by_name('galtileid')))
-        return np.array([self.db_obj.getSpatialModel() for i in
-               chunkiter], dtype=(str, 7))
-    def get_galacticExtinctionModel(self):
-        chunkiter = xrange(len(self.column_by_name('galtileid')))
-        return np.array(['CCM' for i in chunkiter], dtype=(str, 3))
-    def get_galacticAv(self):
-        chunkiter = xrange(len(self.column_by_name('galtileid')))
-        #This is a HACK until we get the real values in here
-        return np.array([0.1 for i in chunkiter], dtype=float)
-    def get_galacticRv(self):
-        chunkiter = xrange(len(self.column_by_name('galtileid')))
-        return np.array([3.1 for i in chunkiter], dtype=float)
-
 

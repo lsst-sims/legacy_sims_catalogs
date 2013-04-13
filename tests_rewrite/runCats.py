@@ -10,14 +10,18 @@ if __name__ == '__main__':
     obs_metadata_gal = ObservationMetaData(circ_bounds=dict(ra=.0,
                                                         dec=.0,
                                                         radius=0.1))
-    objectNames = ['galaxyBase', 'galaxyTiled', 'galaxyBulge', 'galaxyDisk']
-    filetype = ['test_catalog', 'test_catalog', 'trim_catalog_SERSIC2D',
-                'trim_catalog_SERSIC2D']
-    constraints = ["r_ab < 22", "r_ab < 20.", "mass_bulge > 1.", 
-                   "DiskLSSTg < 20."]
-    metadataList = [obs_metadata_gal, obs_metadata, 
-                    obs_metadata, obs_metadata]
-                
+    #objectNames = ['galaxyBase', 'galaxyTiled', 'galaxyBulge', 'galaxyDisk']
+    #filetype = ['test_catalog', 'test_catalog', 'trim_catalog_SERSIC2D',
+    #            'trim_catalog_SERSIC2D']
+    #constraints = ["r_ab < 22", "r_ab < 20.", "mass_bulge > 1.", 
+    #               "DiskLSSTg < 20."]
+    #constraints = [None, None, None, None]
+    #metadataList = [obs_metadata_gal, obs_metadata, 
+    #                obs_metadata, obs_metadata]
+    objectNames = ['msstars','galaxyBulge', 'galaxyDisk', 'galaxyAgn']
+    filetype = ['trim_catalog_POINT', 'trim_catalog_SERSIC2D', 'trim_catalog_SERSIC2D', 'trim_catalog_ZPOINT']
+    constraints = [None,None,None,None]
+    metadataList = [obs_metadata,obs_metadata,obs_metadata,obs_metadata]
 
     for objectName, constraint, md, ftype in zip(objectNames, constraints, metadataList, filetype):
         dbobj = DBObject.from_objid(objectName)
