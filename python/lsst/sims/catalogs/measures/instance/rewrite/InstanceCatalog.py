@@ -25,6 +25,7 @@ class InstanceCatalogMeta(type):
                           "Proceed with caution")
         if 'catalog_type' not in dct:
             dct['catalog_type'] = cls.convert_to_underscores(name)
+
         return super(InstanceCatalogMeta, cls).__new__(cls, name, bases, dct)
 
     def __init__(cls, name, bases, dct):
@@ -38,6 +39,10 @@ class InstanceCatalogMeta(type):
             raise ValueError("Catalog Type %s is duplicated"
                              % cls.catalog_type)
         cls.registry[cls.catalog_type] = cls
+        # add methods for default columns
+        for default in cls.default_columns:
+	    setattr(cls, 'get_%s'%(default[0]), lambda self, value=default[1], type=default[2]:\
+		    np.array([value for i in xrange(len(self._current_chunk))], dtype=type))
             
         return super(InstanceCatalogMeta, cls).__init__(name, bases, dct)
 
@@ -54,6 +59,9 @@ class _MimicRecordArray(object):
     def __getitem__(self, column):
         self.referenced_columns.add(column)
         return np.zeros(1)
+
+    def __len__(self):
+        return 1
 
 
 class InstanceCatalog(object):
@@ -78,12 +86,9 @@ class InstanceCatalog(object):
     override_formats = {}
     transformations = {}
     delimiter = ", "
+    comment_char = "#"
     endline = "\n"
 
-    # XXX: we need to think about how to best specify metadata
-    metadata_outputs = []
-    metadata_formats = {}
-    
     @classmethod
     def new_catalog(cls, catalog_type, *args, **kwargs):
         """Return a new catalog of the given catalog type"""
@@ -105,9 +110,6 @@ class InstanceCatalog(object):
         if self.column_outputs == 'all':
             self.column_outputs = self._all_columns()
 
-        # add stubs for default columns
-        for default in self.default_columns:
-            setattr(self, 'get_%s'%(default[0]), lambda:None)
 
         self._check_requirements()
 
@@ -142,16 +144,6 @@ class InstanceCatalog(object):
         else:
             return self._current_chunk[col_name]
 
-    def set_attr(self, name, value, dtype, chunkiter):
-        setattr(self, 'get_%s'%(name), lambda:np.array([value for i in chunkiter], dtype=dtype))
-        
-    def create_default_columns(self): 
-        chunkiter = xrange(len(self.column_by_name(self.refIdCol)))
-        for default in self.default_columns:
-            self.set_attr(default[0], default[1], default[2], chunkiter)
-
-    
-
     def _check_requirements(self):
         """Check whether the supplied db_obj has the necessary column names"""
         missing_cols = []
@@ -181,11 +173,18 @@ class InstanceCatalog(object):
 
         return self.delimiter.join(templ_list) + self.endline
 
-    def write_catalog(self, filename, chunk_size=None):
+    def write_header(self, file_handle):
+        templ = [self.comment_char,]
+        templ += ["%s" for col in self.column_outputs]
+        file_handle.write("{0}".format(self.comment_char+self.delimiter.join(self.column_outputs))+self.endline)
+
+    def write_catalog(self, filename, chunk_size=None, write_header=True, write_mode='w'):
         db_required_columns = self.db_required_columns()
         template = None
 
-        file_handle = open(filename, 'w')
+        file_handle = open(filename, write_mode)
+        if write_header:
+            self.write_header(file_handle)
 
         query_result = self.db_obj.query_columns(obs_metadata=self.obs_metadata,
                                                  constraint=self.constraint,
@@ -196,8 +195,6 @@ class InstanceCatalog(object):
 
         for chunk in query_result:
             self._current_chunk = chunk
-            self.create_default_columns()
-            chunkiter = xrange(len(self.column_by_name(self.refIdCol)))
             chunk_cols = [self.transformations[col](self.column_by_name(col))
                           if col in self.transformations.keys() else
                           self.column_by_name(col)
@@ -244,14 +241,31 @@ class AstrometryMixin(object):
 class TestCatalog(InstanceCatalog, AstrometryMixin, PhotometryMixin):
     catalog_type = 'test_catalog'
     column_outputs = ['raJ2000', 'decJ2000', 'galid']
-    default_formats = {'S':'%s', 'f':'%.9g', 'i':'%i'}
     refIdCol = 'galid'
-    override_formats = {'ra_corr':'%4.2f',
-                               'dec_corr':'%6.4f'}
     transformations = {'raJ2000':np.degrees, 'decJ2000':np.degrees}
 
     metadata_outputs = []
     metadata_formats = {}
+
+class RefCatalogGalaxyBase(InstanceCatalog, AstrometryMixin, PhotometryMixin):
+    catalog_type = 'ref_catalog_galaxy'
+    column_outputs = ['objectId', 'meanRaJ2000', 'meanDecJ2000', 'redshift', 'majorAxisDisk', 'minorAxisDisk', 'positionAngleDisk',
+                      'majorAxisBulge', 'minorAxisBulge', 'positionAngleBulge']
+    default_formats = {'S':'%s', 'f':'%.5g', 'i':'%i'}
+    refIdCol = 'galid'
+    transformations = {'raJ2000':np.degrees, 'decJ2000':np.degrees, 'majorAxisDisk':np.degrees, 'majorAxisDisk':np.degrees,
+                       'positionAngleDisk':np.degrees, 'majorAxisBulge':np.degrees, 'minorAxisBulge':np.degrees, 
+                       'positionAngleBulge':np.degrees}
+
+    def get_objectId(self): 
+        return self.column_by_name(self.refIdCol)
+
+    def get_meanRaJ2000(self):
+        return self.column_by_name('raJ2000')
+
+    def get_meanDecJ2000(self):
+        return self.column_by_name('decJ2000')
+
 
 class TrimCatalogPoint(InstanceCatalog, AstrometryMixin, PhotometryMixin):
     catalog_type = 'trim_catalog_POINT'
@@ -269,8 +283,6 @@ class TrimCatalogPoint(InstanceCatalog, AstrometryMixin, PhotometryMixin):
     override_formats = {'objectid':'%.2f'}
     transformations = {'raTrim':np.degrees, 'decTrim':np.degrees}
 
-    metadata_outputs = []
-    metadata_formats = {}
     def get_prefix(self):
         chunkiter = xrange(len(self.column_by_name(self.refIdCol)))
         return np.array(['object' for i in chunkiter], dtype=(str, 6))
@@ -279,16 +291,29 @@ class TrimCatalogPoint(InstanceCatalog, AstrometryMixin, PhotometryMixin):
     def get_objTypeId(self):
         #We want the object type to end up in the decimal portion, so:
         fac = 10**(int(np.log10(self.db_obj.getObjectTypeId())) + 1)
-        chunkiter = xrange(len(self.column_by_name(self.refIdCol)))
+        chunkiter = xrange(len(self._current_chunk))
         return np.array([float(self.db_obj.getObjectTypeId())/fac for i in chunkiter], dtype=float)
     def get_raTrim(self):
         return self.column_by_name('ra_corr')
     def get_decTrim(self):
         return self.column_by_name('dec_corr')
     def get_spatialmodel(self):
-        chunkiter = xrange(len(self.column_by_name(self.refIdCol)))
+        chunkiter = xrange(len(self._current_chunk))
         return np.array([self.db_obj.getSpatialModel() for i in
                chunkiter], dtype=(str, 7))
+    def write_header(self, file_handle):
+        md = self.obs_metadata.metadata
+        for k in md:
+            typ = md[k][1].kind
+            templ = self.default_formats.get(typ, None)
+            if templ is None:
+                warnings.warn("Using raw formatting for column '%s' "
+                              "with type %s" % (col, chunk_cols[i].dtype))
+                templ = "%s"
+            templ = "%s "+templ
+            file_handle.write(templ%(k, md[k][0])+"\n") 
+
+
 
 class TrimCatalogZPoint(TrimCatalogPoint, AstrometryMixin, PhotometryMixin):
     catalog_type = 'trim_catalog_ZPOINT'
@@ -306,11 +331,8 @@ class TrimCatalogZPoint(TrimCatalogPoint, AstrometryMixin, PhotometryMixin):
     override_formats = {'objectid':'%.2f'}
     transformations = {'raTrim':np.degrees, 'decTrim':np.degrees}
 
-    metadata_outputs = []
-    metadata_formats = {}
-
     def get_galacticAv(self):
-        chunkiter = xrange(len(self.column_by_name(self.refIdCol)))
+        chunkiter = xrange(len(self._current_chunk))
         #This is a HACK until we get the real values in here
         return np.array([0.1 for i in chunkiter], dtype=float)
 
@@ -330,7 +352,4 @@ class TrimCatalogSersic2D(TrimCatalogZPoint, AstrometryMixin, PhotometryMixin):
     override_formats = {'objectid':'%.2f'}
     transformations = {'raTrim':np.degrees, 'decTrim':np.degrees, 'positionAngle':np.degrees, 
                        'majorAxis':np.degrees, 'minorAxis':np.degrees} 
-
-    metadata_outputs = []
-    metadata_formats = {}
 
