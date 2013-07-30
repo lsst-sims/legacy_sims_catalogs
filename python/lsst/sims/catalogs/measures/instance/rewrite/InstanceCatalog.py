@@ -1,6 +1,8 @@
 """Instance Catalog"""
 import warnings
 import numpy as np
+from functools import wraps
+from collections import OrderedDict
 
 
 class InstanceCatalogMeta(type):
@@ -26,6 +28,10 @@ class InstanceCatalogMeta(type):
         if 'catalog_type' not in dct:
             dct['catalog_type'] = cls.convert_to_underscores(name)
 
+        dct['_cached_columns'] = {}
+        dct['_compound_columns'] = {}
+        dct['_compound_column_names'] = {}
+
         return super(InstanceCatalogMeta, cls).__new__(cls, name, bases, dct)
 
     def __init__(cls, name, bases, dct):
@@ -39,10 +45,48 @@ class InstanceCatalogMeta(type):
             raise ValueError("Catalog Type %s is duplicated"
                              % cls.catalog_type)
         cls.registry[cls.catalog_type] = cls
+
         # add methods for default columns
         for default in cls.default_columns:
-	    setattr(cls, 'get_%s'%(default[0]), lambda self, value=default[1], type=default[2]:\
-		    np.array([value for i in xrange(len(self._current_chunk))], dtype=type))
+	    setattr(cls, 'get_%s'%(default[0]),
+                    lambda self, value=default[1], type=default[2]:\
+                        np.array([value for i in
+                                  xrange(len(self._current_chunk))],
+                                 dtype=type))
+
+        # store compound columns and check for collisions
+        #
+        #  We create a forward and backward mapping.
+        #  The dictionary cls._compound_columns maps the compound column
+        #   name to the multiple individual columns it represents.
+        #  The dictionary cls._compound_column_names maps the individual
+        #   column names to the compound column that contains them
+        for key in dir(cls):
+            if not key.startswith('get_'):
+                continue
+            compound_getter = getattr(cls, key)
+            if not hasattr(compound_getter, '_compound_column'):
+                continue
+
+            for col in compound_getter._colnames:
+                try:
+                    getter = 'get_'+col
+                except TypeError:
+                    raise ValueError("column names in compound "
+                                     "decorator must be strings")
+
+                if hasattr(cls, getter):
+                    raise ValueError("column name '%s' in compound getter "
+                                     "'%s' conflicts with getter '%s'"
+                                     % (col, key, getter))
+                    
+                elif col in cls._compound_column_names:
+                    raise ValueError("duplicate compound column name: '%s'"
+                                     % col)
+
+                else:
+                    cls._compound_column_names[col] = key
+            cls._compound_columns[key] = compound_getter._colnames
             
         return super(InstanceCatalogMeta, cls).__init__(name, bases, dct)
 
@@ -62,6 +106,58 @@ class _MimicRecordArray(object):
 
     def __len__(self):
         return 1
+
+
+#----------------------------------------------------------------------
+# Define decorators for get_* methods
+
+# The cached decorator specifies that once the column is computed for
+# a given database chunk, it is cached in memory and not computed again.
+def cached(f):
+    """Decorator for specifying that the computed result should be cached"""
+    if not f.__name__.startswith('get_'):
+        raise ValueError("@cached can only be applied to get_* methods: "
+                         "Method '%s' invalid." % f.__name__)
+    colname = f.__name__.lstrip('get_')
+    @wraps(f)
+    def new_f(self, *args, **kwargs):
+        if colname in self._column_cache:
+            result = self._column_cache[colname]
+        else:
+            result = f(self, *args, **kwargs)
+            self._column_cache[colname] = result
+        return result
+    new_f._cache_results = True
+    return new_f
+
+# The compound decorator specifies that a column is a "compound column",
+# that is, it returns multiple values.  This is useful in the case of,
+# e.g. RA/DEC, or magnitudes.
+#
+# For example, to return an RA and a DEC together, use, e.g.
+#
+# @compound('ra_corr', 'dec_corr')
+# def get_point_correction(self):
+#     raJ2000 = self.column_by_name('raJ2000')
+#     decJ2000 - self.column_by_name('decJ2000')
+#
+#     ra_corr, dec_corr = precess(raJ2000, decJ2000)
+#
+#     return (ra_corr, dec_corr)
+def compound(*colnames):
+    """Decorator for specifying a compound getter.
+    
+    Note that compound columns are automatically cached."""
+    def wrapper(f):
+        @cached
+        @wraps(f)
+        def new_f(self, *args, **kwargs):
+            results = f(self, *args, **kwargs)
+            return OrderedDict(zip(colnames, results))
+        new_f._compound_column = True
+        new_f._colnames = colnames
+        return new_f
+    return wrapper
 
 
 class InstanceCatalog(object):
@@ -100,6 +196,25 @@ class InstanceCatalog(object):
             raise ValueError("Unrecognized catalog_type: %s"
                              % str(catalog_type))
 
+    @classmethod
+    def is_compound_column(cls, column_name):
+        """Return true if the given column name is a compound column"""
+        getfunc = "get_%s" % column_name
+        if hasattr(cls, getfunc):
+            if hasattr(getattr(cls, getfunc), '_compound_column'):
+                return True
+        return False
+
+    @classmethod
+    def iter_column_names(cls):
+        """Iterate the column names, expanding any compound columns"""
+        for column in cls.column_outputs:
+            if cls.is_compound_column(column):
+                for col in getattr(getattr(cls, "get_" + column), '_colnames'):
+                    yield col
+            else:
+                yield column
+
     def __init__(self, db_obj, obs_metadata=None, constraint=None):
         self.db_obj = db_obj
         self._current_chunk = None
@@ -110,6 +225,7 @@ class InstanceCatalog(object):
         if self.column_outputs == 'all':
             self.column_outputs = self._all_columns()
 
+        self._column_cache = {}
 
         self._check_requirements()
 
@@ -123,26 +239,41 @@ class InstanceCatalog(object):
         columns.update([func.strip('get_') for func in getfuncs])
         return list(columns)
 
+    def _set_current_chunk(self, chunk, column_cache=None):
+        """Set the current chunk and clear the column cache"""
+        self._current_chunk = chunk
+        if column_cache is None:
+            self._column_cache = {}
+        else:
+            self._column_cache = column_cache
+
     def db_required_columns(self):
         """Get the list of columns required to be in the database object."""
+        saved_cache = self._cached_columns
         saved_chunk = self._current_chunk
-        self._current_chunk = _MimicRecordArray()
+        self._set_current_chunk(_MimicRecordArray())
 
-        for column in self.column_outputs:
-            col = self.column_by_name(column)
+        for col_name in self.iter_column_names():
+            # just call the column: this will log queries to the database.
+            col = self.column_by_name(col_name)
 
         db_required_columns = list(self._current_chunk.referenced_columns)
-        self._current_chunk = saved_chunk
+        self._set_current_chunk(saved_chunk, saved_cache)
 
         return db_required_columns
 
-    def column_by_name(self, col_name, *args, **kwargs):
-        getfunc = "get_%s" % col_name
+    def column_by_name(self, column_name, *args, **kwargs):
+        """Given a column name, return the column data"""
+        getfunc = "get_%s" % column_name
 
         if hasattr(self, getfunc):
             return getattr(self, getfunc)(*args, **kwargs)
+        elif column_name in self._compound_column_names:
+            getfunc = self._compound_column_names[column_name]
+            compound_column = getattr(self, getfunc)(*args, **kwargs)
+            return compound_column[column_name]
         else:
-            return self._current_chunk[col_name]
+            return self._current_chunk[column_name]
 
     def _check_requirements(self):
         """Check whether the supplied db_obj has the necessary column names"""
@@ -158,7 +289,7 @@ class InstanceCatalog(object):
 
     def _make_line_template(self, chunk_cols):
         templ_list = []
-        for i, col in enumerate(self.column_outputs):
+        for i, col in enumerate(self.iter_column_names()):
             templ = self.override_formats.get(col, None)
 
             if templ is None:
@@ -174,11 +305,15 @@ class InstanceCatalog(object):
         return self.delimiter.join(templ_list) + self.endline
 
     def write_header(self, file_handle):
+        column_names = list(self.iter_column_names())
         templ = [self.comment_char,]
-        templ += ["%s" for col in self.column_outputs]
-        file_handle.write("{0}".format(self.comment_char+self.delimiter.join(self.column_outputs))+self.endline)
+        templ += ["%s" for col in column_names]
+        file_handle.write("{0}".format(
+                self.comment_char + self.delimiter.join(column_names))
+                          + self.endline)
 
-    def write_catalog(self, filename, chunk_size=None, write_header=True, write_mode='w'):
+    def write_catalog(self, filename, chunk_size=None,
+                      write_header=True, write_mode='w'):
         db_required_columns = self.db_required_columns()
         template = None
 
@@ -194,11 +329,11 @@ class InstanceCatalog(object):
             query_result = [query_result]
 
         for chunk in query_result:
-            self._current_chunk = chunk
+            self._set_current_chunk(chunk)
             chunk_cols = [self.transformations[col](self.column_by_name(col))
                           if col in self.transformations.keys() else
                           self.column_by_name(col)
-                          for col in self.column_outputs]
+                          for col in self.iter_column_names()]
 
             # Create the template with the first chunk
             if template is None:
@@ -210,6 +345,9 @@ class InstanceCatalog(object):
                                    for line in zip(*chunk_cols))
         
         file_handle.close()
+
+    def export_structured_array(self):
+        pass
 
 
 #----------------------------------------------------------------------
@@ -229,27 +367,16 @@ class PhotometryMixin(object):
 
 
 class AstrometryMixin(object):
-    def get_ra_corr(self):
-        raJ2000 = self.column_by_name('raJ2000')
-        return raJ2000 + 0.001  # do something useful here
+    @compound('ra_corr', 'dec_corr')
+    def get_points(self):
+        return (self.column_by_name('raJ2000') + 0.001,
+                self.column_by_name('decJ2000') - 0.001)
 
-    def get_dec_corr(self):
-        decJ2000 = self.column_by_name('decJ2000')
-        return decJ2000 + 0.001  # do something useful here
-        
-
-class TestCatalog(InstanceCatalog, AstrometryMixin, PhotometryMixin):
-    catalog_type = 'test_catalog'
-    column_outputs = ['raJ2000', 'decJ2000', 'galid']
-    refIdCol = 'galid'
-    transformations = {'raJ2000':np.degrees, 'decJ2000':np.degrees}
-
-    metadata_outputs = []
-    metadata_formats = {}
 
 class RefCatalogGalaxyBase(InstanceCatalog, AstrometryMixin, PhotometryMixin):
     catalog_type = 'ref_catalog_galaxy'
-    column_outputs = ['objectId', 'meanRaJ2000', 'meanDecJ2000', 'redshift', 'majorAxisDisk', 'minorAxisDisk', 'positionAngleDisk',
+    column_outputs = ['objectId', 'meanRaJ2000', 'meanDecJ2000', 'redshift',
+                      'majorAxisDisk', 'minorAxisDisk', 'positionAngleDisk',
                       'majorAxisBulge', 'minorAxisBulge', 'positionAngleBulge']
     default_formats = {'S':'%s', 'f':'%.5g', 'i':'%i'}
     refIdCol = 'galid'
@@ -292,7 +419,8 @@ class TrimCatalogPoint(InstanceCatalog, AstrometryMixin, PhotometryMixin):
         #We want the object type to end up in the decimal portion, so:
         fac = 10**(int(np.log10(self.db_obj.getObjectTypeId())) + 1)
         chunkiter = xrange(len(self._current_chunk))
-        return np.array([float(self.db_obj.getObjectTypeId())/fac for i in chunkiter], dtype=float)
+        return np.array([float(self.db_obj.getObjectTypeId())/fac
+                         for i in chunkiter], dtype=float)
     def get_raTrim(self):
         return self.column_by_name('ra_corr')
     def get_decTrim(self):
@@ -353,3 +481,28 @@ class TrimCatalogSersic2D(TrimCatalogZPoint, AstrometryMixin, PhotometryMixin):
     transformations = {'raTrim':np.degrees, 'decTrim':np.degrees, 'positionAngle':np.degrees, 
                        'majorAxis':np.degrees, 'minorAxis':np.degrees} 
 
+
+
+#class TestCatalog(InstanceCatalog, AstrometryMixin, PhotometryMixin):
+#    catalog_type = 'test_catalog'
+#    column_outputs = ['raJ2000', 'decJ2000', 'points', 'galid']
+#    refIdCol = 'galid'
+#    transformations = {'raJ2000':np.degrees,
+#                       'decJ2000':np.degrees,
+#                       'ra_corr':np.degrees,
+#                       'dec_corr':np.degrees}
+
+
+#if __name__ == '__main__':
+#    class dummy(object):
+#        def __init__(self):
+#            self.columnMap = dict([(key, np.zeros(10, dtype=float))
+#                                   for key in ['raJ2000', 'decJ2000',
+#                                               'galid']])
+#        def query_columns(self, **kwargs):
+#            if kwargs['chunk_size'] is None:
+#                return self.columnMap
+#            else:
+#                return (self.columnMap for i in range(3))
+#    t = TestCatalog(dummy())
+#    t.write_catalog('tmp.py')
