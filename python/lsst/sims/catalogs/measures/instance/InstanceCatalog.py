@@ -1,660 +1,509 @@
-""" InstanceCatalog Class
+"""Instance Catalog"""
+import warnings
+import numpy as np
+from functools import wraps
+from collections import OrderedDict
 
-    ajc@astro Feb 10 2010
-    Class and methods that operate on an InstanceClass
+
+class InstanceCatalogMeta(type):
+    """Meta class for registering instance catalogs.
+
+    When any new type of instance catalog class is created, this registers it
+    in a `registry` class attribute, available to all derived instance
+    catalogs.
+    """
+    @staticmethod
+    def convert_to_underscores(name):
+        """convert, e.g. CatalogName to catalog_name"""
+        s1 = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
+        return re.sub('([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
+
+    def __new__(cls, name, bases, dct):
+        # check if attribute catalog_type is specified.
+        # If not, create a default
+        if 'registry' in dct:
+            warnings.warn("registry class attribute should not be "
+                          "over-ridden in InstanceCatalog classes. "
+                          "Proceed with caution")
+        if 'catalog_type' not in dct:
+            dct['catalog_type'] = cls.convert_to_underscores(name)
+
+        dct['_cached_columns'] = {}
+        dct['_compound_columns'] = {}
+        dct['_compound_column_names'] = {}
+
+        return super(InstanceCatalogMeta, cls).__new__(cls, name, bases, dct)
+
+    def __init__(cls, name, bases, dct):
+        # check if 'registry' is specified.
+        # if not, then this is the base class: add the registry
+        if not hasattr(cls, 'registry'):
+            cls.registry = {}
+
+        # add this class to the registry
+        if cls.catalog_type in cls.registry:
+            raise ValueError("Catalog Type %s is duplicated"
+                             % cls.catalog_type)
+        cls.registry[cls.catalog_type] = cls
+
+        # add methods for default columns
+        for default in cls.default_columns:
+	    setattr(cls, 'get_%s'%(default[0]),
+                    lambda self, value=default[1], type=default[2]:\
+                        np.array([value for i in
+                                  xrange(len(self._current_chunk))],
+                                 dtype=type))
+
+        # store compound columns and check for collisions
+        #
+        #  We create a forward and backward mapping.
+        #  The dictionary cls._compound_columns maps the compound column
+        #   name to the multiple individual columns it represents.
+        #  The dictionary cls._compound_column_names maps the individual
+        #   column names to the compound column that contains them
+        for key in dir(cls):
+            if not key.startswith('get_'):
+                continue
+            compound_getter = getattr(cls, key)
+            if not hasattr(compound_getter, '_compound_column'):
+                continue
+
+            for col in compound_getter._colnames:
+                try:
+                    getter = 'get_'+col
+                except TypeError:
+                    raise ValueError("column names in compound "
+                                     "decorator must be strings")
+
+                if hasattr(cls, getter):
+                    raise ValueError("column name '%s' in compound getter "
+                                     "'%s' conflicts with getter '%s'"
+                                     % (col, key, getter))
+                    
+                elif col in cls._compound_column_names:
+                    raise ValueError("duplicate compound column name: '%s'"
+                                     % col)
+
+                else:
+                    cls._compound_column_names[col] = key
+            cls._compound_columns[key] = compound_getter._colnames
+            
+        return super(InstanceCatalogMeta, cls).__init__(name, bases, dct)
+
+
+class _MimicRecordArray(object):
+    """An object used for introspection of the database colums.
+
+    This mimics a numpy record array, but when a column is referenced,
+    it logs the reference and returns zeros.
+    """
+    def __init__(self):
+        self.referenced_columns = set()
+
+    def __getitem__(self, column):
+        self.referenced_columns.add(column)
+        return np.zeros(1)
+
+    def __len__(self):
+        return 1
+
+
+#---------------------------------------------------------------------- 
+# Define decorators for get_* methods
+
+# The cached decorator specifies that once the column is computed for
+# a given database chunk, it is cached in memory and not computed again.
+
+
+def cached(f):
+    """Decorator for specifying that the computed result should be cached"""
+    if not f.__name__.startswith('get_'):
+        raise ValueError("@cached can only be applied to get_* methods: "
+                         "Method '%s' invalid." % f.__name__)
+    colname = f.__name__.lstrip('get_')
+    @wraps(f)
+    def new_f(self, *args, **kwargs):
+        if colname in self._column_cache:
+            result = self._column_cache[colname]
+        else:
+            result = f(self, *args, **kwargs)
+            self._column_cache[colname] = result
+        return result
+    new_f._cache_results = True
+    return new_f
+
+def compound(*colnames):
+    """Specifies that a column is a "compound column",
+ that is, it returns multiple values.  This is useful in the case of,
+ e.g. RA/DEC, or magnitudes.
+
+ For example, to return an RA and a DEC together, use, e.g.::
+
+     @compound('ra_corr', 'dec_corr')
+     def get_point_correction(self):
+         raJ2000 = self.column_by_name('raJ2000')
+         decJ2000 - self.column_by_name('decJ2000')
+     ra_corr, dec_corr = precess(raJ2000, decJ2000)
+     return (ra_corr, dec_corr)
 
 """
-
-import numpy
-import warnings
-import sys
-import itertools
-import gzip
-from copy import deepcopy
-
-from lsst.sims.catalogs.measures.astrometry.Astrometry import *
-import lsst.sims.catalogs.measures.photometry.photUtils as phot
-from lsst.sims.catalogs.measures.photometry.Bandpass import *
-from lsst.sims.catalogs.measures.photometry.Sed import *
-import lsst.sims.catalogs.measures.photometry.EBV as ebv
-import lsst.sims.catalogs.measures.photometry.Variability as variability 
-import lsst.sims.catalogs.measures.weakLensing.weakLensing as weakLensing
-#from lsst.sims.catalogs.measures.instance.CatalogDescription import *
-from lsst.sims.catalogs.measures.instance.SiteDescription import *
-from lsst.sims.catalogs.measures.instance.Metadata import *
-from CatalogDescription import *
+    def wrapper(f):
+        @cached
+        @wraps(f)
+        def new_f(self, *args, **kwargs):
+            results = f(self, *args, **kwargs)
+            return OrderedDict(zip(colnames, results))
+        new_f._compound_column = True
+        new_f._colnames = colnames
+        return new_f
+    return wrapper
 
 
-class InstanceCatalog (Astrometry):
-    """ Class that describes the instance catalog for the simulations. 
+class InstanceCatalog(object):
+    """ Base class for instance catalogs generated by simulations.
 
     Instance catalogs include a dictionary of numpy arrays which contains 
-    core data. Additional arrays can be appended as ancillary data are 
-    derived
+    core data. Additional arrays can be appended as ancillary data.
 
     Catalog types and Object types are defined in the CatalogDescription class
     catalogType =  TRIM, SCIENCE, PHOTCAL, DIASOURCE, MISC, INVALID
     objectType = Point, Moving, Sersic, Image, Artefact, MISC
     catalogTable is name of the database table queried
     dataArray dictionary of numpy arrays of data
-
     """
 
-    def __init__(self, configFile=None, cd=None, md=None):
-        """Create an InstanceClass
-
-        Instantiate an InstanceClass with the catalog type set to invalid
-        """
-        if cd is None:
-            self.catalogDescription = CatalogDescription(configFile)
-        else:
-            self.catalogDescription = cd
-        self.site = SiteDescription()
-        if md is None:
-            self.metadata = Metadata(configFile)
-        else:
-            self.metadata = md
-
-        self.catalogType = None
-        self.neighborhoodType = None
-        self.objectType = None
-        self.catalogTable = ""
-        self.dataArray = {}
-
-    # dataArray operations    
-    def addColumn(self, array, name):
-        """Add a numpy array to dataArray and warn if it already exists """
-        if name in self.dataArray:
-            warnings.warn("Entry %s exists in dataArray" % name)
-        self.dataArray[name] = array
-    def deleteColumn(self, name):
-        """Delete a  numpy array from dataArray """
-        if self.dataArray.has_key(name):
-            del self.dataArray[name] 
-        else:
-            warnings.warn("Entry %s does not exists in dataArray" % name)
-            
-    def noneCheck(self, sedPaths, sedFile):
-        '''Parse any None in the sedFilenames'''
-        try:
-            return "%s.gz"%sedPaths[sedFile]
-        except KeyError:
-            return None
-            
-    def makeFilePaths(self, fileName):
-        '''manipulate sedFilename to add path for file on disk'''
-        sedPaths = self.catalogDescription.getPathMap()
-        if (fileName in self.dataArray):
-            self.addColumn([self.noneCheck(sedPaths, x) for x in  self.dataArray[fileName]], fileName)
-        else:
-            warnings.warn("Entry %s does not exist in dataArray" % fileName)
-
-#        print "FILEPATHS"
-#        print self.dataArray[fileName]
-
-#        print [x for x in self.dataArray[fileName] if x != None]
-#        self.addColumn(map(lambda x: sedPaths[x] + ".gz", self.dataArray[fileName]),fileName)
-
-
-    # validate that the catalog contains the correct data
-    def validateData(self, catalogType):
-        """Validate that the class contains the correct attributes
-        
-        This does not test validity of the data
-            This combines searches through the required and derived attributes"""
-
-        # validate required and derived data 
-        requiredAttributeList = self.catalogDescription.getRequiredFields(catalogType,
-                                                                          self.neighborhoodType,
-                                                                          self.objectType)
-
-        for name in requiredAttributeList:
-            if ((self.dataArray.has_key(name) == False)):
-                raise ValueError("Entry %s does not exist in required data"%name)
-
-        derivedAttributeList = self.catalogDescription.getDerivedFields(catalogType,
-                                                                          self.neighborhoodType,
-                                                                          self.objectType)
-        for name in derivedAttributeList:
-            if ((self.dataArray.has_key(name) == False)):
-                raise ValueError("Entry %s does not exist in derived data" % name)
-
-        return True
-
-
-    def formatData(self, conversion):
-        '''Format data based on conversion function
-
-        conversion is a tuple of (attribute, function for conversion, array of indices in dataArray)
-        '''
-
-        # extract data value for attribute
-        x = self.dataArray[conversion[0]][conversion[2]]
-        #print x
-        
-        if (x == None):
-            x=0
-        #print conversion[0],conversion[1],conversion[2]
-        return eval(conversion[1])
-        
-        
-    # Output of formatted data catalogs
-    def writeCatalogData(self, filename, catalogType, newfile = False, compress = False):
-        """Write an instanceCatalog dataArray based on the catalog type given
-
-           If the catalogType is TRIM use the objectType to determine the output format
-           Provide the option to clobber the file
-        """
-        # open file
-        if compress:
-  	    if (newfile == False):
-	        outputFile = gzip.open(filename+".gz","a")
-	    else:
-	        outputFile = gzip.open(filename+".gz","w")
-        else:
-  	    if (newfile == False):
-	        outputFile = open(filename,"a")
-	    else:
-	        outputFile = open(filename,"w")
-
-        # Determine the catalogType and objectType for printing
-        format, attributeList, conversion = self.catalogDescription.getFormat(catalogType, self.objectType)
-
-        #write trim file based on objectType
-
-
-        #output header info for reference catalog
-        if (catalogType == 'REFERENCECATALOG'):
-            outputFile.write("# ")
-            outputFile.write(" ".join(attributeList))
-            outputFile.write("\n")
-        
-        # add newline to format string - configobj does not interpret these correctly
-        format = format +"\n"
-        for i in range(len(self.dataArray["id"])):
-            # use list comprehension to output all attributes in the given format string
-            # 2.6 outputFile.write(formatString,(map(lambda x: self.dataArray[x][i],attributeList)))
-            # outputFile.write(format % tuple(map(lambda x: self.dataArray[x][i],attributeList)))
-#            print attributeList
-#            print conversion
-#            print format
-            outputFile.write(format % tuple([self.formatData(x) for x in
-                                             zip(attributeList,conversion,numpy.ones(len(attributeList),dtype=int)*i)]))
-
-
-        outputFile.close()
-
-    # Composite astrometry operations
-    def makeHelio(self):
-        """ Generate Heliocentric coordinates """
-
-        # apply precession
-        raOut, decOut = self.applyPrecession(self.dataArray['raJ2000'], self.dataArray['decJ2000'],
-                                                   MJD = self.metadata.parameters['Opsim_expmjd'])
-
-        # apply proper motion (note parallax is converted to arcseconds)
-        raOut, decOut = self.applyProperMotion(raOut, decOut, self.dataArray['properMotionRa'],
-                                               self.dataArray['properMotionDec'], self.dataArray['parallax']/1000.,
-                                               self.dataArray['radialVelocity'], MJD = self.metadata.parameters['Opsim_expmjd'])
-
-        # TODO 3/29/2010 convert FK5 to ICRS?
-        self.addColumn(raOut, 'raHelio')
-        self.addColumn(decOut, 'decHelio')
-
-    def makeApparent(self):
-        """ Generate apparent coordinates
-        
-
-        This converts from the J2000 coordinates to the position as
-        viewed from the center of the Earth and includes the effects
-        of light defection (ignored), annual aberration, precession
-        and nutation
-        """
-        # (note parallax is converted to arcseconds)
-        raOut, decOut = self.applyMeanApparentPlace(self.dataArray['raJ2000'], self.dataArray['decJ2000'],
-                                                    self.dataArray['properMotionRa'],
-                                                    self.dataArray['properMotionDec'], self.dataArray['parallax']/1000.,
-                                                    self.dataArray['radialVelocity'],
-                                                    MJD=self.metadata.parameters['Opsim_expmjd'])
-
-        self.addColumn(raOut, 'raApp')
-        self.addColumn(decOut, 'decApp')
-
-
-    def makeObserved(self):
-        """ Generate Observed coordinates
-
-        From the observed coordinates generate the position of the
-        source as observed from the telescope site. This includes the
-        hour angle, diurnal aberration, alt-az, and refraction. 
-        """
-        if ((("raApp" in self.dataArray) and 
-             ("decApp" in self.dataArray)) != True):
-            self.makeApparent()
-        raOut, decOut = self.applyMeanObservedPlace(self.dataArray['raApp'], self.dataArray['decApp'],
-                                                    MJD=self.metadata.parameters['Opsim_expmjd'])
-
-        self.addColumn(raOut, 'raObs')
-        self.addColumn(decOut, 'decObs')
-
-    def calculateUnrefractedAltAz(self):
-        '''Calculate the unrefracted AltAz for the telescope given the ra dec opsim pointing'''
-        #Calculate pointing of telescope in observed frame and the rotation matrix to transform to this position
-        raCenter, decCenter, altCenter, azCenter = self.transformPointingToObserved(
-            self.metadata.parameters['Unrefracted_RA'],
-            self.metadata.parameters['Unrefracted_Dec'],
-            includeRefraction = False)
-
-        #Update the meta data for ALt-Az
-        self.metadata.addMetadata("Unrefracted_Altitude", altCenter,\
-                                  "Opsim value of the altitude of the observation")
-        self.metadata.addMetadata("Unrefracted_Azimuth", azCenter,\
-                                  "Opsim value of the azimuth of the observation")
-
-    def makeEBV(self, Rv=3.1):
-        '''Populate E(B-V) values from gLon, gLat'''
-
-        glon, glat = self.equatorialToGalactic(self.dataArray['raJ2000'],self.dataArray['decJ2000'])
-
-        datadir = os.environ.get("CAT_SHARE_DATA")
-
-        ebvMapNorth = ebv.EbvMap()
-        ebvMapNorth.readMapFits(os.path.join(datadir, "data/Dust/SFD_dust_4096_ngp.fits"))
-
-        ebvMapSouth = ebv.EbvMap()
-        ebvMapSouth.readMapFits(os.path.join(datadir, "data/Dust/SFD_dust_4096_sgp.fits"))
-			            
-        self.addColumn(ebv.calculateEbv(glon, glat, ebvMapNorth, ebvMapSouth, interp = True)*Rv, 'galacticAv')
-        self.addColumn(numpy.ones(len(self.dataArray['galacticAv']))*Rv, 'galacticRv')
-        self.addColumn(numpy.array(['CCM' for val in
-                                    range(len(self.dataArray['galacticAv']))]),
-                       'galacticExtinctionModel')
-        
-        
-    def makeShear(self):
-        theWL = weakLensing.WL()
-        theWL.initialize()
-
-        shear1, shear2, kappa = theWL.calc(self.dataArray['raJ2000'], self.dataArray['decJ2000'], self.dataArray["redshift"])
-
-        self.addColumn(shear1, 'shear1')
-        self.addColumn(shear2, 'shear2')
-        self.addColumn(kappa, 'kappa')
-
-        
-    def makeTrimCoords(self):
-        """ Generate TRIM coordinates
-
-        From the apparent coordinates generate the position of the
-        source as observed from the telescope site (required for the
-        trim files). This includes the hour angle, diurnal aberration,
-        alt-az. This does NOT include refraction.
-        """
-        
-        # calculate E(B-V) parameters if Extragalactic
-        if (self.neighborhoodType == 'EXTRAGALACTIC'): 
-            self.makeEBV()
-
-            # interpolate shear parameters to the object position, if Extragalactic. 
-            # self.makeShear()
-
-
-        #Calculate pointing of telescope in observed frame and the rotation matrix to transform to this position
-        raCenter, decCenter, altCenter, azCenter = self.transformPointingToObserved(
-            self.metadata.parameters['Unrefracted_RA'],
-            self.metadata.parameters['Unrefracted_Dec'],
-            includeRefraction = False)
-
-        # update file paths for place on disk
-        self.makeFilePaths('sedFilename')
-
-        #Update the meta data for ALt-Az
-#        self.metadata.addMetadata("Unrefracted_Altitude", altCenter,\
-#                                  "Opsim value of the altitude of the observation")
-#        self.metadata.addMetadata("Unrefracted_Azimuth", azCenter,\
-#                                  "Opsim value of the azimuth of the observation")
-        
-        
-        xyzJ2000 = self.sphericalToCartesian(self.metadata.parameters['Unrefracted_RA'],
-                                           self.metadata.parameters['Unrefracted_Dec'])
-        xyzJ2000 /= math.sqrt(numpy.dot(xyzJ2000, xyzJ2000))
-
-        xyzObs = self.sphericalToCartesian(raCenter, decCenter)
-        xyzObs /= math.sqrt(numpy.dot(xyzObs, xyzObs))
-
-        rotationMatrix = self.rotationMatrixFromVectors(xyzObs, xyzJ2000)
-
-        #convert positions of sources from reference to observed
-        if ((("raApp" in self.dataArray) and 
-             ("decApp" in self.dataArray)) != True):
-            self.makeApparent()
-            raOut, decOut = self.applyMeanObservedPlace(self.dataArray['raApp'],
-                                                     self.dataArray['decApp'],
-                                                     MJD=self.metadata.parameters['Opsim_expmjd'],
-                                                     altAzHr=False, includeRefraction=False)
-
-
-        # correct for pointing of the telescope (so only have differential offsets)
-        # and set output as ICRS
-        xyz = self.sphericalToCartesian(raOut, decOut).transpose()
-        for i,_xyz in enumerate(xyz):
-            xyzNew = numpy.dot(rotationMatrix,_xyz)
-            raOut[i], decOut[i] = self.cartesianToSpherical(xyzNew)
-
-        self.addColumn(raOut, 'raTrim')
-        self.addColumn(decOut, 'decTrim')
-
-    def makeReferenceCoords(self):
-        '''Generate reference file attributes'''
-
-        # generate photometry and objid
-        datadir = os.path.join(os.environ.get("CAT_SHARE_DATA"),"data")
-	# add glon and glat if they do not exist
-        if ((("glon" in self.dataArray) and 
-             ("glat" in self.dataArray)) != True):
-            glon, glat = self.equatorialToGalactic(self.dataArray['raJ2000'],self.dataArray['decJ2000'])
-	    self.addColumn(glon, 'glon')
-	    self.addColumn(glat, 'glat')
-        if (self.neighborhoodType == 'GALACTIC'):
-            # generate file paths for SEDS
-            self.makeFilePaths('sedFilename')
-            self.calculateStellarMagnitudes(dataDir=datadir)
-            #generate isVar - use varsimobjid (check for None), bit shift id<<10 and subtract to get variability number
-            variableArray = [x[0] if x[0] is not None else x[1]<<10 for x in zip(self.dataArray['varsimobjid'],
-                                                                self.dataArray['id'])]
-            #print self.dataArray['varsimobjid'][0:10]
-            #print variableArray
-            #print self.dataArray['id'][0:10]
-            self.addColumn((variableArray  - (self.dataArray['id']<<10)),'isVar')
-
-            #generate ID and isVar - id is simobjid <<10 + appendint then append <<1 for stars
-            self.dataArray['id'] = (self.dataArray['id']  << 10) + self.dataArray['appendint']
-            self.dataArray['id'] = (self.dataArray['id']  << 1)
-            
-
-            
-        elif (self.neighborhoodType == 'EXTRAGALACTIC'):
-            # generate isVar - use varsimobjid (check for None), bit shift id<<10
-            # and subtract to get variability number
-            variableArray = [x[0] if x[0] is not None else x[1]<<10 for x in zip(self.dataArray['varsimobjid'],
-                                                                                     self.dataArray['id'])]
-            self.addColumn((variableArray  - (self.dataArray['id']<<10)),'isVar')
-
-            #generate ID for galaxies - id is simobjid <<10 + appendint then append <<1 +1 for stars
-            self.dataArray['galtileid'] = (self.dataArray['galtileid']  << 10) + self.dataArray['appendint']
-            self.dataArray['galtileid'] = self.dataArray['galtileid'] << 1 + 1
-
-            #generate EBV,Av, values
-            #self.makeEBV()
-            #derive filepaths:
-
-            self.makeFilePaths('bulgeSedFilename')
-            self.makeFilePaths('diskSedFilename')
-            self.makeFilePaths('agnSedFilename')
-            #generate magnitudes
-            self.calculateGalaxyMagnitudes(dataDir=datadir)
-
-
-    def transformPointingToObserved(self, ra, dec, includeRefraction = False):
-        """Take an LSST central pointing and determine is observed position on the sky
-        (excluding refraction)"""
-        raOut, decOut = self.applyMeanApparentPlace([ra], [dec], [0.], [0.],[0.], [0.],
-                                                    MJD=self.metadata.parameters['Opsim_expmjd'])
-        #print ra,dec,raOut, decOut,self.metadata.parameters['Opsim_expmjd']
-        raObs, decObs, altObs, azObs = self.applyMeanObservedPlace(raOut, decOut, MJD=self.metadata.parameters['Opsim_expmjd'],
-                                                                   altAzHr=True, includeRefraction = includeRefraction)
-
-        return raObs[0], decObs[0], altObs[0], azObs[0]
-
-    def recalculatePointingInfo(self, dithra, dithdec, moonra, moondec, expmjd, rottel):
-        alt, az = self.equatorialToHorizontal(dithra, dithdec, expmjd)
-        rotsky = math.pi - self.paralacticAngle(az, dithdec) + rottel
-        rotsky = rotsky%360.
-        dist2moon = self.angularSeparation(dithra, dithdec, moonra, moondec)
-        return alt, az, rotsky, dist2moon
-
-
-    # Photometry composite methods
-
-    def calculateStellarMagnitudes(self, filterList=('u', 'g', 'r', 'i', 'z', 'y'),
-                                   dataDir = None, filterroot='total_'):
-        """For stellar sources and a list of bandpass names generate magnitudes"""
+    __metaclass__ = InstanceCatalogMeta
     
-        # load bandpasses
-        bandpassDict = phot.loadBandpasses(filterlist=filterList, dataDir = None)
+    # These are the class attributes to be specified in any derived class:
+    catalog_type = 'instance_catalog'
+    column_outputs = 'all'
+    default_columns = []
+    refIdCol = None
+    default_formats = {'S':'%s', 'f':'%.4g', 'i':'%i'}
+    override_formats = {}
+    transformations = {}
+    delimiter = ", "
+    comment_char = "#"
+    endline = "\n"
+
+    @classmethod
+    def new_catalog(cls, catalog_type, *args, **kwargs):
+        """Return a new catalog of the given catalog type"""
+        if catalog_type in cls.registry:
+            return cls.registry[catalog_type](*args, **kwargs)
+        elif issubclass(catalog_type, InstanceCatalog):
+            return catalog_type(*args, **kwargs)
+        else:
+            raise ValueError("Unrecognized catalog_type: %s"
+                             % str(catalog_type))
+
+    @classmethod
+    def is_compound_column(cls, column_name):
+        """Return true if the given column name is a compound column"""
+        getfunc = "get_%s" % column_name
+        if hasattr(cls, getfunc):
+            if hasattr(getattr(cls, getfunc), '_compound_column'):
+                return True
+        return False
+
+    @classmethod
+    def iter_column_names(cls):
+        """Iterate the column names, expanding any compound columns"""
+        for column in cls.column_outputs:
+            if cls.is_compound_column(column):
+                for col in getattr(getattr(cls, "get_" + column), '_colnames'):
+                    yield col
+            else:
+                yield column
+
+    def __init__(self, db_obj, obs_metadata=None, constraint=None):
+        self.db_obj = db_obj
+        self._current_chunk = None
+
+        self.obs_metadata = obs_metadata
+        self.constraint = constraint
         
-        #load required SEDs
-        sedDict = phot.loadSeds(self.dataArray["sedFilename"], dataDir=dataDir)
+        if self.column_outputs == 'all':
+            self.column_outputs = self._all_columns()
 
-        # pick one SED to be reference - randomly choose #1 sed
-        refsed = sedDict[self.dataArray["sedFilename"][0]]
-        if (refsed.needResample(wavelen_match=bandpassDict[filterList[0]].wavelen)):
-            refsed.resampleSED(wavelen_match=bandpassDict[filterList[0]].wavelen)
+        self._column_cache = {}
 
-        # need to put all SEDs on same wavelength grid
-        for sed in sedDict.values():
-            if (sed.needResample(wavelen_match=refsed.wavelen)):
-                sed.resampleSED(wavelen_match=refsed.wavelen)
+        self._check_requirements()
 
-        # Calculate dust parameters for all stars  (a_x/b_x have implicit wavelength dep)
-        a_x, b_x = refsed.setupCCMab()
-
-        # generate magnitude arrays and set to zero
-        for name,bandpass in bandpassDict.items():
-            self.addColumn(numpy.zeros(len(self.dataArray["id"])), name+"Derived")
-
-        # set up for calculating mags in all bandpasses
-        phiarray, wavelenstep = phot.setupPhiArray_dict(bandpassDict, filterList)
-
-        # loop through magnitudes and calculate   
-        for i,sedName in enumerate(self.dataArray["sedFilename"]):
-            sed = deepcopy(sedDict[sedName])
-            sed.multiplyFluxNorm(self.dataArray["fluxNorm"][i])
-            sed.addCCMDust(a_x, b_x, A_v=self.dataArray["galacticAv"][i], R_v=float(self.dataArray["galacticRv"][i]))
-            sed.flambdaTofnu()
-
-            mags = sed.manyMagCalc(phiarray, wavelenstep)
-            for j,name in enumerate(filterList):
-                self.dataArray[name+"Derived"][i] = mags[j]
-            del sed
-
-
-    def calculateGalaxyMagnitudes(self, filterList=('u', 'g', 'r', 'i', 'z', 'y'),
-                                   dataDir = None, filterroot='total_'):
-        """For galaxy sources and a list of bandpass names generate magnitudes"""
-
-        # load bandpasses
-        bandpassDict = phot.loadBandpasses(filterlist=filterList, dataDir = None)
-        
-        #load required SEDs ignore None
-        sedDict ={}
-        if ("bulgeSedFilename" in self.dataArray):
-            sedDict.update(phot.loadSeds(self.dataArray["bulgeSedFilename"], dataDir=dataDir))
-        if ("diskSedFilename" in self.dataArray):
-            sedDict.update(phot.loadSeds(self.dataArray["diskSedFilename"], dataDir=dataDir))
-        if ("agnSedFilename" in self.dataArray):
-            sedDict.update(phot.loadSeds(self.dataArray["agnSedFilename"], dataDir=dataDir))
-
-        # pick one SED to be reference and grid all to common wavelength
-        refsed = sedDict.values()[0]
-        for sed in sedDict.values():
-            if (sed.needResample(wavelen_match=refsed.wavelen)):
-                sed.resampleSED(wavelen_match=refsed.wavelen)
-
-        # generate magnitude arrays and set to zero
-        for name,bandpass in bandpassDict.items():
-            self.addColumn(numpy.zeros(len(self.dataArray["id"])), name+"Derived")
-
-        # set up for calculating mags in all bandpasses
-        phiarray, wavelenstep = phot.setupPhiArray_dict(bandpassDict, filterList)
-
-        # loop through magnitudes and calculate   
-        for i,id in enumerate(self.dataArray["id"]):
-            try:
-                sedBulge = deepcopy(sedDict[self.dataArray["bulgeSedFilename"][i]])
-                sedBulge.multiplyFluxNorm(self.dataArray["bulgeFluxNorm"][i])
-                a_x, b_x = sedBulge.setupCCMab()
-                sedBulge.addCCMDust(a_x, b_x, A_v=self.dataArray["internalAv_b"][i])
-                sedBulge.redshiftSED(redshift=self.dataArray["redshift"][i], dimming=True)
-                sedBulge.resampleSED(wavelen_match=bandpassDict['u'].wavelen)
-#                print "BULGE EXISTS",self.dataArray["bulgeSedFilename"][i]
-#                print "DUST", self.dataArray["internalAv_b"][i]
-            except KeyError:
-                sedBulge = None
-
-            try:
-                sedDisk = deepcopy(sedDict[self.dataArray["diskSedFilename"][i]])
-                sedDisk.multiplyFluxNorm(self.dataArray["diskFluxNorm"][i])
-                a_x, b_x = sedDisk.setupCCMab()
-                sedDisk.addCCMDust(a_x, b_x, A_v=self.dataArray["internalAv_d"][i])
-                sedDisk.redshiftSED(redshift=self.dataArray["redshift"][i], dimming=True)
-#                print sedDisk.wavelen.min(),sedDisk.wavelen.max()
-                sedDisk.resampleSED(wavelen_match=bandpassDict['u'].wavelen)
-#                print "DISK EXISTS",self.dataArray["diskSedFilename"][i]
-#                print "DUST", self.dataArray["internalAv_d"][i]
-            except KeyError:
-                sedDisk = None
-
-            try:
-                sedAgn = deepcopy(sedDict[self.dataArray["agnSedFilename"][i]])
-                #IS THIS CORRECT
-                if (self.dataArray["agnFluxNorm"][i] > 90.):
-                    self.dataArray["agnFluxNorm"][i] = 0.0
-                    sedAgn = None
-                sedAgn.multiplyFluxNorm(self.dataArray["agnFluxNorm"][i])
-                sedAgn.redshiftSED(redshift=self.dataArray["redshift"][i], dimming=True)
-                sedAgn.resampleSED(wavelen_match=bandpassDict['u'].wavelen)
-#                print "AGN EXISTS",self.dataArray["agnSedFilename"][i]
-
-            except KeyError:
-                sedAgn = None
-                
-
-            #print "Galactic"
-            #print self.dataArray["galacticAv"][i]
-            # add disk and agn to bulge - allow for None in data
-
-            sedList = [sedBulge, sedDisk, sedAgn]
-            try:
-                sedListNoNone = [x for x in sedList if x != None] 
-                sed = sedListNoNone[0]
-            except:
-                print "No SEDs in List"
-                exit()
-#            print "SED LIST", sedList
-#            print "SED NoNone LIST",sedListNoNone
-
-            if (sedDisk != None):
-                sedDisk.flambdaTofnu()
-#                print "DISK MAG", sedDisk.manyMagCalc(phiarray, wavelenstep)
-#                print "DISK g MAG", sedDisk.calcMag(bandpassDict['g'])
-                
-            if (sedBulge != None):
-                sedBulge.flambdaTofnu()
-#                print "BULGE MAG", sedBulge.manyMagCalc(phiarray, wavelenstep)
-#                print "BULGE g MAG", sedBulge.calcMag(bandpassDict['g'])
-
-            if (sedAgn != None):
-                sedAgn.flambdaTofnu()
-#                print "AGN MAG", sedAgn.manyMagCalc(phiarray, wavelenstep)
-#                print "AGN  g MAG", sedAgn.calcMag(bandpassDict['g'])
-
-            #print sed.flambda.mean()
-            #print mags
-#            print "SUMMING"
-#            print "INITIAL",sed.flambda.mean()
-            for nextSed in sedListNoNone[1:]:
-#                print nextSed.flambda.mean()
-                sed.flambda += nextSed.flambda
-                sed.fnu += nextSed.fnu
-#            print "FINAL",sed.flambda.mean()
-
-            # apply galactic extinction
-            #a_mw, b_mw = sed.setupCCMab()
-            #sed.addCCMDust(a_mw, b_mw, A_v=self.dataArray["galacticAv"][i])
-            #sed.flambdaTofnu()
-            
-            mags = sed.manyMagCalc(phiarray, wavelenstep)
-#            print "SUMMED MAGS", mags
-
-#            print "DB MAGS", self.dataArray["id"][i],self.dataArray["u"][i],self.dataArray["g"][i],self.dataArray["r"][i],self.dataArray["i"][i],self.dataArray["z"][i],self.dataArray["y"][i]
-            for j,name in enumerate(filterList):
-                self.dataArray[name+"Derived"][i] = mags[j]
-            del sed
-
-    def applyVariability(self):
-        """Apply variability models to magnitude normalization constants.
-        The name of the method defined in the Variability class along with 
-        the parameters for applying the variability are stored in the database
-        as serialized dictionary objects
+    def _all_columns(self):
         """
-        var = variability.Variability(cache=True)
-        filters = ['u', 'g', 'r', 'i', 'z', 'y','U','G','R','I','Z','Y']
-        #Map to translate filter integer to filter character.
-        filterMap = {0:"u", 1:"g", 2:"r", 3:"i", 4:"z", 5:"y"}
-        filt = ''
-        expmjd = None
-        if self.metadata.parameters.has_key('Opsim_filter'):
-            filt = self.metadata.parameters['Opsim_filter']
-        elif self.metadata.parameters.has_key('filter'):
-            filt = self.metadata.parameters['filter']
-        else:
-            raise Exception("Need filter information in metadata to procede with variability application")
+        Return a list of all available column names, from those provided
+        by the instance catalog and those provided by the database
+        """
+        columns = set(self.db_obj.columnMap.keys())
+        getfuncs = [func for func in dir(self) if func.startswith('get_')]
+        columns.update([func.strip('get_') for func in getfuncs])
+        return list(columns)
 
-        if self.metadata.parameters.has_key('Opsim_expmjd'):
-            expmjd = self.metadata.parameters['Opsim_expmjd']
-        elif self.metadata.parameters.has_key('expmjd'):
-            expmjd = self.metadata.parameters['expmjd']
+    def _set_current_chunk(self, chunk, column_cache=None):
+        """Set the current chunk and clear the column cache"""
+        self._current_chunk = chunk
+        if column_cache is None:
+            self._column_cache = {}
         else:
-            raise Exception("Need time information in metadata to procede with variability application")
+            self._column_cache = column_cache
 
-        if filt in filters:
-            filt = filt.lower()
-        elif filterMap.has_key(filt):
-            filt = filterMap[filt]
+    def db_required_columns(self):
+        """Get the list of columns required to be in the database object."""
+        saved_cache = self._cached_columns
+        saved_chunk = self._current_chunk
+        self._set_current_chunk(_MimicRecordArray())
+
+        for col_name in self.iter_column_names():
+            # just call the column: this will log queries to the database.
+            col = self.column_by_name(col_name)
+
+        db_required_columns = list(self._current_chunk.referenced_columns)
+        self._set_current_chunk(saved_chunk, saved_cache)
+
+        return db_required_columns
+
+    def column_by_name(self, column_name, *args, **kwargs):
+        """Given a column name, return the column data"""
+        getfunc = "get_%s" % column_name
+
+        if hasattr(self, getfunc):
+            return getattr(self, getfunc)(*args, **kwargs)
+        elif column_name in self._compound_column_names:
+            getfunc = self._compound_column_names[column_name]
+            compound_column = getattr(self, getfunc)(*args, **kwargs)
+            return compound_column[column_name]
         else:
-            raise Exception("Filter %s does not match the LSST filter list"\
-                    %(str(self.metadata.parameters['Opsim_filter'])))
+            return self._current_chunk[column_name]
+
+    def _check_requirements(self):
+        """Check whether the supplied db_obj has the necessary column names"""
+        missing_cols = []
+
+        for col in self.db_required_columns():
+            if col not in self.db_obj.columnMap.keys():
+                missing_cols.append(col)
+
+        if len(missing_cols) > 0:
+            raise ValueError("Required columns missing from database: "
+                             "({0})".format(', '.join(missing_cols)))
+
+    def _make_line_template(self, chunk_cols):
+        templ_list = []
+        for i, col in enumerate(self.iter_column_names()):
+            templ = self.override_formats.get(col, None)
+
+            if templ is None:
+                typ = chunk_cols[i].dtype.kind
+                templ = self.default_formats.get(typ)
+
+            if templ is None:
+                warnings.warn("Using raw formatting for column '%s' "
+                              "with type %s" % (col, chunk_cols[i].dtype))
+                templ = "%s"
+            templ_list.append(templ)
+
+        return self.delimiter.join(templ_list) + self.endline
+
+    def write_header(self, file_handle):
+        column_names = list(self.iter_column_names())
+        templ = [self.comment_char,]
+        templ += ["%s" for col in column_names]
+        file_handle.write("{0}".format(
+                self.comment_char + self.delimiter.join(column_names))
+                          + self.endline)
+
+    def write_catalog(self, filename, chunk_size=None,
+                      write_header=True, write_mode='w'):
+        db_required_columns = self.db_required_columns()
+        template = None
+
+        file_handle = open(filename, write_mode)
+        if write_header:
+            self.write_header(file_handle)
+
+        query_result = self.db_obj.query_columns(obs_metadata=self.obs_metadata,
+                                                 constraint=self.constraint,
+                                                 chunk_size=chunk_size)
+
+        if chunk_size is None:
+            query_result = [query_result]
+
+        for chunk in query_result:
+            self._set_current_chunk(chunk)
+            chunk_cols = [self.transformations[col](self.column_by_name(col))
+                          if col in self.transformations.keys() else
+                          self.column_by_name(col)
+                          for col in self.iter_column_names()]
+
+            # Create the template with the first chunk
+            if template is None:
+                template = self._make_line_template(chunk_cols)
+
+            # use a generator expression for lines rather than a list
+            # for memory efficiency
+            file_handle.writelines(template % line
+                                   for line in zip(*chunk_cols))
         
-        #Apply variability to an entire array of magnitude normalization
-        #constants.
-        if not self.dataArray.has_key('variabilityParameters'):
-            raise Exception("Cannot apply variability without parameters")
-        numVar = len(self.dataArray['variabilityParameters'])
-        magOffset = numpy.zeros(numVar)
-        for ind,dstr in zip(range(numVar),self.dataArray['variabilityParameters']):
-            dstr = str(dstr)
-            if dstr == 'None' or dstr == '':
-                continue
-            d = eval(dstr)
-            magOffset[ind] = eval("var.%s(d['pars'], \
-                %f)['%s']"%\
-                (d['varMethodName'],expmjd,filt))
-        self.dataArray["magNorm"] += magOffset
+        file_handle.close()
 
-""" TODO (2/18/2010) incorporate the precession routines
-    def makeMeasured(self):
-        raOut, decOut = self.applyPropermotion(self.dataArray['raJ2000'], 
-                                    self.dataArray['decJ2000'])
-        raOut, decOut = self.applyParallax(raOut, decOut)
-        self.addColumn(raOut, 'raMeasured')
-        self.addColumn(decOut, 'decMeasured')
-    def makeGeo(self):
-        if ((("raHelio" in self.dataArray) and 
-             ("decHelio" in self.dataArray)) != True):
-            self.makeHelio()
-        raOut, decOut = self.applyParallax()
-        raOut, decOut = self.applyAberration()
-        self.addColumn(raOut, 'raGeo')
-        self.addColumn(decOut, 'decGeo')
-    def makeTopo(self):
-        if ((("raGeo" in self.dataArray) and 
-             ("decGeo" in self.dataArray)) != True):
-            self.makeGeo()
-        raOut, decOut = self.applyAbsoluteRefraction(raPar, decPar)
-        self.addColumn(raOut, 'raHTopo')
-        self.addColumn(decOut, 'decTopo')
-     """
+    def export_structured_array(self):
+        pass
 
 
+#----------------------------------------------------------------------
+# Some example uses
 
+
+class PhotometryMixin(object):
+    def get_ug_color(self):
+        u = self.column_by_name('umag')
+        g = self.column_by_name('gmag')
+        return u - g
+
+    def get_gr_color(self):
+        g = self.column_by_name('gmag')
+        r = self.column_by_name('rmag')
+        return g - r
+
+
+class AstrometryMixin(object):
+    @compound('ra_corr', 'dec_corr')
+    def get_points(self):
+        return (self.column_by_name('raJ2000') + 0.001,
+                self.column_by_name('decJ2000') - 0.001)
+
+
+class RefCatalogGalaxyBase(InstanceCatalog, AstrometryMixin, PhotometryMixin):
+    catalog_type = 'ref_catalog_galaxy'
+    column_outputs = ['objectId', 'meanRaJ2000', 'meanDecJ2000', 'redshift',
+                      'majorAxisDisk', 'minorAxisDisk', 'positionAngleDisk',
+                      'majorAxisBulge', 'minorAxisBulge', 'positionAngleBulge']
+    default_formats = {'S':'%s', 'f':'%.5g', 'i':'%i'}
+    refIdCol = 'galid'
+    transformations = {'raJ2000':np.degrees, 'decJ2000':np.degrees, 'majorAxisDisk':np.degrees, 'majorAxisDisk':np.degrees,
+                       'positionAngleDisk':np.degrees, 'majorAxisBulge':np.degrees, 'minorAxisBulge':np.degrees, 
+                       'positionAngleBulge':np.degrees}
+
+    def get_objectId(self): 
+        return self.column_by_name(self.refIdCol)
+
+    def get_meanRaJ2000(self):
+        return self.column_by_name('raJ2000')
+
+    def get_meanDecJ2000(self):
+        return self.column_by_name('decJ2000')
+
+
+class TrimCatalogPoint(InstanceCatalog, AstrometryMixin, PhotometryMixin):
+    catalog_type = 'trim_catalog_POINT'
+    column_outputs = ['prefix', 'objectid','raTrim','decTrim','magNorm','sedFilename',
+                      'redshift','shear1','shear2','kappa','raOffset','decOffset',
+                      'spatialmodel','galacticExtinctionModel','galacticAv','galacticRv',
+                      'internalExtinctionModel']
+    default_columns = [('redshift', 0., float),('shear1', 0., float), ('shear2', 0., float), 
+                       ('kappa', 0., float), ('raOffset', 0., float), ('decOffset', 0., float), 
+                       ('galacticExtinctionModel', 'CCM', (str,3)), ('galacticRv', 3.1, float),
+                       ('internalExtinctionModel', 'none', (str,4))]
+    refIdCol = 'id'
+    default_formats = {'S':'%s', 'f':'%.9g', 'i':'%i'}
+    delimiter = " "
+    override_formats = {'objectid':'%.2f'}
+    transformations = {'raTrim':np.degrees, 'decTrim':np.degrees}
+
+    def get_prefix(self):
+        chunkiter = xrange(len(self.column_by_name(self.refIdCol)))
+        return np.array(['object' for i in chunkiter], dtype=(str, 6))
+    def get_objectid(self):
+        return self.column_by_name(self.refIdCol)+self.column_by_name('objTypeId')
+    def get_objTypeId(self):
+        #We want the object type to end up in the decimal portion, so:
+        fac = 10**(int(np.log10(self.db_obj.getObjectTypeId())) + 1)
+        chunkiter = xrange(len(self._current_chunk))
+        return np.array([float(self.db_obj.getObjectTypeId())/fac
+                         for i in chunkiter], dtype=float)
+    def get_raTrim(self):
+        return self.column_by_name('ra_corr')
+    def get_decTrim(self):
+        return self.column_by_name('dec_corr')
+    def get_spatialmodel(self):
+        chunkiter = xrange(len(self._current_chunk))
+        return np.array([self.db_obj.getSpatialModel() for i in
+               chunkiter], dtype=(str, 7))
+    def write_header(self, file_handle):
+        md = self.obs_metadata.metadata
+        for k in md:
+            typ = md[k][1].kind
+            templ = self.default_formats.get(typ, None)
+            if templ is None:
+                warnings.warn("Using raw formatting for column '%s' "
+                              "with type %s" % (col, chunk_cols[i].dtype))
+                templ = "%s"
+            templ = "%s "+templ
+            file_handle.write(templ%(k, md[k][0])+"\n") 
+
+
+
+class TrimCatalogZPoint(TrimCatalogPoint, AstrometryMixin, PhotometryMixin):
+    catalog_type = 'trim_catalog_ZPOINT'
+    column_outputs = ['prefix', 'objectid','raTrim','decTrim','magNorm','sedFilename',
+                      'redshift','shear1','shear2','kappa','raOffset','decOffset',
+                      'spatialmodel','galacticExtinctionModel','galacticAv','galacticRv',
+                      'internalExtinctionModel']
+    default_columns = [('shear1', 0., float), ('shear2', 0., float), ('kappa', 0., float),
+                       ('raOffset', 0., float), ('decOffset', 0., float), 
+                       ('galacticExtinctionModel', 'CCM', (str,3)), ('galacticRv', 3.1, float),
+                       ('internalExtinctionModel', 'none', (str,4))]
+    refIdCol = 'galtileid'
+    default_formats = {'S':'%s', 'f':'%.9g', 'i':'%i'}
+    delimiter = " "
+    override_formats = {'objectid':'%.2f'}
+    transformations = {'raTrim':np.degrees, 'decTrim':np.degrees}
+
+    def get_galacticAv(self):
+        chunkiter = xrange(len(self._current_chunk))
+        #This is a HACK until we get the real values in here
+        return np.array([0.1 for i in chunkiter], dtype=float)
+
+class TrimCatalogSersic2D(TrimCatalogZPoint, AstrometryMixin, PhotometryMixin):
+    catalog_type = 'trim_catalog_SERSIC2D'
+    column_outputs = ['prefix', 'objectid','raTrim','decTrim','magNorm','sedFilename',
+                      'redshift','shear1','shear2','kappa','raOffset','decOffset',
+                      'spatialmodel','majorAxis','minorAxis','positionAngle','sindex',
+                      'galacticExtinctionModel','galacticAv','galacticRv',
+                      'internalExtinctionModel','internalAv','internalRv']
+    default_columns = [('shear1', 0., float), ('shear2', 0., float), ('kappa', 0., float),
+                       ('raOffset', 0., float), ('decOffset', 0., float), 
+                       ('galacticExtinctionModel', 'CCM', (str,3)), ('galacticRv', 3.1, float)]
+    refIdCol = 'galtileid'
+    default_formats = {'S':'%s', 'f':'%.9g', 'i':'%i'}
+    delimiter = " "
+    override_formats = {'objectid':'%.2f'}
+    transformations = {'raTrim':np.degrees, 'decTrim':np.degrees, 'positionAngle':np.degrees, 
+                       'majorAxis':np.degrees, 'minorAxis':np.degrees} 
+
+
+
+#class TestCatalog(InstanceCatalog, AstrometryMixin, PhotometryMixin):
+#    catalog_type = 'test_catalog'
+#    column_outputs = ['raJ2000', 'decJ2000', 'points', 'galid']
+#    refIdCol = 'galid'
+#    transformations = {'raJ2000':np.degrees,
+#                       'decJ2000':np.degrees,
+#                       'ra_corr':np.degrees,
+#                       'dec_corr':np.degrees}
+
+
+#if __name__ == '__main__':
+#    class dummy(object):
+#        def __init__(self):
+#            self.columnMap = dict([(key, np.zeros(10, dtype=float))
+#                                   for key in ['raJ2000', 'decJ2000',
+#                                               'galid']])
+#        def query_columns(self, **kwargs):
+#            if kwargs['chunk_size'] is None:
+#                return self.columnMap
+#            else:
+#                return (self.columnMap for i in range(3))
+#    t = TestCatalog(dummy())
+#    t.write_catalog('tmp.py')
