@@ -179,7 +179,7 @@ class InstanceCatalog(object):
     column_outputs = 'all'
     default_columns = []
     refIdCol = None
-    default_formats = {'S':'%s', 'f':'%.4g', 'i':'%i'}
+    default_formats = {'S':'%s', 'f':'%.4f', 'i':'%i'}
     override_formats = {}
     transformations = {}
     delimiter = ", "
