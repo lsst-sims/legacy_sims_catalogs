@@ -432,6 +432,8 @@ class TrimCatalogPoint(InstanceCatalog, AstrometryMixin, PhotometryMixin):
                chunkiter], dtype=(str, 7))
     def write_header(self, file_handle):
         md = self.obs_metadata.metadata
+        if md is None:
+            raise RuntimeError("Can't write a trim without a full metadata dictionary")
         for k in md:
             typ = md[k][1].kind
             templ = self.default_formats.get(typ, None)
@@ -481,29 +483,3 @@ class TrimCatalogSersic2D(TrimCatalogZPoint, AstrometryMixin, PhotometryMixin):
     override_formats = {'objectid':'%.2f'}
     transformations = {'raTrim':np.degrees, 'decTrim':np.degrees, 'positionAngle':np.degrees, 
                        'majorAxis':np.degrees, 'minorAxis':np.degrees} 
-
-
-
-#class TestCatalog(InstanceCatalog, AstrometryMixin, PhotometryMixin):
-#    catalog_type = 'test_catalog'
-#    column_outputs = ['raJ2000', 'decJ2000', 'points', 'galid']
-#    refIdCol = 'galid'
-#    transformations = {'raJ2000':np.degrees,
-#                       'decJ2000':np.degrees,
-#                       'ra_corr':np.degrees,
-#                       'dec_corr':np.degrees}
-
-
-#if __name__ == '__main__':
-#    class dummy(object):
-#        def __init__(self):
-#            self.columnMap = dict([(key, np.zeros(10, dtype=float))
-#                                   for key in ['raJ2000', 'decJ2000',
-#                                               'galid']])
-#        def query_columns(self, **kwargs):
-#            if kwargs['chunk_size'] is None:
-#                return self.columnMap
-#            else:
-#                return (self.columnMap for i in range(3))
-#    t = TestCatalog(dummy())
-#    t.write_catalog('tmp.py')
