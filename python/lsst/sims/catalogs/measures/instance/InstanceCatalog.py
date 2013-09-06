@@ -3,6 +3,7 @@ import warnings
 import numpy as np
 from functools import wraps
 from collections import OrderedDict
+from .fileMaps import defaultSpecMap
 
 
 class InstanceCatalogMeta(type):
@@ -102,10 +103,10 @@ class _MimicRecordArray(object):
 
     def __getitem__(self, column):
         self.referenced_columns.add(column)
-        return np.zeros(1)
+        return np.empty(0)
 
     def __len__(self):
-        return 1
+        return 0
 
 
 #---------------------------------------------------------------------- 
@@ -216,12 +217,13 @@ class InstanceCatalog(object):
             else:
                 yield column
 
-    def __init__(self, db_obj, obs_metadata=None, constraint=None):
+    def __init__(self, db_obj, obs_metadata=None, constraint=None, specFileMap=defaultSpecMap):
         self.db_obj = db_obj
         self._current_chunk = None
 
         self.obs_metadata = obs_metadata
         self.constraint = constraint
+        self.specFileMap = specFileMap
         
         if self.column_outputs == 'all':
             self.column_outputs = self._all_columns()
@@ -397,7 +399,7 @@ class RefCatalogGalaxyBase(InstanceCatalog, AstrometryMixin, PhotometryMixin):
 
 class TrimCatalogPoint(InstanceCatalog, AstrometryMixin, PhotometryMixin):
     catalog_type = 'trim_catalog_POINT'
-    column_outputs = ['prefix', 'objectid','raTrim','decTrim','magNorm','sedFilename',
+    column_outputs = ['prefix', 'objectid','raTrim','decTrim','magNorm','sedFilepath',
                       'redshift','shear1','shear2','kappa','raOffset','decOffset',
                       'spatialmodel','galacticExtinctionModel','galacticAv','galacticRv',
                       'internalExtinctionModel']
@@ -409,11 +411,19 @@ class TrimCatalogPoint(InstanceCatalog, AstrometryMixin, PhotometryMixin):
     default_formats = {'S':'%s', 'f':'%.9g', 'i':'%i'}
     delimiter = " "
     override_formats = {'objectid':'%.2f'}
-    transformations = {'raTrim':np.degrees, 'decTrim':np.degrees}
+    filtMap = {'u':'0', 'g':'1', 'r':'2', 'i':'3', 'z':'4', 'y':'5'}
+    transformations = {'raTrim':np.degrees, 'decTrim':np.degrees, 'Unrefracted_RA':np.degrees, 
+                       'Unrefracted_Dec':np.degrees, 'Opsim_moonra':np.degrees, 'Opsim_moondec':np.degrees, 
+                       'Opsim_rotskypos':np.degrees, 'Opsim_rottelpos':np.degrees, 
+                       'Opsim_sunalt':np.degrees, 'Opsim_moonalt':np.degrees, 'Opsim_dist2moon':np.degrees, 
+                       'Opsim_altitude':np.degrees, 'Opsim_azimuth':np.degrees, 'Opsim_filter':filtMap.get}
 
     def get_prefix(self):
         chunkiter = xrange(len(self.column_by_name(self.refIdCol)))
         return np.array(['object' for i in chunkiter], dtype=(str, 6))
+    def get_sedFilepath(self):
+        return np.array([self.specFileMap[k] 
+                         for k in self.column_by_name('sedFilename')])
     def get_objectid(self):
         return self.column_by_name(self.refIdCol)+self.column_by_name('objTypeId')
     def get_objTypeId(self):
@@ -442,13 +452,17 @@ class TrimCatalogPoint(InstanceCatalog, AstrometryMixin, PhotometryMixin):
                               "with type %s" % (col, chunk_cols[i].dtype))
                 templ = "%s"
             templ = "%s "+templ
-            file_handle.write(templ%(k, md[k][0])+"\n") 
+            if k in self.transformations.keys():
+                outval = self.transformations[k](md[k][0])
+            else:
+                outval = md[k][0]
+            file_handle.write(templ%(k, outval)+"\n") 
 
 
 
 class TrimCatalogZPoint(TrimCatalogPoint, AstrometryMixin, PhotometryMixin):
     catalog_type = 'trim_catalog_ZPOINT'
-    column_outputs = ['prefix', 'objectid','raTrim','decTrim','magNorm','sedFilename',
+    column_outputs = ['prefix', 'objectid','raTrim','decTrim','magNorm','sedFilepath',
                       'redshift','shear1','shear2','kappa','raOffset','decOffset',
                       'spatialmodel','galacticExtinctionModel','galacticAv','galacticRv',
                       'internalExtinctionModel']
@@ -469,7 +483,7 @@ class TrimCatalogZPoint(TrimCatalogPoint, AstrometryMixin, PhotometryMixin):
 
 class TrimCatalogSersic2D(TrimCatalogZPoint, AstrometryMixin, PhotometryMixin):
     catalog_type = 'trim_catalog_SERSIC2D'
-    column_outputs = ['prefix', 'objectid','raTrim','decTrim','magNorm','sedFilename',
+    column_outputs = ['prefix', 'objectid','raTrim','decTrim','magNorm','sedFilepath',
                       'redshift','shear1','shear2','kappa','raOffset','decOffset',
                       'spatialmodel','majorAxis','minorAxis','positionAngle','sindex',
                       'galacticExtinctionModel','galacticAv','galacticRv',
@@ -482,4 +496,4 @@ class TrimCatalogSersic2D(TrimCatalogZPoint, AstrometryMixin, PhotometryMixin):
     delimiter = " "
     override_formats = {'objectid':'%.2f'}
     transformations = {'raTrim':np.degrees, 'decTrim':np.degrees, 'positionAngle':np.degrees, 
-                       'majorAxis':np.degrees, 'minorAxis':np.degrees} 
+            'majorAxis':np.degrees, 'minorAxis':np.degrees} 
