@@ -268,7 +268,6 @@ class InstanceCatalog(object):
     def column_by_name(self, column_name, *args, **kwargs):
         """Given a column name, return the column data"""
         getfunc = "get_%s" % column_name
-
         if hasattr(self, getfunc):
             return getattr(self, getfunc)(*args, **kwargs)
         elif column_name in self._compound_column_names:
@@ -327,10 +326,6 @@ class InstanceCatalog(object):
         query_result = self.db_obj.query_columns(obs_metadata=self.obs_metadata,
                                                  constraint=self.constraint,
                                                  chunk_size=chunk_size)
-
-        if chunk_size is None:
-            query_result = [query_result]
-
         for chunk in query_result:
             self._set_current_chunk(chunk)
             chunk_cols = [self.transformations[col](self.column_by_name(col))
@@ -412,11 +407,13 @@ class TrimCatalogPoint(InstanceCatalog, AstrometryMixin, PhotometryMixin):
     delimiter = " "
     override_formats = {'objectid':'%.2f'}
     filtMap = {'u':'0', 'g':'1', 'r':'2', 'i':'3', 'z':'4', 'y':'5'}
-    transformations = {'raTrim':np.degrees, 'decTrim':np.degrees, 'Unrefracted_RA':np.degrees, 
-                       'Unrefracted_Dec':np.degrees, 'Opsim_moonra':np.degrees, 'Opsim_moondec':np.degrees, 
+    transformations = {'raTrim':np.degrees, 'decTrim':np.degrees}
+    headerTransformations = {'Unrefracted_RA':np.degrees, 'Unrefracted_Dec':np.degrees, 
+                       'Opsim_moonra':np.degrees, 'Opsim_moondec':np.degrees, 
                        'Opsim_rotskypos':np.degrees, 'Opsim_rottelpos':np.degrees, 
-                       'Opsim_sunalt':np.degrees, 'Opsim_moonalt':np.degrees, 'Opsim_dist2moon':np.degrees, 
-                       'Opsim_altitude':np.degrees, 'Opsim_azimuth':np.degrees, 'Opsim_filter':filtMap.get}
+                       'Opsim_sunalt':np.degrees, 'Opsim_moonalt':np.degrees, 
+                       'Opsim_dist2moon':np.degrees, 'Opsim_altitude':np.degrees, 
+                       'Opsim_azimuth':np.degrees, 'Opsim_filter':filtMap.get}
 
     def get_prefix(self):
         chunkiter = xrange(len(self.column_by_name(self.refIdCol)))
@@ -452,8 +449,8 @@ class TrimCatalogPoint(InstanceCatalog, AstrometryMixin, PhotometryMixin):
                               "with type %s" % (col, chunk_cols[i].dtype))
                 templ = "%s"
             templ = "%s "+templ
-            if k in self.transformations.keys():
-                outval = self.transformations[k](md[k][0])
+            if k in self.headerTransformations.keys():
+                outval = self.headerTransformations[k](md[k][0])
             else:
                 outval = md[k][0]
             file_handle.write(templ%(k, outval)+"\n") 
