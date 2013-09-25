@@ -343,10 +343,21 @@ class InstanceCatalog(object):
                                    for line in zip(*chunk_cols))
         
         file_handle.close()
+    
+    def iter_catalog(self, chunk_size=None):
+        db_required_columns = self.db_required_columns()
 
-    def export_structured_array(self):
-        pass
-
+        query_result = self.db_obj.query_columns(obs_metadata=self.obs_metadata,
+                                                 constraint=self.constraint,
+                                                 chunk_size=chunk_size)
+        for chunk in query_result:
+            self._set_current_chunk(chunk)
+            chunk_cols = [self.transformations[col](self.column_by_name(col))
+                          if col in self.transformations.keys() else
+                          self.column_by_name(col)
+                          for col in self.iter_column_names()]
+            for line in zip(*chunk_cols):
+                yield line
 
 #----------------------------------------------------------------------
 # Some example uses
