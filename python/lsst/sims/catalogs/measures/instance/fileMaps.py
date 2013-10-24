@@ -15,6 +15,7 @@ class SpecMap(object):
         self.D[key] = val
 
     def __getitem__(self, item):
+        item = item.rstrip()
         if self.D.has_key(item):
             return self.D[item]
         for key, val in sorted(self.subdir_map.iteritems()):
