@@ -3,6 +3,7 @@ setupRequired(throughputs)
 setupRequired(pyfits)
 setupRequired(scipy)
 
+envPrepend(TDSVER, 7.0)
 envAppend(LD_LIBRARY_PATH, ${PRODUCT_DIR}/lib)
 envAppend(LD_LIBRARY_PATH, ${CAT_SHARE_DATA}/postgres.8.4.1/lib)
 envAppend(LD_LIBRARY_PATH, ${CAT_SHARE_DATA}/atlas/lib)
