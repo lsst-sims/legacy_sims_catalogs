@@ -223,6 +223,8 @@ class Bandpass:
         # A typical component list of all files to build final component list, including filter, might be: 
         #   componentList=['detector.dat', 'lens1.dat', 'lens2.dat', 'lens3.dat', 
         #                 'm1.dat', 'm2.dat', 'm3.dat', 'atmos.dat', 'ideal_g.dat'] 
+	# 
+	# Set wavelen limits for this object, if any updates have been given. 
         self.setWavelenLimits(wavelen_min, wavelen_max, wavelen_step)
         # Set up wavelen/sb on grid.
         self.wavelen = numpy.arange(self.wavelen_min, self.wavelen_max+self.wavelen_step, self.wavelen_step,
@@ -230,10 +232,11 @@ class Bandpass:
         self.phi = None
         self.sb = numpy.ones(len(self.wavelen), dtype='float')
         # Set up a temporary bandpass object to hold data from each file.
-        tempbandpass = Bandpass()
+        tempbandpass = Bandpass(wavelen_min=self.wavelen_min, wavelen_max=self.wavelen_max, 
+                                wavelen_step=self.wavelen_step)
         for component in componentList:
             # Read data from file.
-            tempbandpass.readThroughput(os.path.join(rootDir, component), wavelen_min, wavelen_max, wavelen_step)
+            tempbandpass.readThroughput(os.path.join(rootDir, component))
             # Multiply self by new sb values.
             self.sb = self.sb * tempbandpass.sb
         return
