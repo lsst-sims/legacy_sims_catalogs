@@ -1,9 +1,11 @@
 """Instance Catalog"""
 import warnings
-import numpy as np
+import numpy 
+import inspect
 from functools import wraps
 from collections import OrderedDict
 from .fileMaps import defaultSpecMap
+
 
 
 class InstanceCatalogMeta(type):
@@ -49,10 +51,10 @@ class InstanceCatalogMeta(type):
 
         # add methods for default columns
         for default in cls.default_columns:
-	    setattr(cls, 'get_%s'%(default[0]),
-                    lambda self, value=default[1], type=default[2]:\
-                        np.array([value for i in
-                                  xrange(len(self._current_chunk))],
+            setattr(cls, 'default_%s'%(default[0]),
+                lambda self, value=default[1], type=default[2]:\
+                        numpy.array([value for i in
+                                 xrange(len(self._current_chunk))],
                                  dtype=type))
 
         # store compound columns and check for collisions
@@ -103,7 +105,7 @@ class _MimicRecordArray(object):
 
     def __getitem__(self, column):
         self.referenced_columns.add(column)
-        return np.empty(0)
+        return numpy.empty(0)
 
     def __len__(self):
         return 0
@@ -179,7 +181,6 @@ class InstanceCatalog(object):
     catalog_type = 'instance_catalog'
     column_outputs = 'all'
     default_columns = []
-    refIdCol = None
     default_formats = {'S':'%s', 'f':'%.4f', 'i':'%i'}
     override_formats = {}
     transformations = {}
@@ -192,7 +193,7 @@ class InstanceCatalog(object):
         """Return a new catalog of the given catalog type"""
         if catalog_type in cls.registry:
             return cls.registry[catalog_type](*args, **kwargs)
-        elif issubclass(catalog_type, InstanceCatalog):
+        elif inspect.isclass(catalog_type) and issubclass(catalog_type, InstanceCatalog):
             return catalog_type(*args, **kwargs)
         else:
             raise ValueError("Unrecognized catalog_type: %s"
@@ -224,6 +225,8 @@ class InstanceCatalog(object):
         self.obs_metadata = obs_metadata
         self.constraint = constraint
         self.specFileMap = specFileMap
+
+        self.refIdCol = self.db_obj.getIdColKey()
         
         if self.column_outputs == 'all':
             self.column_outputs = self._all_columns()
@@ -239,7 +242,9 @@ class InstanceCatalog(object):
         """
         columns = set(self.db_obj.columnMap.keys())
         getfuncs = [func for func in dir(self) if func.startswith('get_')]
+        defaultfuncs = [func for func in dir(self) if func.startswith('default')]
         columns.update([func.strip('get_') for func in getfuncs])
+        columns.update([func.strip('default_') for func in defaultfuncs])
         return list(columns)
 
     def _set_current_chunk(self, chunk, column_cache=None):
@@ -261,9 +266,14 @@ class InstanceCatalog(object):
             col = self.column_by_name(col_name)
 
         db_required_columns = list(self._current_chunk.referenced_columns)
+
+        default_columns_set = set(el[0] for el in self.default_columns)
+        required_columns_set = set(db_required_columns)
+        required_columns_with_defaults = default_columns_set&required_columns_set
+
         self._set_current_chunk(saved_chunk, saved_cache)
 
-        return db_required_columns
+        return db_required_columns, list(required_columns_with_defaults)
 
     def column_by_name(self, column_name, *args, **kwargs):
         """Given a column name, return the column data"""
@@ -274,20 +284,31 @@ class InstanceCatalog(object):
             getfunc = self._compound_column_names[column_name]
             compound_column = getattr(self, getfunc)(*args, **kwargs)
             return compound_column[column_name]
-        else:
+        elif isinstance(self._current_chunk, _MimicRecordArray) or column_name in self._current_chunk.dtype.names:
             return self._current_chunk[column_name]
+        else:
+            return getattr(self, "default_%s"%column_name)(*args, **kwargs)
 
     def _check_requirements(self):
         """Check whether the supplied db_obj has the necessary column names"""
         missing_cols = []
+        self._active_columns = []
+        cols, defaults = self.db_required_columns()
 
-        for col in self.db_required_columns():
-            if col not in self.db_obj.columnMap.keys():
+        for col in cols:
+            if col not in self.db_obj.columnMap:
                 missing_cols.append(col)
+            else:
+                self._active_columns.append(col)
 
         if len(missing_cols) > 0:
-            raise ValueError("Required columns missing from database: "
-                             "({0})".format(', '.join(missing_cols)))
+            nodefault = []
+            for col in missing_cols:
+                if col not in defaults:
+                    nodefault.append(col)
+            if len(nodefault) > 0:
+                raise ValueError("Required columns missing from database: "
+                                 "({0})".format(', '.join(nodefault)))
 
     def _make_line_template(self, chunk_cols):
         templ_list = []
@@ -316,16 +337,18 @@ class InstanceCatalog(object):
 
     def write_catalog(self, filename, chunk_size=None,
                       write_header=True, write_mode='w'):
-        db_required_columns = self.db_required_columns()
+        db_required_columns, required_columns_with_defaults = self.db_required_columns()
         template = None
 
         file_handle = open(filename, write_mode)
         if write_header:
             self.write_header(file_handle)
 
-        query_result = self.db_obj.query_columns(obs_metadata=self.obs_metadata,
+        query_result = self.db_obj.query_columns(colnames=self._active_columns,
+                                                 obs_metadata=self.obs_metadata,
                                                  constraint=self.constraint,
                                                  chunk_size=chunk_size)
+
         for chunk in query_result:
             self._set_current_chunk(chunk)
             chunk_cols = [self.transformations[col](self.column_by_name(col))
@@ -343,154 +366,45 @@ class InstanceCatalog(object):
                                    for line in zip(*chunk_cols))
         
         file_handle.close()
+    
+    def iter_catalog(self, chunk_size=None):
+        db_required_columns = self.db_required_columns()
 
-    def export_structured_array(self):
-        pass
+        query_result = self.db_obj.query_columns(colnames=self._active_columns,
+                                                 obs_metadata=self.obs_metadata,
+                                                 constraint=self.constraint,
+                                                 chunk_size=chunk_size)
+        for chunk in query_result:
+            self._set_current_chunk(chunk)
+            chunk_cols = [self.transformations[col](self.column_by_name(col))
+                          if col in self.transformations.keys() else
+                          self.column_by_name(col)
+                          for col in self.iter_column_names()]
+            for line in zip(*chunk_cols):
+                yield line
 
+    def iter_catalog_chunks(self, chunk_size=None):
+        db_required_columns = self.db_required_columns()
 
-#----------------------------------------------------------------------
-# Some example uses
+        query_result = self.db_obj.query_columns(colnames=self._active_columns,
+                                                 obs_metadata=self.obs_metadata,
+                                                 constraint=self.constraint,
+                                                 chunk_size=chunk_size)
+        for chunk in query_result:
+            self._set_current_chunk(chunk)
+            chunk_cols = [self.transformations[col](self.column_by_name(col))
+                          if col in self.transformations.keys() else
+                          self.column_by_name(col)
+                          for col in self.iter_column_names()]
+            chunkColMap = dict([(col, i) for i,col in enumerate(self.iter_column_names())])
+            yield chunk_cols, chunkColMap
 
-
-class PhotometryMixin(object):
-    def get_ug_color(self):
-        u = self.column_by_name('umag')
-        g = self.column_by_name('gmag')
-        return u - g
-
-    def get_gr_color(self):
-        g = self.column_by_name('gmag')
-        r = self.column_by_name('rmag')
-        return g - r
-
-
-class AstrometryMixin(object):
-    @compound('ra_corr', 'dec_corr')
-    def get_points(self):
-        return (self.column_by_name('raJ2000') + 0.001,
-                self.column_by_name('decJ2000') - 0.001)
-
-
-class RefCatalogGalaxyBase(InstanceCatalog, AstrometryMixin, PhotometryMixin):
-    catalog_type = 'ref_catalog_galaxy'
-    column_outputs = ['objectId', 'meanRaJ2000', 'meanDecJ2000', 'redshift',
-                      'majorAxisDisk', 'minorAxisDisk', 'positionAngleDisk',
-                      'majorAxisBulge', 'minorAxisBulge', 'positionAngleBulge']
-    default_formats = {'S':'%s', 'f':'%.5g', 'i':'%i'}
-    refIdCol = 'galid'
-    transformations = {'raJ2000':np.degrees, 'decJ2000':np.degrees, 'majorAxisDisk':np.degrees, 'majorAxisDisk':np.degrees,
-                       'positionAngleDisk':np.degrees, 'majorAxisBulge':np.degrees, 'minorAxisBulge':np.degrees, 
-                       'positionAngleBulge':np.degrees}
-
-    def get_objectId(self): 
+    def get_objId(self):
         return self.column_by_name(self.refIdCol)
 
-    def get_meanRaJ2000(self):
-        return self.column_by_name('raJ2000')
-
-    def get_meanDecJ2000(self):
-        return self.column_by_name('decJ2000')
-
-
-class TrimCatalogPoint(InstanceCatalog, AstrometryMixin, PhotometryMixin):
-    catalog_type = 'trim_catalog_POINT'
-    column_outputs = ['prefix', 'objectid','raTrim','decTrim','magNorm','sedFilepath',
-                      'redshift','shear1','shear2','kappa','raOffset','decOffset',
-                      'spatialmodel','galacticExtinctionModel','galacticAv','galacticRv',
-                      'internalExtinctionModel']
-    default_columns = [('redshift', 0., float),('shear1', 0., float), ('shear2', 0., float), 
-                       ('kappa', 0., float), ('raOffset', 0., float), ('decOffset', 0., float), 
-                       ('galacticExtinctionModel', 'CCM', (str,3)), ('galacticRv', 3.1, float),
-                       ('internalExtinctionModel', 'none', (str,4))]
-    refIdCol = 'id'
-    default_formats = {'S':'%s', 'f':'%.9g', 'i':'%i'}
-    delimiter = " "
-    override_formats = {'objectid':'%.2f'}
-    filtMap = {'u':'0', 'g':'1', 'r':'2', 'i':'3', 'z':'4', 'y':'5'}
-    transformations = {'raTrim':np.degrees, 'decTrim':np.degrees}
-    headerTransformations = {'Unrefracted_RA':np.degrees, 'Unrefracted_Dec':np.degrees, 
-                       'Opsim_moonra':np.degrees, 'Opsim_moondec':np.degrees, 
-                       'Opsim_rotskypos':np.degrees, 'Opsim_rottelpos':np.degrees, 
-                       'Opsim_sunalt':np.degrees, 'Opsim_moonalt':np.degrees, 
-                       'Opsim_dist2moon':np.degrees, 'Opsim_altitude':np.degrees, 
-                       'Opsim_azimuth':np.degrees, 'Opsim_filter':filtMap.get}
-
-    def get_prefix(self):
-        chunkiter = xrange(len(self.column_by_name(self.refIdCol)))
-        return np.array(['object' for i in chunkiter], dtype=(str, 6))
-    def get_sedFilepath(self):
-        return np.array([self.specFileMap[k] 
-                         for k in self.column_by_name('sedFilename')])
-    def get_objectid(self):
-        return self.column_by_name(self.refIdCol)+self.column_by_name('objTypeId')
-    def get_objTypeId(self):
-        #We want the object type to end up in the decimal portion, so:
-        fac = 10**(int(np.log10(self.db_obj.getObjectTypeId())) + 1)
-        chunkiter = xrange(len(self._current_chunk))
-        return np.array([float(self.db_obj.getObjectTypeId())/fac
-                         for i in chunkiter], dtype=float)
-    def get_raTrim(self):
-        return self.column_by_name('ra_corr')
-    def get_decTrim(self):
-        return self.column_by_name('dec_corr')
-    def get_spatialmodel(self):
-        chunkiter = xrange(len(self._current_chunk))
-        return np.array([self.db_obj.getSpatialModel() for i in
-               chunkiter], dtype=(str, 7))
-    def write_header(self, file_handle):
-        md = self.obs_metadata.metadata
-        if md is None:
-            raise RuntimeError("Can't write a trim without a full metadata dictionary")
-        for k in md:
-            typ = md[k][1].kind
-            templ = self.default_formats.get(typ, None)
-            if templ is None:
-                warnings.warn("Using raw formatting for column '%s' "
-                              "with type %s" % (col, chunk_cols[i].dtype))
-                templ = "%s"
-            templ = "%s "+templ
-            if k in self.headerTransformations.keys():
-                outval = self.headerTransformations[k](md[k][0])
-            else:
-                outval = md[k][0]
-            file_handle.write(templ%(k, outval)+"\n") 
-
-
-
-class TrimCatalogZPoint(TrimCatalogPoint, AstrometryMixin, PhotometryMixin):
-    catalog_type = 'trim_catalog_ZPOINT'
-    column_outputs = ['prefix', 'objectid','raTrim','decTrim','magNorm','sedFilepath',
-                      'redshift','shear1','shear2','kappa','raOffset','decOffset',
-                      'spatialmodel','galacticExtinctionModel','galacticAv','galacticRv',
-                      'internalExtinctionModel']
-    default_columns = [('shear1', 0., float), ('shear2', 0., float), ('kappa', 0., float),
-                       ('raOffset', 0., float), ('decOffset', 0., float), 
-                       ('galacticExtinctionModel', 'CCM', (str,3)), ('galacticRv', 3.1, float),
-                       ('internalExtinctionModel', 'none', (str,4))]
-    refIdCol = 'galtileid'
-    default_formats = {'S':'%s', 'f':'%.9g', 'i':'%i'}
-    delimiter = " "
-    override_formats = {'objectid':'%.2f'}
-    transformations = {'raTrim':np.degrees, 'decTrim':np.degrees}
-
-    def get_galacticAv(self):
-        chunkiter = xrange(len(self._current_chunk))
-        #This is a HACK until we get the real values in here
-        return np.array([0.1 for i in chunkiter], dtype=float)
-
-class TrimCatalogSersic2D(TrimCatalogZPoint, AstrometryMixin, PhotometryMixin):
-    catalog_type = 'trim_catalog_SERSIC2D'
-    column_outputs = ['prefix', 'objectid','raTrim','decTrim','magNorm','sedFilepath',
-                      'redshift','shear1','shear2','kappa','raOffset','decOffset',
-                      'spatialmodel','majorAxis','minorAxis','positionAngle','sindex',
-                      'galacticExtinctionModel','galacticAv','galacticRv',
-                      'internalExtinctionModel','internalAv','internalRv']
-    default_columns = [('shear1', 0., float), ('shear2', 0., float), ('kappa', 0., float),
-                       ('raOffset', 0., float), ('decOffset', 0., float), 
-                       ('galacticExtinctionModel', 'CCM', (str,3)), ('galacticRv', 3.1, float)]
-    refIdCol = 'galtileid'
-    default_formats = {'S':'%s', 'f':'%.9g', 'i':'%i'}
-    delimiter = " "
-    override_formats = {'objectid':'%.2f'}
-    transformations = {'raTrim':np.degrees, 'decTrim':np.degrees, 'positionAngle':np.degrees, 
-            'majorAxis':np.degrees, 'minorAxis':np.degrees} 
+    def get_uniqueId(self, nShift=10):
+        arr = self.column_by_name(self.refIdCol)
+        if len(arr) > 0:
+            return numpy.left_shift(self.column_by_name(self.refIdCol), nShift) + self.db_obj.getObjectTypeId()
+        else:
+            return arr
