@@ -1,7 +1,7 @@
 import scipy
 from lsst.sims.catalogs.generation.db import\
         DBObject, ObservationMetaData
-from lsst.sims.catalogs.measures.instance import\
+from lsst.sims.catalogs.measures.example_utils.exampleCatalogDefinitions import\
         RefCatalogGalaxyBase
 class RefCatalogGalaxyTiled(RefCatalogGalaxyBase):
     catalog_type = 'ref_catalog_galaxy_tiled'
