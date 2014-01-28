@@ -188,6 +188,50 @@ class astrometryUnitTest(unittest.TestCase):
         self.assertAlmostEqual(output[1][1],1.038086165642298164e+00,6)
         self.assertAlmostEqual(output[0][2],7.740864769302191473e-01,6) 
         self.assertAlmostEqual(output[1][2],2.758053025017753179e-01,6)
+
+    def testApplyMeanApparentPlace(self):
+    
+        ra=numpy.zeros((3),dtype=float)
+        dec=numpy.zeros((3),dtype=float)
+        pm_ra=numpy.zeros((3),dtype=float)
+        pm_dec=numpy.zeros((3),dtype=float)
+        parallax=numpy.zeros((3),dtype=float)
+        v_rad=numpy.zeros((3),dtype=float)
+        
+    
+        ra[0]=2.549091039839124218e+00 
+        dec[0]=5.198752733024248895e-01 
+        pm_ra[0]=-8.472633255615005918e-05 
+        pm_dec[0]=-5.618517146980475171e-07 
+        parallax[0]=9.328946209650547383e-02 
+        v_rad[0]=3.060308412186171267e+02
+
+        ra[1]=8.693375673649429425e-01 
+        dec[1]=1.038086165642298164e+00 
+        pm_ra[1]=-5.848962163813087908e-05 
+        pm_dec[1]=-3.000346282603337522e-05 
+        parallax[1]=5.392364722571952457e-02 
+        v_rad[1]=4.785834687356999098e+02
+        
+        ra[2]=7.740864769302191473e-01 
+        dec[2]=2.758053025017753179e-01 
+        pm_ra[2]=5.904070507320858615e-07 
+        pm_dec[2]=-2.958381482198743105e-05 
+        parallax[2]=2.172865273161764255e-02 
+        v_rad[2]=-3.225459751425886452e+02
+        
+        ep=2.001040286039033845e+03 
+        mjd=2.018749109074271473e+03
+        
+        output=self.cat.applyMeanApparentPlace(ra,dec,pm_ra,pm_dec,parallax,v_rad,Epoch0=ep,MJD=mjd)
+        
+        self.assertAlmostEqual(output[0][0],2.595192097244795271e+00,6) 
+        self.assertAlmostEqual(output[1][0],5.087810324442909593e-01,6)
+        self.assertAlmostEqual(output[0][1],9.258751911081868347e-01,6) 
+        self.assertAlmostEqual(output[1][1],1.054386141274341826e+00,6)
+        self.assertAlmostEqual(output[0][2],8.071508504312236987e-01,6)
+        self.assertAlmostEqual(output[1][2],2.893239687902559587e-01,6)
+
         
         
 def suite():
