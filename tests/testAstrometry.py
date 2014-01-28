@@ -53,6 +53,16 @@ class astrometryUnitTest(unittest.TestCase):
         self.assertAlmostEqual(output[1][2],-6.367345775760760995e-01,7) 
         
 
+    def testAngularSeparation(self):
+        arg1 = 7.853981633974482790e-01 
+        arg2 = 3.769911184307751517e-01 
+        arg3 = 5.026548245743668986e+00 
+        arg4 = -6.283185307179586232e-01
+        
+        output=self.cat.angularSeparation(arg1,arg2,arg3,arg4)
+        
+        self.assertAlmostEqual(output,1.522426604701640152e+00,7)
+
 def suite():
     utilsTests.init()
     suites = []
