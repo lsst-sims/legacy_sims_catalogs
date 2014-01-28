@@ -225,12 +225,12 @@ class astrometryUnitTest(unittest.TestCase):
         
         output=self.cat.applyMeanApparentPlace(ra,dec,pm_ra,pm_dec,parallax,v_rad,Epoch0=ep,MJD=mjd)
         
-        self.assertAlmostEqual(output[0][0],2.595192097244795271e+00,6) 
-        self.assertAlmostEqual(output[1][0],5.087810324442909593e-01,6)
-        self.assertAlmostEqual(output[0][1],9.258751911081868347e-01,6) 
-        self.assertAlmostEqual(output[1][1],1.054386141274341826e+00,6)
-        self.assertAlmostEqual(output[0][2],8.071508504312236987e-01,6)
-        self.assertAlmostEqual(output[1][2],2.893239687902559587e-01,6)
+        self.assertAlmostEqual(output[0][0],2.525858337335585180e+00,6) 
+        self.assertAlmostEqual(output[1][0],5.309044018653210628e-01,6)
+        self.assertAlmostEqual(output[0][1],8.297492370691380570e-01,6) 
+        self.assertAlmostEqual(output[1][1],1.037400063009288331e+00,6)
+        self.assertAlmostEqual(output[0][2],7.408639821342507537e-01,6) 
+        self.assertAlmostEqual(output[1][2],2.703229189890907214e-01,6)
 
         
         
