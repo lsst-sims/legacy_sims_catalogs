@@ -31,11 +31,26 @@ class astrometryUnitTest(unittest.TestCase):
         self.assertAlmostEqual(output[2],-3.090169943749476178e-1,7)
 
     def testCartesianToSpherical(self):
-         xyz=numpy.zeros((3,3),dtype=float)
+        xyz=numpy.zeros((3,3),dtype=float)
          
-         -1.528397655830016078e-03 -1.220314328441649110e+00 -1.209496845057127512e+00
--2.015391452804179195e+00 3.209255728096233051e-01 -2.420049632697228503e+00
--1.737023855580406284e+00 -9.876134719050078115e-02 -2.000636201137401038e+00
+        xyz[0][0]=-1.528397655830016078e-03 
+        xyz[0][1]=-1.220314328441649110e+00 
+        xyz[0][2]=-1.209496845057127512e+00
+        xyz[1][0]=-2.015391452804179195e+00 
+        xyz[1][1]=3.209255728096233051e-01 
+        xyz[1][2]=-2.420049632697228503e+00
+        xyz[2][0]=-1.737023855580406284e+00 
+        xyz[2][1]=-9.876134719050078115e-02 
+        xyz[2][2]=-2.000636201137401038e+00
+        
+        output=self.cat.cartesianToSpherical(xyz)
+        
+        self.assertAlmostEqual(output[0][0],-1.571554689325760146e+00,7)
+        self.assertAlmostEqual(output[1][0],-7.113500771245374610e-01,7) 
+        self.assertAlmostEqual(output[0][1],2.884429715637988778e+00,7)
+        self.assertAlmostEqual(output[1][1],-7.811044420646305608e-02,7)
+        self.assertAlmostEqual(output[0][2],-2.034269388180792504e+00,7)
+        self.assertAlmostEqual(output[1][2],-6.367345775760760995e-01,7) 
         
 
 def suite():
