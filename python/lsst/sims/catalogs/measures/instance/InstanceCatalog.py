@@ -6,6 +6,7 @@ from functools import wraps
 from collections import OrderedDict
 from .fileMaps import defaultSpecMap
 
+from lsst.sims.catalogs.measures.astrometry import Astrometry
 
 
 class InstanceCatalogMeta(type):
