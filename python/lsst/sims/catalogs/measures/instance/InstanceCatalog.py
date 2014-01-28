@@ -8,7 +8,6 @@ from .fileMaps import defaultSpecMap
 
 from lsst.sims.catalogs.measures.astrometry.Astrometry import Astrometry
 
-
 class InstanceCatalogMeta(type):
     """Meta class for registering instance catalogs.
 
@@ -220,6 +219,9 @@ class InstanceCatalog(Astrometry):
                 yield column
 
     def __init__(self, db_obj, obs_metadata=None, constraint=None, specFileMap=defaultSpecMap):
+        
+        super(InstanceCatalog,self).__init__()
+        
         self.db_obj = db_obj
         self._current_chunk = None
 
@@ -292,6 +294,7 @@ class InstanceCatalog(Astrometry):
 
     def _check_requirements(self):
         """Check whether the supplied db_obj has the necessary column names"""
+
         missing_cols = []
         self._active_columns = []
         cols, defaults = self.db_required_columns()
