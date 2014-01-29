@@ -306,6 +306,32 @@ class astrometryUnitTest(unittest.TestCase):
         self.assertAlmostEqual(output[1][2],2.758055401087299296e-01,6) 
         self.assertAlmostEqual(output[2][2],5.271912536356709866e-01,6) 
         self.assertAlmostEqual(output[3][2],5.479759580847959555e+00,6)
+
+
+    def testApplyApparentToTrim(self):
+        
+        ra=numpy.zeros((3),dtype=float)
+        dec=numpy.zeros((3),dtype=float)
+    
+        ra[0]=2.549091039839124218e+00 
+        dec[0]=5.198752733024248895e-01
+        ra[1]=4.346687836824714712e-01 
+        dec[1]=-5.190430828211490821e-01
+        ra[2]=7.740864769302191473e-01 
+        dec[2]=2.758053025017753179e-01
+        
+        mjd=2.018749109074271473e+03
+        
+        output=self.cat.applyApparentToTrim(ra,dec,MJD=mjd,altAzHr=True)        
+        
+        self.assertAlmostEqual(output[0][0],2.549091783674975353e+00,6)
+        self.assertAlmostEqual(output[1][0],5.198746844679964507e-01,6)
+        self.assertAlmostEqual(output[0][1],4.346695674418772359e-01,6)
+        self.assertAlmostEqual(output[1][1],-5.190436610150490626e-01,6)
+        self.assertAlmostEqual(output[0][2],7.740875471580924705e-01,6)
+        self.assertAlmostEqual(output[1][2],2.758055401087299296e-01,6)
+        self.assertAlmostEqual(output[2],5.271914342095551653e-01,6)
+        self.assertAlmostEqual(output[3],5.479759402150099490e+00,6)
         
 def suite():
     utilsTests.init()
