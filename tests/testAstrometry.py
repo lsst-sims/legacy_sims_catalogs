@@ -332,6 +332,27 @@ class astrometryUnitTest(unittest.TestCase):
         self.assertAlmostEqual(output[1][2],2.758055401087299296e-01,6)
         self.assertAlmostEqual(output[2],5.271914342095551653e-01,6)
         self.assertAlmostEqual(output[3],5.479759402150099490e+00,6)
+
+    def testRefractionCoefficients(self):
+        output=self.cat.refractionCoefficients()
+        
+        self.assertAlmostEqual(output[0],2.295817926320665320e-04,6) 
+        self.assertAlmostEqual(output[1],-2.385964632924575670e-07,6)
+
+    def testApplyRefraction(self):
+        coeffs=self.cat.refractionCoefficients()
+       
+        output=self.cat.applyRefraction(0.25*numpy.pi,coeffs[0],coeffs[1])
+        
+        self.assertAlmostEqual(output,7.851689251070859132e-01,6)
+
+    def testCalcLast(self):
+            
+        arg1=2.004031374869656474e+03 
+        arg2=10
+        
+        output=self.cat.calcLast(arg1,arg2)
+        self.assertAlmostEqual(output,1.662978602873423029e+00,5) 
         
 def suite():
     utilsTests.init()
