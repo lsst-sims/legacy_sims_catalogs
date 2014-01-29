@@ -353,6 +353,23 @@ class astrometryUnitTest(unittest.TestCase):
         
         output=self.cat.calcLast(arg1,arg2)
         self.assertAlmostEqual(output,1.662978602873423029e+00,5) 
+
+    def testEquatorialToHorizontal(self):
+        arg1=2.549091039839124218e+00 
+        arg2=5.198752733024248895e-01 
+        arg3=2.004031374869656474e+03
+        output=self.cat.equatorialToHorizontal(arg1,arg2,arg3)
+        
+        self.assertAlmostEqual(output[0],4.486633480937949336e-01,5) 
+        self.assertAlmostEqual(output[1],5.852620488358430961e+00,5)
+
+    def testParalacticAngle(self):
+        arg1=1.507444663929565554e+00 
+        arg2=-4.887258694875344922e-01
+        
+        output=self.cat.paralacticAngle(arg1,arg2)
+        
+        self.assertAlmostEqual(output,1.381600229503358701e+00,6)
         
 def suite():
     utilsTests.init()
