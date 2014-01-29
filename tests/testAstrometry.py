@@ -26,11 +26,22 @@ class astrometryUnitTest(unittest.TestCase):
         arg1=2.19911485751
         arg2=5.96902604182
         output=self.cat.sphericalToCartesian(arg1,arg2)
-        self.assertAlmostEqual(output[0],-5.590169943749473402e-1,7)
-        self.assertAlmostEqual(output[1],7.694208842938133897e-1,7)
-        self.assertAlmostEqual(output[2],-3.090169943749476178e-1,7)
+        
+        vv=numpy.zeros((3),dtype=float)
+        vv[0]=numpy.cos(arg2)*numpy.cos(arg1)
+        vv[1]=numpy.cos(arg2)*numpy.sin(arg1)
+        vv[2]=numpy.sin(arg2)
+
+        self.assertAlmostEqual(output[0],vv[0],7)
+        self.assertAlmostEqual(output[1],vv[1],7)
+        self.assertAlmostEqual(output[2],vv[2],7)
 
     def testCartesianToSpherical(self):
+        """
+        Note that xyz[i][j] is the ith component of the jth vector
+        
+        Each column of xyz is a vector
+        """
         xyz=numpy.zeros((3,3),dtype=float)
          
         xyz[0][0]=-1.528397655830016078e-03 
@@ -45,13 +56,19 @@ class astrometryUnitTest(unittest.TestCase):
         
         output=self.cat.cartesianToSpherical(xyz)
         
-        self.assertAlmostEqual(output[0][0],-1.571554689325760146e+00,7)
-        self.assertAlmostEqual(output[1][0],-7.113500771245374610e-01,7) 
-        self.assertAlmostEqual(output[0][1],2.884429715637988778e+00,7)
-        self.assertAlmostEqual(output[1][1],-7.811044420646305608e-02,7)
-        self.assertAlmostEqual(output[0][2],-2.034269388180792504e+00,7)
-        self.assertAlmostEqual(output[1][2],-6.367345775760760995e-01,7) 
+        vv=numpy.zeros((3),dtype=float)
         
+        for i in range(3):
+
+            rr=numpy.sqrt(xyz[0][i]*xyz[0][i]+xyz[1][i]*xyz[1][i]+xyz[2][i]*xyz[2][i])
+
+            vv[0]=rr*numpy.cos(output[1][i])*numpy.cos(output[0][i])
+            vv[1]=rr*numpy.cos(output[1][i])*numpy.sin(output[0][i])
+            vv[2]=rr*numpy.sin(output[1][i])
+    
+            for j in range(3):
+                self.assertAlmostEqual(vv[j],xyz[j][i],7)
+
 
     def testAngularSeparation(self):
         arg1 = 7.853981633974482790e-01 
@@ -61,7 +78,7 @@ class astrometryUnitTest(unittest.TestCase):
         
         output=self.cat.angularSeparation(arg1,arg2,arg3,arg4)
         
-        self.assertAlmostEqual(output,2.162615946398791955e+00,7)
+        self.assertAlmostEqual(output,2.162615946398791955e+00,10)
     
     def testRotationMatrixFromVectors(self):
         v1=numpy.zeros((3),dtype=float)
