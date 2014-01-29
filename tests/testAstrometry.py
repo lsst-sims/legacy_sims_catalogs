@@ -233,13 +233,19 @@ class astrometryUnitTest(unittest.TestCase):
         self.assertAlmostEqual(output[1][2],2.703229189890907214e-01,6)
 
     def testApplyMeanObservedPlace(self):
+        """
+        Note: this routine depends on Aopqk which fails if zenith distance
+        is too great (or, at least, it won't warn you if the zenith distance
+        is greater than pi/2, in which case answers won't make sense)
+        """
+    
         ra=numpy.zeros((3),dtype=float)
         dec=numpy.zeros((3),dtype=float)
     
         ra[0]=2.549091039839124218e+00 
         dec[0]=5.198752733024248895e-01
-        ra[1]=8.693375673649429425e-01 
-        dec[1]=1.038086165642298164e+00
+        ra[1]=4.346687836824714712e-01 
+        dec[1]=-5.190430828211490821e-01
         ra[2]=7.740864769302191473e-01 
         dec[2]=2.758053025017753179e-01
         
@@ -247,13 +253,11 @@ class astrometryUnitTest(unittest.TestCase):
         
         output=self.cat.applyMeanObservedPlace(ra,dec,MJD=mjd)
         
-        print "output ",output
-        
         self.assertAlmostEqual(output[0][0],2.547475965605183745e+00,6) 
         self.assertAlmostEqual(output[1][0],5.187045152602967057e-01,6)
-        
-        self.assertAlmostEqual(output[0][1],8.738390089168487362e-01,6) 
-        self.assertAlmostEqual(output[1][1],1.034067016522897120e+00,6)
+       
+        self.assertAlmostEqual(output[0][1],4.349858626308809040e-01,6) 
+        self.assertAlmostEqual(output[1][1],-5.191213875880701378e-01,6)
         
         self.assertAlmostEqual(output[0][2],7.743528611421227614e-01,6) 
         self.assertAlmostEqual(output[1][2],2.755070101670137328e-01,6)
@@ -265,22 +269,24 @@ class astrometryUnitTest(unittest.TestCase):
         self.assertAlmostEqual(output[2][0],1.168920017932007643e-01,6) 
         self.assertAlmostEqual(output[3][0],8.745379535264000692e-01,6)
         
-        self.assertAlmostEqual(output[0][1],8.738390089168487362e-01,6) 
-        self.assertAlmostEqual(output[1][1],1.034067016522897120e+00,6) 
-        self.assertAlmostEqual(output[2][1],-5.948805693190830496e-02,6) 
-        self.assertAlmostEqual(output[3][1],5.988366621756272323e+00,6)
+        self.assertAlmostEqual(output[0][1],4.349858626308809040e-01,6) 
+        self.assertAlmostEqual(output[1][1],-5.191213875880701378e-01,6) 
+        self.assertAlmostEqual(output[2][1],6.766119585479937193e-01,6) 
+        self.assertAlmostEqual(output[3][1],4.433969998336554141e+00,6)
         
         self.assertAlmostEqual(output[0][2],7.743528611421227614e-01,6) 
         self.assertAlmostEqual(output[1][2],2.755070101670137328e-01,6) 
         self.assertAlmostEqual(output[2][2],5.275840601437552513e-01,6)
         self.assertAlmostEqual(output[3][2],5.479759580847959555e+00,6)
         
-        output=self.cat.applyMeanObservedPlace(ra,dec,MJD=mjd,includRefraction=False)
+        output=self.cat.applyMeanObservedPlace(ra,dec,MJD=mjd,includeRefraction=False)
         
         self.assertAlmostEqual(output[0][0],2.549091783674975353e+00,6) 
         self.assertAlmostEqual(output[1][0],5.198746844679964507e-01,6)
-        self.assertAlmostEqual(output[0][1],8.693397492149510519e-01,6) 
-        self.assertAlmostEqual(output[1][1],1.038086829486380980e+00,6)
+        
+        self.assertAlmostEqual(output[0][1],4.346695674418772359e-01,6) 
+        self.assertAlmostEqual(output[1][1],-5.190436610150490626e-01,6)
+        
         self.assertAlmostEqual(output[0][2],7.740875471580924705e-01,6) 
         self.assertAlmostEqual(output[1][2],2.758055401087299296e-01,6)
         
@@ -290,11 +296,13 @@ class astrometryUnitTest(unittest.TestCase):
         self.assertAlmostEqual(output[1][0],5.198746844679964507e-01,6) 
         self.assertAlmostEqual(output[2][0],1.150652107618796299e-01,6) 
         self.assertAlmostEqual(output[3][0],8.745379535264000692e-01,6)
-        self.assertAlmostEqual(output[0][1],8.693397492149510519e-01,6) 
-        self.assertAlmostEqual(output[1][1],1.038086829486380980e+00,6) 
-        self.assertAlmostEqual(output[2][1],-6.411578322072165881e-02,6) 
-        self.assertAlmostEqual(output[3][1],5.988366621756272323e+00,6)
-        self.assertAlmostEqual(output[0][2],7.740875471580924705e-01,6) 
+        
+        self.assertAlmostEqual(output[0][1],4.346695674418772359e-01,6) 
+        self.assertAlmostEqual(output[1][1],-5.190436610150490626e-01,6) 
+        self.assertAlmostEqual(output[2][1],6.763265401447272618e-01,6) 
+        self.assertAlmostEqual(output[3][1],4.433969998336554141e+00,6)
+        
+        self.assertAlmostEqual(output[0][2],7.740875471580924705e-01,6)      
         self.assertAlmostEqual(output[1][2],2.758055401087299296e-01,6) 
         self.assertAlmostEqual(output[2][2],5.271912536356709866e-01,6) 
         self.assertAlmostEqual(output[3][2],5.479759580847959555e+00,6)
