@@ -6,6 +6,8 @@ from functools import wraps
 from collections import OrderedDict
 from .fileMaps import defaultSpecMap
 
+from lsst.sims.catalogs.measures.astrometry.Site import Site
+
 class InstanceCatalogMeta(type):
     """Meta class for registering instance catalogs.
 
@@ -216,9 +218,14 @@ class InstanceCatalog(object):
             else:
                 yield column
 
-    def __init__(self, db_obj, obs_metadata=None, constraint=None, specFileMap=defaultSpecMap):
+    def __init__(self, db_obj, obs_metadata=None, constraint=None, specFileMap=defaultSpecMap, site=None):
         
         super(InstanceCatalog,self).__init__()
+        
+        if site == None:
+            self.site=Site()
+        else:
+            self.site=site
         
         self.db_obj = db_obj
         self._current_chunk = None
