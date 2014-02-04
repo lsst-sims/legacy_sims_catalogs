@@ -21,6 +21,7 @@ import lsst.utils.tests as utilsTests
 from lsst.sims.catalogs.measures.instance import InstanceCatalog, compound, cached
 from lsst.sims.catalogs.generation.db import DBObject, ObservationMetaData
 from lsst.sims.catalogs.measures.astrometry.Astrometry import Astrometry
+from lsst.sims.catalogs.measures.astrometry.Site import Site
 
 class testCatalog(InstanceCatalog,Astrometry):
     """
@@ -36,9 +37,31 @@ class astrometryUnitTest(unittest.TestCase):
 
     obsMD = DBObject.from_objid('opsim3_61')
     obs_metadata=obsMD.getObservationMetaData(88544919, 0.1, makeCircBounds=True)
-    cat=testCatalog(obsMD,obs_metadata=obs_metadata)
+    cat=testCatalog(obsMD,obs_metadata=obs_metadata)    
     tol=1.0e-5
-
+    
+    def testPassingOfSite(self):
+        """
+        Test that site information is correctly passed to 
+        InstanceCatalog objects
+        """
+        
+        testSite=Site(longitude=10.0,latitude=20.0,height=4000.0, \
+              xPolar=2.4, yPolar=1.4, meanTemperature=314.0, \
+              meanPressure=800.0,meanHumidity=0.9, lapseRate=0.01)
+        
+        cat2=testCatalog(self.obsMD,obs_metadata=self.obs_metadata,site=testSite)
+        
+        self.assertEqual(cat2.site.longitude,10.0)
+        self.assertEqual(cat2.site.latitude,20.0)
+        self.assertEqual(cat2.site.height,4000.0)
+        self.assertEqual(cat2.site.xPolar,2.4)
+        self.assertEqual(cat2.site.yPolar,1.4)
+        self.assertEqual(cat2.site.meanTemperature,314.0)
+        self.assertEqual(cat2.site.meanPressure,800.0)
+        self.assertEqual(cat2.site.meanHumidity,0.9)
+        self.assertEqual(cat2.site.lapseRate,0.01)
+    
     def testSphericalToCartesian(self):
         arg1=2.19911485751
         arg2=5.96902604182
