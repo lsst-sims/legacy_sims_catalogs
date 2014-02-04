@@ -20,8 +20,9 @@ import lsst.utils.tests as utilsTests
 
 from lsst.sims.catalogs.measures.instance import InstanceCatalog, compound, cached
 from lsst.sims.catalogs.generation.db import DBObject, ObservationMetaData
+from lsst.sims.catalogs.measures.astrometry.Astrometry import Astrometry
 
-class testCatalog(InstanceCatalog):
+class testCatalog(InstanceCatalog,Astrometry):
     """
     This generates a catalog class that has the bare minimum of features
     to be able to run the methods from the Astrometry mixin
