@@ -28,7 +28,7 @@ class testCatalog(InstanceCatalog,Astrometry):
     to be able to run the methods from the Astrometry mixin
     """
     catalog_type = 'MISC'
-    default_columns=[('Opsim_expmjd',5000.0,float)]
+    default_columns=[('Opsim_expmjd',5000.0,float)]    
     def db_required_columns(self):
         return ['Unrefracted_Dec'],['Opsim_altitude']
 
