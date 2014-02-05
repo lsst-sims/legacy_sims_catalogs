@@ -182,22 +182,6 @@ class astrometryUnitTest(unittest.TestCase):
         self.assertAlmostEqual(output[0][2],7.412362765815005972e-01,6)
         self.assertAlmostEqual(output[1][2],2.662034339930458571e-01,6)
     
-    def testApplyProperMotionException(self):
-        """
-        Make sure that applyProperMotion throws an exception
-        if parallax<0.00045
-        """
-        
-        ra=[numpy.pi/4.0]
-        dec=[numpy.pi/4.0]
-        pm_ra=[0.0001]
-        pm_dec=[0.0001]
-        parallax=[0.0002]
-        v_rad=[10.0]
-        
-        self.assertRaises(ValueError,self.cat.applyProperMotion,\
-                          ra,dec,pm_ra,pm_dec,parallax,v_rad)
-    
     def testApplyProperMotion(self):
     
         ra=numpy.zeros((3),dtype=float)
