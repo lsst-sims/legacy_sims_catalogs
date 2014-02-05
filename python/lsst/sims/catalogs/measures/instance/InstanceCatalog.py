@@ -220,8 +220,6 @@ class InstanceCatalog(object):
 
     def __init__(self, db_obj, obs_metadata=None, constraint=None, specFileMap=defaultSpecMap, site=None):
         
-        super(InstanceCatalog,self).__init__()
-        
         if site == None:
             self.site=Site()
         else:
