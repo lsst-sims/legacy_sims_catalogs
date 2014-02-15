@@ -140,5 +140,28 @@ for(ii=0;ii<n_sed;ii++){
     fclose(output);
 }
 
+double fnu,flux;
+int ifilter,ised;
+
+output=fopen("test_magnitudes.dat","w");
+
+for(ifilter=0;ifilter<nfilters;ifilter++){
+    for(ised=0;ised<n_sed;ised++){
+        
+
+        
+        flux=0.0;
+        for(i=0;i<el;i++){
+            fnu=sed[ised][i]*lambda[i]*lambda[i]*NM2M*ERGSETC2JANSKY/LIGHTSPEED;
+            flux+=fnu*phi[ifilter][i]*lambda_step;
+        }
+        
+        fprintf(output,"filter %s sed %d mag %.18e\n",
+        filters[ifilter],ised,-2.5*log(flux)/log(10.0)+8.9);
+        
+    }
+}
+
+fclose(output);
 
 }
