@@ -60,11 +60,14 @@ class photometryUnitTest(unittest.TestCase):
             magDictControl[self.filterlist[i]]=magnitudes
         
         for i in range(len(self.sedNames)):
-            print self.sedDict[self.sedNames[i]]
-        
             magDict = self.testObject.manyMagCalc_dict(self.sedDict[self.sedNames[i]],phiArray,wavelenstep,self.bandpassDict,self.filterlist)    
             for j in range(len(self.filterlist)):
-                self.assertAlmostEqual(magDictControl[self.filterlist[j]][i],magDict[self.filterlist[j]],7)
+                #use self.assertAlmostEqual on the ratio of the two because the number of decimal places accepted
+                #by self.assertAlmostEqual starts counting from the decimal, not from the zeroth significant figure,
+                #so 100 and 100.01 are not equal to 3 decimal places, even though they are equal to one part in
+                #10^3
+                
+                self.assertAlmostEqual(magDictControl[self.filterlist[j]][i]/magDict[self.filterlist[j]],1.0,5)
             
         
 def suite():
