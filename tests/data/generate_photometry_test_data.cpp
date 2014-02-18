@@ -9,7 +9,7 @@
 
 main(){
 
-double lambda_min=300.0,lambda_max=1150.0,lambda_step=0.3;
+double lambda_min=300.0,lambda_max=1150.0,lambda_step=0.1;
 
 int nfilters=5,ii;
 
@@ -25,19 +25,19 @@ sprintf(filters[4],"z");
 
 double mu[5];
 
-mu[0]=lambda_min+200.0*lambda_step;
-mu[1]=mu[0]+300.0*lambda_step;
-mu[2]=mu[1]+700.0*lambda_step;
-mu[3]=mu[2]+700.0*lambda_step;
-mu[4]=mu[3]+500.0*lambda_step;
+mu[0]=lambda_min+600.0*lambda_step;
+mu[1]=mu[0]+900.0*lambda_step;
+mu[2]=mu[1]+2100.0*lambda_step;
+mu[3]=mu[2]+2100.0*lambda_step;
+mu[4]=mu[3]+1500.0*lambda_step;
 
 double sigma[5];
 
-sigma[0]=100.0*lambda_step;
-sigma[1]=200.0*lambda_step;
-sigma[2]=200.0*lambda_step;
-sigma[3]=150.0*lambda_step;
-sigma[4]=200.0*lambda_step;
+sigma[0]=300.0*lambda_step;
+sigma[1]=600.0*lambda_step;
+sigma[2]=600.0*lambda_step;
+sigma[3]=450.0*lambda_step;
+sigma[4]=600.0*lambda_step;
 
 double _sb,norm,_phi,ll;
 
