@@ -14,18 +14,22 @@ class photometryTestClass(Photometry):
 
 class photometryUnitTest(unittest.TestCase):
 
+    testObject=photometryTestClass()
+    directory="data/"
+    sedNames=["test_sed_0.dat"]
+    for i in range(9):
+        name="test_sed_%d.dat" % (i+1)
+        sedNames.append(name)
+        
+    sedDict=testObject.loadSeds(sedNames,directory)   
+   
+    filterRoot="test_bandpass_"
+    filterlist=('u','g','r','i','z')
+    bandpassDict=testObject.loadBandpasses(filterlist=filterlist,dataDir=directory,filterroot=filterRoot)
+    
     def testMagnitudes(self):
-        
-        testObject=photometryTestClass()
-        
-        
-        directory="data/"
-        seds=["test_sed_0.dat"]
-        for i in range(9):
-            name="test_sed_%d.dat" % (i+1)
-            seds.append(name)
-        
-        sedDict=testObject.loadSeds(seds,directory)
+        pass
+
         
 
 
