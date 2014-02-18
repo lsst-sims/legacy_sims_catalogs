@@ -9,7 +9,7 @@
 
 main(){
 
-double lambda_min=100.0,lambda_max=30000.0,lambda_step=10.0;
+double lambda_min=300.0,lambda_max=1150.0,lambda_step=0.3;
 
 int nfilters=5,ii;
 
@@ -66,7 +66,7 @@ for(ii=0;ii<nfilters;ii++){
     output=fopen(bname,"w");
     
     i=0;
-    for(ll=lambda_min;ll<lambda_max+1.0;ll+=lambda_step){
+    for(ll=lambda_min;ll<lambda_max+0.1*lambda_step;ll+=lambda_step){
         if(i>=el){
             printf("WARNING i overstepped sb %d %d %e %e\n",i,el,ll,lambda_max);
             exit(1);
@@ -86,7 +86,7 @@ for(ii=0;ii<nfilters;ii++){
 
     output=fopen(aname,"w");
     i=0;
-    for(ll=lambda_min;ll<lambda_max+1.0;ll+=lambda_step){
+    for(ll=lambda_min;ll<lambda_max+0.1*lambda_step;ll+=lambda_step){
         if(i>=el){
             printf("WARNING i overstepped el %d %d %e %e\n",i,el,ll,lambda_max);
             exit(1);
@@ -116,18 +116,18 @@ for(ii=0;ii<n_sed;ii++){
     
     output=fopen(sedname,"w");
     i=0;
-    for(ll=lambda_min;ll<lambda_max+1.0;ll+=lambda_step){
+    for(ll=lambda_min;ll<lambda_max+0.1*lambda_step;ll+=lambda_step){
         if(i>=el){
             printf("WARNING i overstepped in sed %d %d\n",i,el);
         }
         
         if(ii<5){
-            sed[ii][i]=1.6+atan((ll-ii*3000.0)/2000.0);
+            sed[ii][i]=1.6+atan((ll-ii*170.0-300.0)/70.0);
         }
         else{
             //sed[ii][i]=2.0*exp(-ll/(ii*500.0))+0.5
             
-            sed[ii][i]=1.6-atan((ll-exp(1.9*log(ii-4.0))*1000.0)/2000.0);
+            sed[ii][i]=1.6-atan((ll-exp(1.9*log(ii-4.0))*70.0)/100.0);
             
         }  
         

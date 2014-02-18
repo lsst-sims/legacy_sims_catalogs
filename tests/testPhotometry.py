@@ -27,8 +27,14 @@ class photometryUnitTest(unittest.TestCase):
     filterlist=('u','g','r','i','z')
     bandpassDict=testObject.loadBandpasses(filterlist=filterlist,dataDir=directory,filterroot=filterRoot)
     
-    def testMagnitudes(self):
-        pass
+    def testPhiArray(self):
+        
+        phiArray, wavelenstep = self.testObject.setupPhiArray_dict(self.bandpassDict,self.filterlist)
+        
+        print phiArray
+        print wavelenstep
+        print phiArray.size
+        print self.bandpassDict['u'].wavelen
 
         
 
