@@ -25,16 +25,16 @@ sprintf(filters[4],"z");
 
 double mu[5];
 
-mu[0]=lambda_min+600.0*lambda_step;
-mu[1]=mu[0]+900.0*lambda_step;
-mu[2]=mu[1]+2100.0*lambda_step;
+mu[0]=lambda_min+700.0*lambda_step;
+mu[1]=mu[0]+1200.0*lambda_step;
+mu[2]=mu[1]+1000.0*lambda_step;
 mu[3]=mu[2]+2100.0*lambda_step;
-mu[4]=mu[3]+1500.0*lambda_step;
+mu[4]=mu[3]+500.0*lambda_step;
 
 double sigma[5];
 
-sigma[0]=300.0*lambda_step;
-sigma[1]=600.0*lambda_step;
+sigma[0]=200.0*lambda_step;
+sigma[1]=250.0*lambda_step;
 sigma[2]=600.0*lambda_step;
 sigma[3]=450.0*lambda_step;
 sigma[4]=600.0*lambda_step;
@@ -75,7 +75,7 @@ for(ii=0;ii<nfilters;ii++){
         _sb=exp(-0.5*(ll-mu[ii])*(ll-mu[ii])/(sigma[ii]*sigma[ii]));
         norm+=lambda_step*_sb/ll;
         
-        fprintf(output,"%.18e %.18e\n",ll,_sb);
+        fprintf(output,"%.6e %.18e\n",ll,_sb);
         sb[ii][i]=_sb;
         lambda[i]=ll;
         i++;
@@ -95,7 +95,7 @@ for(ii=0;ii<nfilters;ii++){
         _sb=exp(-0.5*(ll-mu[ii])*(ll-mu[ii])/(sigma[ii]*sigma[ii]));
         _phi=_sb/(ll*norm);
         
-        fprintf(output,"%.18e %.18e\n",ll,_phi);
+        fprintf(output,"%.6e %.18e\n",ll,_phi);
         phi[ii][i]=_phi;
         i++;
         
@@ -131,7 +131,7 @@ for(ii=0;ii<n_sed;ii++){
             
         }  
         
-        fprintf(output,"%.18e %.18e\n",ll,sed[ii][i]);
+        fprintf(output,"%.6e %.18e\n",ll,sed[ii][i]);
         
         i++;
         
