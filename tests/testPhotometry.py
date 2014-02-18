@@ -41,6 +41,31 @@ class photometryUnitTest(unittest.TestCase):
                 phi = float(values[1])
                 self.assertAlmostEqual(phi,phiArray[i][j],7)    
             phiFile.close()
+
+    def testManyMagCalc_dict(self):
+        
+        controlMagFile=open(self.directory+'test_magnitudes.dat',"r")
+        lines=controlMagFile.readlines()
+        controlMagFile.close()
+        
+        phiArray, wavelenstep = self.testObject.setupPhiArray_dict(self.bandpassDict,self.filterlist)
+        
+        magDictControl={}
+        for i in range(len(self.filterlist)):
+            magnitudes=[]
+            for j in range(len(self.sedNames)):
+                values  = lines[i*len(self.sedNames)+j].split()
+                magnitudes.append(float(values[5]))
+                
+            magDictControl[self.filterlist[i]]=magnitudes
+        
+        for i in range(len(self.sedNames)):
+            print self.sedDict[self.sedNames[i]]
+        
+            magDict = self.testObject.manyMagCalc_dict(self.sedDict[self.sedNames[i]],phiArray,wavelenstep,self.bandpassDict,self.filterlist)    
+            for j in range(len(self.filterlist)):
+                self.assertAlmostEqual(magDictControl[self.filterlist[j]][i],magDict[self.filterlist[j]],7)
+            
         
 def suite():
     utilsTests.init()
