@@ -31,8 +31,6 @@ class photometryUnitTest(unittest.TestCase):
         
         phiArray, wavelenstep = self.testObject.setupPhiArray_dict(self.bandpassDict,self.filterlist)
         
-        maxerr=-1.0
-        
         for i in range(len(self.filterlist)):
             phiName=self.directory+'test_phi_'+self.filterlist[i]+'.dat'
             phiFile=open(phiName,"r")
@@ -41,28 +39,9 @@ class photometryUnitTest(unittest.TestCase):
                 values = lines[j].split()
                 wavelen = float(values[0])
                 phi = float(values[1])
-                
-                err=numpy.fabs(phi-phiArray[i][j])
-                if(err>maxerr):
-                    maxerr=err
-                    worst_i=i
-                    worst_j=j
-                    #print maxerr,worst_i,worst_j,phi,phiArray[i][j],\
-                    #self.bandpassDict[self.filterlist[i]].sb[j]
-                
-                
-                if j == 0:
-                    print self.filterlist[i],self.bandpassDict[self.filterlist[i]].wavelen[j],self.bandpassDict[self.filterlist[i]].sb[j]
-                    
-                self.assertAlmostEqual(phi,phiArray[i][j],3)    
-            
+                self.assertAlmostEqual(phi,phiArray[i][j],7)    
             phiFile.close()
         
-        print "worst ",worst_i,worst_j
-
-        
-
-
 def suite():
     utilsTests.init()
     suites = []
