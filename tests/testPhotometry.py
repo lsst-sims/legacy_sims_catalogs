@@ -58,7 +58,7 @@ class photometryUnitTest(unittest.TestCase):
                 magnitudes.append(float(values[5]))
                 
             magDictControl[self.filterlist[i]]=magnitudes
-        
+            
         for i in range(len(self.sedNames)):
             magDict = self.testObject.manyMagCalc_dict(self.sedDict[self.sedNames[i]],phiArray,wavelenstep,self.bandpassDict,self.filterlist)    
             for j in range(len(self.filterlist)):
