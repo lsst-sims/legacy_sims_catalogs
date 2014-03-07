@@ -39,9 +39,9 @@ class sfdTestDB(DBObject):
                #('ra_corr',None),
                #('dec_corr',None)]
 
-class sfdTestCatalog(InstanceCatalog,Astrometry):
+class sfdTestCatalog(InstanceCatalog,Astrometry,Photometry):
     catalog_type = 'sfd_test'
-    column_outputs=['id','raJ2000','decJ2000','ra_corr','dec_corr']
+    column_outputs=['id','raJ2000','decJ2000','ra_corr','dec_corr','EBV']
 
 sfd_db=sfdTestDB()
 print 'key is ',sfd_db.getIdColKey()
