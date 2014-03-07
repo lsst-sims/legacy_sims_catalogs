@@ -43,7 +43,7 @@ from lsst.sims.catalogs.measures.instance import InstanceCatalog, compound, cach
 from lsst.sims.catalogs.generation.db import DBObject, ObservationMetaData
 from lsst.sims.catalogs.measures.astrometry.Astrometry import Astrometry
 from lsst.sims.catalogs.measures.astrometry.Site import Site
-
+'''
 class testCatalog(InstanceCatalog,Astrometry):
     """
     This generates a catalog class that has the bare minimum of features
@@ -53,6 +53,17 @@ class testCatalog(InstanceCatalog,Astrometry):
     default_columns=[('Opsim_expmjd',5000.0,float)]    
     def db_required_columns(self):
         return ['Unrefracted_Dec'],['Opsim_altitude']
+'''
+class testCatalog(InstanceCatalog, Astrometry):
+    catalog_type = 'MISC'
+    column_outputs = ['prefix', 'objectid','raTrim','decTrim','mag_norm','sedFilename',
+                      'redshift','shear1','shear2','kappa','raOffset','decOffset',
+                      'spatialmodel','galacticExtinctionModel','galacticAv','galacticRv',
+                      'internalExtinctionModel']
+    default_columns = []
+    default_columns.append(('galacticAv', 0.1, float))
+    default_columns.append(('sedFilename', 'flat.dat', (str,8)))
+
 
 class astrometryUnitTest(unittest.TestCase):
 
