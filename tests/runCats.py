@@ -11,8 +11,6 @@ if __name__ == '__main__':
     obsMD = DBObject.from_objid('opsim3_61')
     obs_metadata = obsMD.getObservationMetaData(88544919, 0.1, makeCircBounds=True)
     
-    print "sfd ",obs_metadata.metadata['Opsim_expmjd']
-    
     obs_metadata_gal = ObservationMetaData(circ_bounds=dict(ra=.0,
                                                         dec=.0,
                                                         radius=0.1))
