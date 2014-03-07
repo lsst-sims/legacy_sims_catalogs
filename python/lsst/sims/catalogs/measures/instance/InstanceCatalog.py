@@ -6,7 +6,7 @@ from functools import wraps
 from collections import OrderedDict
 from .fileMaps import defaultSpecMap
 
-from lsst.sims.catalogs.measures.astrometry.Site import Site
+from .Site import Site
 
 class InstanceCatalogMeta(type):
     """Meta class for registering instance catalogs.
