@@ -12,8 +12,9 @@ from lsst.sims.catalogs.measures.astrometry.Astrometry import Astrometry
 from lsst.sims.catalogs.measures.astrometry.Site import Site
 
 from lsst.sims.catalogs.measures.photometry.photUtils import Photometry
+from lsst.sims.catalogs.measures.photometry.Variability import Variability
 
-class testCatalog(InstanceCatalog,Astrometry,Photometry):
+class testCatalog(InstanceCatalog,Astrometry,Photometry,Variability):
     catalog_type = 'MISC'
     default_columns=[('expmjd',5000.0,float)]
     def db_required_columns(self):
@@ -26,9 +27,19 @@ class photometryUnitTest(unittest.TestCase):
     rrly = DBObject.from_objid('rrly')
     obsMD = DBObject.from_objid('opsim3_61')
     obs_metadata = obsMD.getObservationMetaData(88544919, 0.1, makeCircBounds = True)
-    galcat = testCatalog(galaxy,obs_metadata = obs_metadata)
+
     rrlycat = testCatalog(rrly,obs_metadata = obs_metadata)
-               
+    
+    def testGalaxyVariability(self):   
+                
+        galcat = testCatalog(self.galaxy,obs_metadata = self.obs_metadata)
+        rows = self.galaxy.query_columns(['varParamStr'], constraint = 'VarParamStr is not NULL')
+        rows = rows.next()
+        print "len ",len(rows)
+        for i in range(20):
+            #print "i ",i
+            mags=galcat.applyVariability(rows[i]['varParamStr'])
+            #print mags
         
 def suite():
     utilsTests.init()

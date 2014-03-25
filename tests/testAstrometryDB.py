@@ -10,6 +10,7 @@ import sys
 import lsst.utils.tests as utilsTests
 
 from lsst.sims.catalogs.measures.photometry.photUtils import Photometry
+from lsst.sims.catalogs.measures.photometry.Variability import Variability
 from lsst.sims.catalogs.measures.astrometry.Astrometry import Astrometry
 from lsst.sims.catalogs.generation.db import DBObject, ObservationMetaData
 from lsst.sims.catalogs.measures.instance import InstanceCatalog
@@ -67,7 +68,7 @@ class sfdTestDB(DBObject):
 
 
 
-class sfdTestCatalog(InstanceCatalog,Astrometry,Photometry):
+class sfdTestCatalog(InstanceCatalog,Astrometry,Photometry,Variability):
     catalog_type = 'sfd_test'
     column_outputs=['id','raJ2000','decJ2000','ra_corr','dec_corr','EBV']
 

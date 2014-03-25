@@ -241,6 +241,26 @@ class InstanceCatalog(object):
         self._column_cache = {}
         
         #below are variables to cache the light curves of variability models
+        self.variabilityMethods={}
+        if(hasattr(self,"applyMflare")):
+            self.variabilityMethods['applyMflare'] = self.applyMflare
+        if(hasattr(self,"applyRRly")):
+            self.variabilityMethods['applyRRly'] = self.applyRRly
+        if(hasattr(self,"applyCepheid")):
+            self.variabilityMethods['applyCepheid'] = self.applyCepheid
+        if(hasattr(self,"applyEb")):
+            self.variabilityMethods['applyEb'] = self.applyEb
+        if(hasattr(self,"applyMicrolens")):
+            self.variabilityMethods['applyMicrolens'] = self.applyMicrolens
+        if(hasattr(self,"applyAgn")):
+            self.variabilityMethods['applyAgn'] = self.applyAgn
+        if(hasattr(self,"applyMicrolensing")):
+            self.variabilityMethods['applyMicrolensing'] = self.applyMicrolensing
+        if(hasattr(self,"applyAmcvn")):
+            self.variabilityMethods['applyAmcvn'] = self.applyAmcvn
+        if(hasattr(self,"applyBHMicrolens")):
+            self.variabilityMethods['applyBHMicrolens'] = self.applyBHMicrolens
+        
         self.variabilityLcCache = {}
         self.variabilityCache = variabilityCache
         try:
