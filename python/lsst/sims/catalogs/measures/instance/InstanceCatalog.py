@@ -1,5 +1,4 @@
 """Instance Catalog"""
-import os
 import warnings
 import numpy 
 import inspect

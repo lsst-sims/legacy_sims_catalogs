@@ -40,6 +40,13 @@ class photometryUnitTest(unittest.TestCase):
             #print "i ",i
             mags=galcat.applyVariability(rows[i]['varParamStr'])
             #print mags
+
+    def testRRlyVariability(self):
+        rrlycat = testCatalog(self.rrly,obs_metadata = self.obs_metadata)
+        rows = self.rrly.query_columns(['varParamStr'], constraint = 'VarParamStr is not NULL')
+        rows = rows.next()
+        for i in range(20):
+            mags=rrlycat.applyVariability(rows[i]['varParamStr'])
         
 def suite():
     utilsTests.init()
