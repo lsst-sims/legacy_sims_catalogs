@@ -1,4 +1,5 @@
 """Instance Catalog"""
+import os
 import warnings
 import numpy 
 import inspect
@@ -245,7 +246,8 @@ class InstanceCatalog(object):
         try:
             self.variabilityDataDir = os.path.join(os.environ.get("CAT_SHARE_DATA"),"data","LightCurves")
         except:
-            raise("No directory specified and $CAT_SHARE_DATA is undefined")
+            print "No directory specified and $CAT_SHARE_DATA is undefined"
+            raise
 
         self._check_requirements()
 

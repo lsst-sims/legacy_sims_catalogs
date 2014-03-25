@@ -76,6 +76,11 @@ print 'key is ',sfd_db.getIdColKey()
 sfd_cat=sfdTestCatalog(sfd_db)
 sfd_cat.write_catalog("sfd_catalog_output.sav")
 
+#query = sfd_db.query_columns(['raJ2000'])
+#sfd_cat._set_current_chunk(query)
+#col=sfd_cat.column_by_name('raJ2000')
+
+#print col
 
 """
 sfd_stars=sfdStarClass()
