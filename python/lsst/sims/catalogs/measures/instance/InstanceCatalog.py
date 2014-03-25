@@ -218,7 +218,7 @@ class InstanceCatalog(object):
             else:
                 yield column
 
-    def __init__(self, db_obj, obs_metadata=None, constraint=None, specFileMap=defaultSpecMap, site=None):
+    def __init__(self, db_obj, obs_metadata=None, constraint=None, specFileMap=defaultSpecMap, site=None, variabilityCache=False):
         
         if site == None:
             self.site=Site()
@@ -238,6 +238,14 @@ class InstanceCatalog(object):
             self.column_outputs = self._all_columns()
 
         self._column_cache = {}
+        
+        #below are variables to cache the light curves of variability models
+        self.variabilityLcCache = {}
+        self.variabilityCache = variabilityCache
+        try:
+            self.variabilityDataDir = os.path.join(os.environ.get("CAT_SHARE_DATA"),"data","LightCurves")
+        except:
+            raise("No directory specified and $CAT_SHARE_DATA is undefined")
 
         self._check_requirements()
 
