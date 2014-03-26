@@ -70,11 +70,19 @@ class sfdTestDB(DBObject):
 
 class sfdTestCatalog(InstanceCatalog,Astrometry,Photometry,Variability):
     catalog_type = 'sfd_test'
-    column_outputs=['id','raJ2000','decJ2000','ra_corr','dec_corr','EBV']
+    column_outputs=['id','raJ2000','decJ2000','ra_corr','dec_corr','EBV','sfd_u','sfd_g','sfd_r','sfd_i','sfd_z']
 
-sfd_db=sfdTestDB()
+sfd_db=DBObject.from_objid('rrly')
 print 'key is ',sfd_db.getIdColKey()
+
+#results=sfd_db.query_columns(['sedFilename'])
+#results=results.next()
+#for i in range(10):
+#    print results[i]['sedFilename']
+
+
 sfd_cat=sfdTestCatalog(sfd_db)
+
 sfd_cat.write_catalog("sfd_catalog_output.sav")
 
 #query = sfd_db.query_columns(['raJ2000'])
