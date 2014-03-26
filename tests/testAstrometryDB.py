@@ -81,7 +81,7 @@ print 'key is ',sfd_db.getIdColKey()
 #    print results[i]['sedFilename']
 
 
-sfd_cat=sfdTestCatalog(sfd_db)
+sfd_cat=sfdTestCatalog(sfd_db,constraint='TOP 100')
 
 sfd_cat.write_catalog("sfd_catalog_output.sav")
 

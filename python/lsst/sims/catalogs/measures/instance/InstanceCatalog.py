@@ -218,7 +218,7 @@ class InstanceCatalog(object):
             else:
                 yield column
 
-    def __init__(self, db_obj, obs_metadata=None, constraint=None, specFileMap=defaultSpecMap, site=None, variabilityCache=False):
+    def __init__(self, db_obj, obs_metadata=None, constraint=None, specFileMap=defaultSpecMap, site=None):
         
         if site == None:
             self.site=Site()
