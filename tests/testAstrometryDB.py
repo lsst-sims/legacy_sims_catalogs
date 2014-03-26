@@ -10,7 +10,7 @@ import sys
 import lsst.utils.tests as utilsTests
 
 from lsst.sims.catalogs.measures.photometry.EBV import EBVmixin
-from lsst.sims.catalogs.measures.photometry.photUtils import Photometry
+from lsst.sims.catalogs.measures.photometry.Photometry import Photometry
 from lsst.sims.catalogs.measures.photometry.Variability import Variability
 from lsst.sims.catalogs.measures.astrometry.Astrometry import Astrometry
 from lsst.sims.catalogs.generation.db import DBObject, ObservationMetaData
