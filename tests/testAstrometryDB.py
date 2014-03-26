@@ -16,6 +16,8 @@ from lsst.sims.catalogs.generation.db import DBObject, ObservationMetaData
 from lsst.sims.catalogs.measures.instance import InstanceCatalog
 import lsst.sims.catalogs.generation.utils.testUtils as tu
 
+from lsst.sims.catalogs.measures.example_utils.exampleCatalogDefinitions import GalaxyPhotometry
+
 """
 class sfdStarClass(DBObject):
     objid = 'msstars'
@@ -72,7 +74,7 @@ class sfdTestCatalog(InstanceCatalog,Astrometry,Photometry,Variability):
     catalog_type = 'sfd_test'
     column_outputs=['id','raJ2000','decJ2000','ra_corr','dec_corr','EBV','lsst_u','lsst_g','lsst_r','lsst_i','lsst_z','lsst_y']
 
-sfd_db=DBObject.from_objid('rrly')
+sfd_db=DBObject.from_objid('galaxyBase')
 print 'key is ',sfd_db.getIdColKey()
 
 #results=sfd_db.query_columns(['sedFilename'])
@@ -81,13 +83,14 @@ print 'key is ',sfd_db.getIdColKey()
 #    print results[i]['sedFilename']
 
 
-obs_metadata_pointed=ObservationMetaData(circ_bounds=dict(ra=200., dec=-30, radius=1.))
-sfd_cat=sfdTestCatalog(sfd_db,obs_metadata=obs_metadata_pointed)
+obs_metadata_pointed=ObservationMetaData(circ_bounds=dict(ra=200., dec=-30, radius=10.))
+#sfd_cat=sfdTestCatalog(sfd_db,obs_metadata=obs_metadata_pointed)
 
+sfd_cat=GalaxyPhotometry(sfd_db)
 
 print "and now to write"
 
-sfd_cat.write_catalog("sfd_catalog_output.sav")
+sfd_cat.write_catalog("sfd_catalog_output.sav",chunk_size=20)
 
 #query = sfd_db.query_columns(['raJ2000'])
 #sfd_cat._set_current_chunk(query)
