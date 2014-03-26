@@ -84,7 +84,6 @@ print 'key is ',sfd_db.getIdColKey()
 obs_metadata_pointed=ObservationMetaData(circ_bounds=dict(ra=200., dec=-30, radius=1.))
 sfd_cat=sfdTestCatalog(sfd_db,obs_metadata=obs_metadata_pointed)
 
-sfd_cat.initializePhotometry(sedDir='/Users/noldor/physics/lsststackW2013/cat_data/data/starSED/kurucz')
 
 print "and now to write"
 
