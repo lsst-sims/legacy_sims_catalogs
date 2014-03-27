@@ -73,7 +73,7 @@ class sfdTestDB(DBObject):
 
 class sfdTestCatalog(InstanceCatalog,Astrometry,Photometry,EBVmixin,Variability):
     catalog_type = 'sfd_test'
-    column_outputs=['id','raJ2000','decJ2000','ra_corr','dec_corr','EBV','lsst_u','lsst_g','lsst_r','lsst_i','lsst_z','lsst_y']
+    column_outputs=['id','ra_corr','dec_corr','lsst_u','lsst_g','lsst_r','lsst_i','lsst_z','lsst_y','objectTypeId']
 
 sfd_db=DBObject.from_objid('rrly')
 print 'key is ',sfd_db.getIdColKey()
