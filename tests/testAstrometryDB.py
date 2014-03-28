@@ -10,7 +10,7 @@ import sys
 import lsst.utils.tests as utilsTests
 
 from lsst.sims.catalogs.measures.photometry.EBV import EBVmixin
-from lsst.sims.catalogs.measures.photometry.Photometry import PhotometryStars
+from lsst.sims.catalogs.measures.photometry.Photometry import PhotometryStars, PhotometryGalaxies
 from lsst.sims.catalogs.measures.photometry.Variability import Variability
 from lsst.sims.catalogs.measures.astrometry.Astrometry import Astrometry
 from lsst.sims.catalogs.generation.db import DBObject, ObservationMetaData
@@ -19,79 +19,36 @@ import lsst.sims.catalogs.generation.utils.testUtils as tu
 
 from lsst.sims.catalogs.measures.example_utils.exampleCatalogDefinitions import GalaxyPhotometry
 
-"""
-class sfdStarClass(DBObject):
-    objid = 'msstars'
-    tableid = 'stars'
-    idColKey = 'id'
-    raColName = 'ra'
-    decColName = 'decl'
-    objectTypeId = 4
-    spatialModel = 'POINT'
-    dbAddress = 'sqlite:///testDatabase.db'
-    dbDefaultValues = {'varsimobjid':-1, 'runid':-1, 'ismultiple':-1, 'run':-1,
-                       'runobjid':-1}
-    #These types should be matched to the database.
-    #: Default map is float.  If the column mapping is the same as the column name, None can be specified
-    columns = [('id',None, int),
-               ('raJ2000', 'ra*%f'%(numpy.pi/180.)),
-               ('decJ2000', 'decl*%f'%(numpy.pi/180.)),
-               #('glon', 'gal_l*%f'%(numpy.pi/180.)),
-               #('glat', 'gal_b*%f'%(numpy.pi/180.)),
-               #('magNorm', '(-2.5*log(flux_scale)/log(10.)) - 18.402732642'),
-               #('properMotionRa', '(mudecl/(1000.*3600.))*PI()/180.'),
-               #('properMotionDec', '(mura/(1000.*3600.))*PI()/180.'),
-               #('galacticAv', 'CONVERT(float, ebv*3.1)'),
-               #('radialVelocity', 'vrad'),
-               ('variabilityParameters', 'varParamStr', str, 256),
-               ('sedFilename', 'sedfilename', unicode, 40)]
 
-"""
-
-class sfdTestDB(DBObject):
-    objid = 'teststars'
-    tableid = 'stars'
-    idColKey = 'id'
-    #Make this implausibly large?  
-    appendint = 1023
-    dbAddress = 'sqlite:///testDatabase.db'
-    raColName = 'ra'
-    decColName = 'decl'
-    spatialModel = 'POINT'
-    columns = [('id', None, int),
-               ('raJ2000', 'ra*%f'%(numpy.pi/180.)),
-               ('decJ2000', 'decl*%f'%(numpy.pi/180.)),
-               ('umag', None),
-               ('gmag', None),
-               ('rmag', None),
-               ('imag', None),
-               ('zmag', None),
-               ('ymag', None),
-               ('mag_norm', None)]
-
-
-
-class sfdTestCatalog(InstanceCatalog,Astrometry,EBVmixin,Variability,PhotometryStars):
+class sfdTestStars(InstanceCatalog,Astrometry,EBVmixin,Variability,PhotometryStars):
     catalog_type = 'sfd_test'
     column_outputs=['id','ra_corr','dec_corr','magNorm','lsst_u','lsst_g','lsst_r','lsst_i','lsst_z','lsst_y']
+
+class sfdTestGalaxies(InstanceCatalog,Astrometry,EBVmixin,Variability,PhotometryGalaxies):
+    catalog_type = 'sfd_test_galaxies'
+    column_outputs=['galid','ra_corr','dec_corr','uRecalc', 'gRecalc', 'rRecalc', 'iRecalc', 'zRecalc', 'yRecalc',\
+        'sedFilenameBulge','uBulge', 'gBulge', 'rBulge', 'iBulge', 'zBulge', 'yBulge',\
+        'sedFilenameDisk','uDisk', 'gDisk', 'rDisk', 'iDisk', 'zDisk', 'yDisk',\
+        'sedFilenameAgn','uAgn', 'gAgn', 'rAgn', 'iAgn', 'zAgn', 'yAgn']
+
 
 sfd_db=DBObject.from_objid('rrly')
 print 'key is ',sfd_db.getIdColKey()
 
-#results=sfd_db.query_columns(['sedFilename'])
-#results=results.next()
-#for i in range(10):
-#    print results[i]['sedFilename']
-
-
 obs_metadata_pointed=ObservationMetaData(circ_bounds=dict(ra=200., dec=-30, radius=1.))
-sfd_cat=sfdTestCatalog(sfd_db,obs_metadata=obs_metadata_pointed)
+sfd_cat=sfdTestStars(sfd_db,obs_metadata=obs_metadata_pointed)
 
 #sfd_cat=GalaxyPhotometry(sfd_db)
 
 print "and now to write"
 
-sfd_cat.write_catalog("sfd_catalog_output.sav")
+sfd_cat.write_catalog("sfd_stellar_output.sav")
+
+sfd_gal=DBObject.from_objid('galaxyBase')
+obs_metadata_pointed = ObservationMetaData(circ_bounds=dict(ra=0., dec=0, radius=0.01))
+
+gal_cat=sfdTestGalaxies(sfd_gal,obs_metadata_pointed)
+gal_cat.write_catalog("sfd_galaxy_output.sav")
 
 #query = sfd_db.query_columns(['raJ2000'])
 #sfd_cat._set_current_chunk(query)
