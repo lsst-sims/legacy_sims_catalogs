@@ -10,7 +10,7 @@ import sys
 import lsst.utils.tests as utilsTests
 
 from lsst.sims.catalogs.measures.photometry.EBV import EBVmixin
-#from lsst.sims.catalogs.measures.photometry.Photometry import Photometry
+from lsst.sims.catalogs.measures.photometry.Photometry import PhotometryStars
 from lsst.sims.catalogs.measures.photometry.Variability import Variability
 from lsst.sims.catalogs.measures.astrometry.Astrometry import Astrometry
 from lsst.sims.catalogs.generation.db import DBObject, ObservationMetaData
@@ -71,9 +71,9 @@ class sfdTestDB(DBObject):
 
 
 
-class sfdTestCatalog(InstanceCatalog,Astrometry,EBVmixin,Variability):
+class sfdTestCatalog(InstanceCatalog,Astrometry,EBVmixin,Variability,PhotometryStars):
     catalog_type = 'sfd_test'
-    column_outputs=['id','ra_corr','dec_corr']
+    column_outputs=['id','ra_corr','dec_corr','magNorm','lsst_u','lsst_g','lsst_r','lsst_i','lsst_z','lsst_y']
 
 sfd_db=DBObject.from_objid('rrly')
 print 'key is ',sfd_db.getIdColKey()
