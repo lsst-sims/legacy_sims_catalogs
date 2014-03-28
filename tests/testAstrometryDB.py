@@ -22,7 +22,7 @@ from lsst.sims.catalogs.measures.example_utils.exampleCatalogDefinitions import 
 
 class sfdTestStars(InstanceCatalog,Astrometry,EBVmixin,Variability,PhotometryStars):
     catalog_type = 'sfd_test'
-    column_outputs=['id','ra_corr','dec_corr','magNorm','lsst_u','lsst_g','lsst_r','lsst_i','lsst_z','lsst_y']
+    column_outputs=['id','ra_corr','dec_corr','magNorm','lsst_u','lsst_g','lsst_r','lsst_i','lsst_z','lsst_y','EBV']
 
 class sfdTestGalaxies(InstanceCatalog,Astrometry,EBVmixin,Variability,PhotometryGalaxies):
     catalog_type = 'sfd_test_galaxies'

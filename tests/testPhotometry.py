@@ -11,10 +11,9 @@ from lsst.sims.catalogs.generation.db import DBObject, ObservationMetaData
 from lsst.sims.catalogs.measures.astrometry.Astrometry import Astrometry
 from lsst.sims.catalogs.measures.astrometry.Site import Site
 
-from lsst.sims.catalogs.measures.photometry.photUtils import Photometry
 from lsst.sims.catalogs.measures.photometry.Variability import Variability
 
-class testCatalog(InstanceCatalog,Astrometry,Photometry,Variability):
+class testCatalog(InstanceCatalog,Astrometry,Variability):
     catalog_type = 'MISC'
     default_columns=[('expmjd',5000.0,float)]
     def db_required_columns(self):
