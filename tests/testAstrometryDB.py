@@ -17,7 +17,7 @@ from lsst.sims.catalogs.generation.db import DBObject, ObservationMetaData
 from lsst.sims.catalogs.measures.instance import InstanceCatalog
 import lsst.sims.catalogs.generation.utils.testUtils as tu
 
-from lsst.sims.catalogs.measures.example_utils.exampleCatalogDefinitions import GalaxyPhotometry
+#from lsst.sims.catalogs.measures.example_utils.exampleCatalogDefinitions import GalaxyPhotometry
 
 
 class sfdTestStars(InstanceCatalog,Astrometry,EBVmixin,Variability,PhotometryStars):
