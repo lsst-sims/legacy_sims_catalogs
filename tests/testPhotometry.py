@@ -73,7 +73,7 @@ class photometryUnitTest(unittest.TestCase):
     
     def testGalaxies(self):
         dbObj=DBObject.from_objid("galaxyBase")
-        obs_metadata_pointed=ObservationMetaData(circ_bounds=dict(ra=200., dec=-30, radius=0.01))
+        obs_metadata_pointed=ObservationMetaData(circ_bounds=dict(ra=0., dec=0., radius=0.01))
         test_cat=testGalaxies(dbObj,obs_metadata=obs_metadata_pointed)
         test_cat.write_catalog("testGalaxiesOutput.txt")
         
