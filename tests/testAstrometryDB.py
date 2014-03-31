@@ -17,6 +17,8 @@ from lsst.sims.catalogs.generation.db import DBObject, ObservationMetaData
 from lsst.sims.catalogs.measures.instance import InstanceCatalog
 import lsst.sims.catalogs.generation.utils.testUtils as tu
 
+from lsst.sims.catalogs.measures.example_utils.exampleCatalogDefinitions import TrimCatalogPoint
+
 #from lsst.sims.catalogs.measures.example_utils.exampleCatalogDefinitions import GalaxyPhotometry
 
 
@@ -44,11 +46,17 @@ print "and now to write"
 
 sfd_cat.write_catalog("sfd_stellar_output.sav")
 
+
 sfd_gal=DBObject.from_objid('galaxyBase')
 obs_metadata_pointed = ObservationMetaData(circ_bounds=dict(ra=0., dec=0, radius=0.01))
 
-gal_cat=sfdTestGalaxies(sfd_gal,obs_metadata_pointed)
+gal_cat=sfdTestGalaxies(sfd_gal,obs_metadata=obs_metadata_pointed)
 gal_cat.write_catalog("sfd_galaxy_output.sav")
+
+obsMD = DBObject.from_objid('opsim3_61')
+obs_metadata = obsMD.getObservationMetaData(88544919, 1.0, makeCircBounds = True)
+sfd_trim = TrimCatalogPoint(sfd_db,obs_metadata=obs_metadata)
+sfd_trim.write_catalog("sfd_trim_output.sav")
 
 #query = sfd_db.query_columns(['raJ2000'])
 #sfd_cat._set_current_chunk(query)
