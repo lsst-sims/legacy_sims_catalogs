@@ -16,7 +16,7 @@ from lsst.sims.photUtils.Photometry import PhotometryGalaxies, PhotometryStars
 from lsst.sims.photUtils.EBV import EBVmixin
 from lsst.sims.catalogs.measures.instance.Site import Site
 
-from lsst.sims.catalogs.measures.photometry.Variability import Variability
+from lsst.sims.photUtils.Variability import Variability
 
 class testCatalog(InstanceCatalog,Astrometry,Variability):
     catalog_type = 'MISC'
