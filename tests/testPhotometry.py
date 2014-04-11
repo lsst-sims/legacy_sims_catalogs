@@ -18,17 +18,68 @@ from lsst.sims.catalogs.measures.instance.Site import Site
 
 from lsst.sims.photUtils.Variability import Variability
 
-class testCatalog(InstanceCatalog,Astrometry,Variability):
+class testDefaults(object):
+
+    def get_proper_motion_ra(self):
+        ra=self.column_by_name('raJ2000')
+        out=numpy.zeros(len(ra))
+        for i in range(len(ra)):
+            out[i]=0.0
+        
+        return out
+  
+    
+    def get_proper_motion_dec(self):
+        ra=self.column_by_name('raJ2000')
+        out=numpy.zeros(len(ra))
+        for i in range(len(ra)):
+            out[i]=0.0
+        
+        return out
+    
+    def get_parallax(self):
+        ra=self.column_by_name('raJ2000')
+        out=numpy.zeros(len(ra))
+        for i in range(len(ra)):
+            out[i]=1.2
+        
+        return out
+    
+    def get_radial_velocity(self):
+        ra=self.column_by_name('raJ2000')
+        out=numpy.zeros(len(ra))
+        for i in range(len(ra)):
+            out[i]=0.0
+        
+        return out
+    
+    def get_epoch(self):
+        ra=self.column_by_name('raJ2000')
+        out=numpy.zeros(len(ra))
+        for i in range(len(ra)):
+            out[i]=2000.0
+        
+        return out
+    
+    def get_mjd(self):
+        ra=self.column_by_name('raJ2000')
+        out=numpy.zeros(len(ra))
+        for i in range(len(ra)):
+            out[i]=2015.0
+        
+        return out
+
+class testCatalog(InstanceCatalog,Astrometry,Variability,testDefaults):
     catalog_type = 'MISC'
     default_columns=[('expmjd',5000.0,float)]
     def db_required_columns(self):
         return ['raJ2000'],['varParamStr']
         
-class testStars(InstanceCatalog,Astrometry,EBVmixin,Variability,PhotometryStars):
+class testStars(InstanceCatalog,Astrometry,EBVmixin,Variability,PhotometryStars,testDefaults):
     catalog_type = 'test_stars'
     column_outputs=['id','ra_corr','dec_corr','magNorm','lsst_u','lsst_g','lsst_r','lsst_i','lsst_z','lsst_y','EBV']
-
-class testGalaxies(InstanceCatalog,Astrometry,EBVmixin,Variability,PhotometryGalaxies):
+    
+class testGalaxies(InstanceCatalog,Astrometry,EBVmixin,Variability,PhotometryGalaxies,testDefaults):
     catalog_type = 'test_galaxies'
     column_outputs=['galid','ra_corr','dec_corr','uRecalc', 'gRecalc', 'rRecalc', 'iRecalc', 'zRecalc', 'yRecalc',\
         'sedFilenameBulge','uBulge', 'gBulge', 'rBulge', 'iBulge', 'zBulge', 'yBulge',\
