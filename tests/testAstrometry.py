@@ -41,8 +41,8 @@ import lsst.utils.tests as utilsTests
 
 from lsst.sims.catalogs.measures.instance import InstanceCatalog, compound, cached
 from lsst.sims.catalogs.generation.db import DBObject, ObservationMetaData
-from lsst.sims.catalogs.measures.astrometry.Astrometry import Astrometry
-from lsst.sims.catalogs.measures.astrometry.Site import Site
+from lsst.sims.coordUtils.Astrometry import Astrometry
+from lsst.sims.catalogs.measures.instance.Site import Site
 
 class testCatalog(InstanceCatalog,Astrometry):
     """
