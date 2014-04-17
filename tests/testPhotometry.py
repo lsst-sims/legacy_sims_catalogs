@@ -93,13 +93,11 @@ class variabilityUnitTest(unittest.TestCase):
     rrly = DBObject.from_objid('rrly')
     obsMD = DBObject.from_objid('opsim3_61')
     obs_metadata = obsMD.getObservationMetaData(88544919, 0.1, makeCircBounds = True)
-
-    rrlycat = testCatalog(rrly,obs_metadata = obs_metadata)
     
     def testGalaxyVariability(self):   
                 
         galcat = testCatalog(self.galaxy,obs_metadata = self.obs_metadata)
-        rows = self.galaxy.query_columns(['varParamStr'], constraint = 'VarParamStr is not NULL')
+        rows = self.galaxy.query_columns(['varParamStr'], constraint = 'VarParamStr is not NULL',chunk_size=20)
         rows = rows.next()
         print "len ",len(rows)
         for i in range(20):
@@ -109,7 +107,7 @@ class variabilityUnitTest(unittest.TestCase):
 
     def testRRlyVariability(self):
         rrlycat = testCatalog(self.rrly,obs_metadata = self.obs_metadata)
-        rows = self.rrly.query_columns(['varParamStr'], constraint = 'VarParamStr is not NULL')
+        rows = self.rrly.query_columns(['varParamStr'], constraint = 'VarParamStr is not NULL',chunk_size=20)
         rows = rows.next()
         for i in range(20):
             mags=rrlycat.applyVariability(rows[i]['varParamStr'])
