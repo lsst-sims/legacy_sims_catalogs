@@ -74,17 +74,32 @@ class testCatalog(InstanceCatalog,Astrometry,Variability,testDefaults):
     default_columns=[('expmjd',5000.0,float)]
     def db_required_columns(self):
         return ['raJ2000'],['varParamStr']
+
         
 class testStars(InstanceCatalog,Astrometry,EBVmixin,Variability,PhotometryStars,testDefaults):
     catalog_type = 'test_stars'
-    column_outputs=['id','ra_corr','dec_corr','magNorm','lsst_u','lsst_g','lsst_r','lsst_i','lsst_z','lsst_y','EBV']
+    column_outputs=['id','ra_corr','dec_corr','magNorm',\
+    'lsst_u','lsst_u_var','lsst_g','lsst_g_var',\
+    'lsst_r','lsst_r_var','lsst_i','lsst_i_var','lsst_z','lsst_z_var',
+    'lsst_y','lsst_y_var',\
+    'EBV','varParamStr']
+
+"""
+class testStars(InstanceCatalog,Astrometry,EBVmixin,Variability,PhotometryStars,testDefaults):
+    catalog_type = 'test_stars'
+    column_outputs=['id','ra_corr','dec_corr','magNorm',\
+    'lsst_u','lsst_g','lsst_r','lsst_i','lsst_z','lsst_y',\
+    'EBV','varParamStr']
+"""
     
 class testGalaxies(InstanceCatalog,Astrometry,EBVmixin,Variability,PhotometryGalaxies,testDefaults):
     catalog_type = 'test_galaxies'
     column_outputs=['galid','ra_corr','dec_corr','uRecalc', 'gRecalc', 'rRecalc', 'iRecalc', 'zRecalc', 'yRecalc',\
-        'sedFilenameBulge','uBulge', 'gBulge', 'rBulge', 'iBulge', 'zBulge', 'yBulge',\
-        'sedFilenameDisk','uDisk', 'gDisk', 'rDisk', 'iDisk', 'zDisk', 'yDisk',\
-        'sedFilenameAgn','uAgn', 'gAgn', 'rAgn', 'iAgn', 'zAgn', 'yAgn']
+        'uRecalc_var','gRecalc_var','rRecalc_var','iRecalc_var','zRecalc_var','yRecalc_var',\
+        'sedFilenameBulge','uBulge', 'gBulge', 'rBulge','iBulge', 'zBulge', 'yBulge', \
+        'sedFilenameDisk','uDisk', 'gDisk', 'rDisk','iDisk', 'zDisk', 'yDisk',\
+        'sedFilenameAgn','uAgn', 'uAgn_var', 'gAgn', 'gAgn_var', 'rAgn', 'rAgn_var', \
+        'iAgn', 'iAgn_var', 'zAgn', 'zAgn_var', 'yAgn', 'yAgn_var', 'varParamStr']
 
 
 class variabilityUnitTest(unittest.TestCase):
@@ -113,16 +128,17 @@ class variabilityUnitTest(unittest.TestCase):
             mags=rrlycat.applyVariability(rows[i]['varParamStr'])
 
 class photometryUnitTest(unittest.TestCase):
-        
+       
     def testStars(self):
         dbObj=DBObject.from_objid('rrly')
-        obs_metadata_pointed=ObservationMetaData(circ_bounds=dict(ra=200., dec=-30, radius=1.))
+        obs_metadata_pointed=ObservationMetaData(mjd=2013.23, circ_bounds=dict(ra=200., dec=-30, radius=1.))
         test_cat=testStars(dbObj,obs_metadata=obs_metadata_pointed)
         test_cat.write_catalog("testStarsOutput.txt")
     
+    
     def testGalaxies(self):
         dbObj=DBObject.from_objid("galaxyBase")
-        obs_metadata_pointed=ObservationMetaData(circ_bounds=dict(ra=0., dec=0., radius=0.01))
+        obs_metadata_pointed=ObservationMetaData(mjd=50000.0, circ_bounds=dict(ra=0., dec=0., radius=0.01))
         test_cat=testGalaxies(dbObj,obs_metadata=obs_metadata_pointed)
         test_cat.write_catalog("testGalaxiesOutput.txt")
         
