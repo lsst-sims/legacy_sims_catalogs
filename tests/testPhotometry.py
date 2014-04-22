@@ -97,19 +97,25 @@ class testStars(InstanceCatalog,Astrometry,EBVmixin,Variability,PhotometryStars,
     
 class testGalaxies(InstanceCatalog,Astrometry,EBVmixin,Variability,PhotometryGalaxies,testDefaults):
     catalog_type = 'test_galaxies'
-    column_outputs=['galid','ra_corr','dec_corr','uRecalc', 'sigma_uRecalc', \
-        'gRecalc', 'sigma_gRecalc', 'rRecalc', 'sigma_rRecalc', 'iRecalc', 'sigma_iRecalc', \
-         'zRecalc', 'sigma_zRecalc', 'yRecalc', 'sigma_yRecalc', \
-        'uRecalc_var','gRecalc_var','rRecalc_var','iRecalc_var','zRecalc_var','yRecalc_var',\
+    column_outputs=['galid','ra_corr','dec_corr',\
+        'uRecalc', 'sigma_uRecalc', 'uRecalc_var','sigma_uRecalc_var',\
+        'gRecalc', 'sigma_gRecalc', 'gRecalc_var','sigma_gRecalc_var',\
+        'rRecalc', 'sigma_rRecalc', 'rRecalc_var', 'sigma_rRecalc_var',\
+         'iRecalc', 'sigma_iRecalc', 'iRecalc_var','sigma_iRecalc_var',\
+         'zRecalc', 'sigma_zRecalc', 'zRecalc_var', 'sigma_zRecalc_var',\
+         'yRecalc', 'sigma_yRecalc', 'yRecalc_var', 'sigma_yRecalc_var',\
         'sedFilenameBulge','uBulge', 'sigma_uBulge', 'gBulge', 'sigma_gBulge', \
         'rBulge', 'sigma_rBulge', 'iBulge', 'sigma_iBulge', 'zBulge', 'sigma_zBulge',\
          'yBulge', 'sigma_yBulge', \
         'sedFilenameDisk','uDisk', 'sigma_uDisk', 'gDisk', 'sigma_gDisk', 'rDisk', 'sigma_rDisk', \
         'iDisk', 'sigma_iDisk', 'zDisk', 'sigma_zDisk', 'yDisk', 'sigma_yDisk', \
-        'sedFilenameAgn','uAgn', 'sigma_uAgn', 'uAgn_var', 'gAgn', 'sigma_gAgn',\
-         'gAgn_var', 'rAgn', 'sigma_rAgn', 'rAgn_var', \
-        'iAgn', 'sigma_iAgn', 'iAgn_var', 'zAgn', 'sigma_zAgn', 'zAgn_var', \
-        'yAgn', 'sigma_yAgn', 'yAgn_var', 'varParamStr']
+        'sedFilenameAgn',\
+        'uAgn', 'sigma_uAgn', 'uAgn_var', 'sigma_uAgn_var',\
+        'gAgn', 'sigma_gAgn', 'gAgn_var', 'sigma_gAgn_var',\
+        'rAgn', 'sigma_rAgn', 'rAgn_var', 'sigma_rAgn_var',\
+        'iAgn', 'sigma_iAgn', 'iAgn_var', 'sigma_iAgn_var',\
+        'zAgn', 'sigma_zAgn', 'zAgn_var', 'sigma_zAgn_var',\
+        'yAgn', 'sigma_yAgn', 'yAgn_var', 'sigma_yAgn_var', 'varParamStr']
 
 
 class variabilityUnitTest(unittest.TestCase):
