@@ -52,22 +52,6 @@ class testDefaults(object):
             out[i]=0.0
         
         return out
-    
-    def get_epoch(self):
-        ra=self.column_by_name('raJ2000')
-        out=numpy.zeros(len(ra))
-        for i in range(len(ra)):
-            out[i]=2000.0
-        
-        return out
-    
-    def get_mjd(self):
-        ra=self.column_by_name('raJ2000')
-        out=numpy.zeros(len(ra))
-        for i in range(len(ra)):
-            out[i]=2015.0
-        
-        return out
 
 class testCatalog(InstanceCatalog,Astrometry,Variability,testDefaults):
     catalog_type = 'MISC'
