@@ -79,9 +79,10 @@ class testCatalog(InstanceCatalog,Astrometry,Variability,testDefaults):
 class testStars(InstanceCatalog,Astrometry,EBVmixin,Variability,PhotometryStars,testDefaults):
     catalog_type = 'test_stars'
     column_outputs=['id','ra_corr','dec_corr','magNorm',\
-    'lsst_u','lsst_u_var','lsst_g','lsst_g_var',\
-    'lsst_r','lsst_r_var','lsst_i','lsst_i_var','lsst_z','lsst_z_var',
-    'lsst_y','lsst_y_var',\
+    'lsst_u','sigma_lsst_u','lsst_u_var','lsst_g','sigma_lsst_g','lsst_g_var',\
+    'lsst_r','sigma_lsst_r','lsst_r_var','lsst_i','sigma_lsst_i','lsst_i_var',\
+    'lsst_z','sigma_lsst_z','lsst_z_var',
+    'lsst_y','sigma_lsst_y','lsst_y_var',\
     'EBV','varParamStr']
 
 """
