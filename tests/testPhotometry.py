@@ -94,7 +94,9 @@ class testStars(InstanceCatalog,Astrometry,EBVmixin,Variability,PhotometryStars,
     
 class testGalaxies(InstanceCatalog,Astrometry,EBVmixin,Variability,PhotometryGalaxies,testDefaults):
     catalog_type = 'test_galaxies'
-    column_outputs=['galid','ra_corr','dec_corr','uRecalc', 'gRecalc', 'rRecalc', 'iRecalc', 'zRecalc', 'yRecalc',\
+    column_outputs=['galid','ra_corr','dec_corr','uRecalc', 'sigma_uRecalc', \
+        'gRecalc', 'sigma_gRecalc', 'rRecalc', 'sigma_rRecalc', 'iRecalc', 'sigma_iRecalc', \
+         'zRecalc', 'sigma_zRecalc', 'yRecalc', 'sigma_yRecalc', \
         'uRecalc_var','gRecalc_var','rRecalc_var','iRecalc_var','zRecalc_var','yRecalc_var',\
         'sedFilenameBulge','uBulge', 'gBulge', 'rBulge','iBulge', 'zBulge', 'yBulge', \
         'sedFilenameDisk','uDisk', 'gDisk', 'rDisk','iDisk', 'zDisk', 'yDisk',\
