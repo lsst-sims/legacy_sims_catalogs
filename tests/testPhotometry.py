@@ -99,10 +99,15 @@ class testGalaxies(InstanceCatalog,Astrometry,EBVmixin,Variability,PhotometryGal
         'gRecalc', 'sigma_gRecalc', 'rRecalc', 'sigma_rRecalc', 'iRecalc', 'sigma_iRecalc', \
          'zRecalc', 'sigma_zRecalc', 'yRecalc', 'sigma_yRecalc', \
         'uRecalc_var','gRecalc_var','rRecalc_var','iRecalc_var','zRecalc_var','yRecalc_var',\
-        'sedFilenameBulge','uBulge', 'gBulge', 'rBulge','iBulge', 'zBulge', 'yBulge', \
-        'sedFilenameDisk','uDisk', 'gDisk', 'rDisk','iDisk', 'zDisk', 'yDisk',\
-        'sedFilenameAgn','uAgn', 'uAgn_var', 'gAgn', 'gAgn_var', 'rAgn', 'rAgn_var', \
-        'iAgn', 'iAgn_var', 'zAgn', 'zAgn_var', 'yAgn', 'yAgn_var', 'varParamStr']
+        'sedFilenameBulge','uBulge', 'sigma_uBulge', 'gBulge', 'sigma_gBulge', \
+        'rBulge', 'sigma_rBulge', 'iBulge', 'sigma_iBulge', 'zBulge', 'sigma_zBulge',\
+         'yBulge', 'sigma_yBulge', \
+        'sedFilenameDisk','uDisk', 'sigma_uDisk', 'gDisk', 'sigma_gDisk', 'rDisk', 'sigma_rDisk', \
+        'iDisk', 'sigma_iDisk', 'zDisk', 'sigma_zDisk', 'yDisk', 'sigma_yDisk', \
+        'sedFilenameAgn','uAgn', 'sigma_uAgn', 'uAgn_var', 'gAgn', 'sigma_gAgn',\
+         'gAgn_var', 'rAgn', 'sigma_rAgn', 'rAgn_var', \
+        'iAgn', 'sigma_iAgn', 'iAgn_var', 'zAgn', 'sigma_zAgn', 'zAgn_var', \
+        'yAgn', 'sigma_yAgn', 'yAgn_var', 'varParamStr']
 
 
 class variabilityUnitTest(unittest.TestCase):
