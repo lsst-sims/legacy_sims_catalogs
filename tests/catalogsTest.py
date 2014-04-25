@@ -1,7 +1,8 @@
 import os
 import numpy
+from lsst.sims.coordUtils import compound
 from lsst.sims.catalogs.generation.db import DBObject, ObservationMetaData
-from lsst.sims.catalogs.measures.instance import InstanceCatalog, compound
+from lsst.sims.catalogs.measures.instance import InstanceCatalog
 from lsst.sims.catalogs.measures.example_utils.exampleCatalogDefinitions import\
         TrimCatalogPoint
 import lsst.sims.catalogs.generation.utils.testUtils as tu
