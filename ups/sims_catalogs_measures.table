@@ -1,5 +1,7 @@
 setupRequired(python)
 setupRequired(sims_catalogs_generation)
+setupRequired(sims_photUtils)
+setupRequired(sims_coordUtils)
 setupRequired(throughputs)
 setupRequired(pyfits)
 
