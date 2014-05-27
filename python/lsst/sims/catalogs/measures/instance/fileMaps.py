@@ -61,4 +61,5 @@ defaultSpecMap = SpecMap(
      'PNastrom.dat':'starSED/gizis_SED/PNastrom_interp.dat.gz',
      'RedE1astrom.dat':'starSED/gizis_SED/RedE1astrom_interp.dat.gz',
      'RedE2astrom.dat':'starSED/gizis_SED/RedE2astrom_interp.dat.gz',
-     'sed_flat_norm.txt':'flatSED/sed_flat_norm.txt.gz'})
+     'sed_flat.txt':'flatSED/sed_flat.txt.gz',
+     'sed_flat_norm.txt':'flatSED/sed_flat.txt.gz'})

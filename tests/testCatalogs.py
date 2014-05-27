@@ -2,6 +2,7 @@ from __future__ import with_statement
 import os
 import numpy
 import unittest
+import eups
 import lsst.utils.tests as utilsTests
 from lsst.sims.catalogs.generation.db import DBObject, ObservationMetaData
 from lsst.sims.catalogs.measures.instance import InstanceCatalog, compound
@@ -48,6 +49,7 @@ class InstanceCatalogTestCase(unittest.TestCase):
                                                bandpassName='r')
         self.mystars = DBObject.from_objid('teststars')
         self.mygals = DBObject.from_objid('testgals')
+        self.basedir = eups.productDir('sims_catalogs_measures')+"/tests/"
 
     def tearDown(self):
         del self.obsMd
@@ -57,21 +59,21 @@ class InstanceCatalogTestCase(unittest.TestCase):
     def testStarLike(self):
         t = self.mystars.getCatalog('custom_catalog', obs_metadata=self.obsMd)
         t.write_catalog('test_CUSTOM.out')
-        self.assertTrue(compareFiles('test_CUSTOM.out', 'testdata/CUSTOM_STAR.out'))
+        self.assertTrue(compareFiles('test_CUSTOM.out', self.basedir+'testdata/CUSTOM_STAR.out'))
         os.unlink('test_CUSTOM.out')
         t = self.mystars.getCatalog('basic_catalog', obs_metadata=self.obsMd)
         t.write_catalog('test_BASIC.out')
-        self.assertTrue(compareFiles('test_BASIC.out', 'testdata/BASIC_STAR.out'))
+        self.assertTrue(compareFiles('test_BASIC.out', self.basedir+'testdata/BASIC_STAR.out'))
         os.unlink('test_BASIC.out')
 
     def testGalLike(self):
         t = self.mygals.getCatalog('custom_catalog', obs_metadata=self.obsMd)
         t.write_catalog('test_CUSTOM.out')
-        self.assertTrue(compareFiles('test_CUSTOM.out', 'testdata/CUSTOM_GAL.out'))
+        self.assertTrue(compareFiles('test_CUSTOM.out', self.basedir+'testdata/CUSTOM_GAL.out'))
         os.unlink('test_CUSTOM.out')
         t = self.mygals.getCatalog('basic_catalog', obs_metadata=self.obsMd)
         t.write_catalog('test_BASIC.out')
-        self.assertTrue(compareFiles('test_BASIC.out', 'testdata/BASIC_GAL.out'))
+        self.assertTrue(compareFiles('test_BASIC.out', self.basedir+'testdata/BASIC_GAL.out'))
         os.unlink('test_BASIC.out')
 
 def suite():

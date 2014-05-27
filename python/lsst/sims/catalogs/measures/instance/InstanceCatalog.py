@@ -166,7 +166,7 @@ class InstanceCatalog(object):
                 yield column
 
     def __init__(self, db_obj, obs_metadata=None, constraint=None, specFileMap=defaultSpecMap, site=None):
-        
+        self.verbose = db_obj.verbose
         if site == None:
             self.site=Site()
         else:
@@ -276,8 +276,9 @@ class InstanceCatalog(object):
                 templ = self.default_formats.get(typ)
 
             if templ is None:
-                warnings.warn("Using raw formatting for column '%s' "
-                              "with type %s" % (col, chunk_cols[i].dtype))
+                if self.verbose:
+                    warnings.warn("Using raw formatting for column '%s' "
+                                  "with type %s" % (col, chunk_cols[i].dtype))
                 templ = "%s"
             templ_list.append(templ)
 
