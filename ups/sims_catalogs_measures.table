@@ -1,11 +1,6 @@
 setupRequired(python)
 setupRequired(sims_catalogs_generation)
-setupRequired(sims_photUtils)
-setupRequired(sims_coordUtils)
-setupRequired(throughputs)
-setupRequired(pyfits)
 
-setupOptional(sims_sed_library)
 #Anaconda provides scipy which is needed by this package.
 
 envPrepend(PYTHONPATH, ${PRODUCT_DIR}/python)
