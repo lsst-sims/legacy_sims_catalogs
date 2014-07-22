@@ -57,11 +57,12 @@ class InstanceCatalogTestCase(unittest.TestCase):
         conn.create_function("SIN",1,numpy.sin)
         conn.create_function("ASIN",1,numpy.arcsin)
         conn.create_function("SQRT",1,numpy.sqrt)
+        conn.close()
         
         #this will let me play around here in real time
         #see if I can execute a query using one of these functions
-        import pdb
-        pdb.set_trace()
+        #import pdb
+        #pdb.set_trace()
         
         self.mygals = DBObject.from_objid('testgals')
         
@@ -70,6 +71,7 @@ class InstanceCatalogTestCase(unittest.TestCase):
         gconn.create_function("SIN",1,numpy.sin)
         gconn.create_function("ASIN",1,numpy.arcsin)
         gconn.create_function("SQRT",1,numpy.sqrt)
+        gconn.close()
         
         self.basedir = eups.productDir('sims_catalogs_measures')+"/tests/"
 
@@ -79,6 +81,14 @@ class InstanceCatalogTestCase(unittest.TestCase):
         del self.mygals
 
     def testStarLike(self):
+        conn=self.mystars.engine.raw_connection()
+        conn.create_function("COS",1,numpy.cos)
+        conn.create_function("SIN",1,numpy.sin)
+        conn.create_function("ASIN",1,numpy.arcsin)
+        conn.create_function("SQRT",1,numpy.sqrt)
+        conn.close()
+    
+    
         t = self.mystars.getCatalog('custom_catalog', obs_metadata=self.obsMd)
         t.write_catalog('test_CUSTOM.out')
         self.assertTrue(compareFiles('test_CUSTOM.out', self.basedir+'testdata/CUSTOM_STAR.out'))
@@ -89,6 +99,15 @@ class InstanceCatalogTestCase(unittest.TestCase):
         os.unlink('test_BASIC.out')
 
     def testGalLike(self):
+    
+        gconn=self.mygals.engine.raw_connection()
+        gconn.create_function("COS",1,numpy.cos)
+        gconn.create_function("SIN",1,numpy.sin)
+        gconn.create_function("ASIN",1,numpy.arcsin)
+        gconn.create_function("SQRT",1,numpy.sqrt)
+        gconn.close()
+    
+    
         t = self.mygals.getCatalog('custom_catalog', obs_metadata=self.obsMd)
         t.write_catalog('test_CUSTOM.out')
         self.assertTrue(compareFiles('test_CUSTOM.out', self.basedir+'testdata/CUSTOM_GAL.out'))
@@ -122,6 +141,7 @@ class boundingBoxTest(unittest.TestCase):
                                             mjd=52000., bandpassName='r')
                                             
         self.mystars = DBObject.from_objid('teststars')
+
         
         #self.basedir = eups.productDir('sims_catalogs_measures')+"/tests/"
 
@@ -131,7 +151,20 @@ class boundingBoxTest(unittest.TestCase):
         del self.mystars
 
     def testBoxBounds(self):
-        myCatalog = self.mystars.getCatalog('basic_catalog',obs_metadata = self.obsMdBox)
+        
+        myCatalog = self.mystars.getCatalog('basic_catalog',obs_metadata = self.obsMdCirc)
+        """     
+        conn=self.mystars.engine.raw_connection()
+        conn.create_function("COS",1,numpy.cos)
+        conn.create_function("SIN",1,numpy.sin)
+        conn.create_function("ASIN",1,numpy.arcsin)
+        conn.create_function("SQRT",1,numpy.sqrt)
+        """
+    
+        #import pdb
+        #pdb.set_trace()
+        
+
         myIterator = myCatalog.iter_catalog(chunk_size=10)
         
         for line in myIterator:
@@ -144,9 +177,9 @@ def suite():
     """Returns a suite containing all the test cases in this module."""
     utilsTests.init()
     suites = []
-    suites += unittest.makeSuite(InstanceCatalogTestCase)
+    #suites += unittest.makeSuite(InstanceCatalogTestCase)
     suites += unittest.makeSuite(utilsTests.MemoryTestCase)
-    #suites += unittest.makeSuite(boundingBoxTest)
+    suites += unittest.makeSuite(boundingBoxTest)
 
     return unittest.TestSuite(suites)
 
