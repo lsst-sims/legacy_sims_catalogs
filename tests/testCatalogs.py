@@ -156,7 +156,7 @@ class boundingBoxTest(unittest.TestCase):
     def testCircBounds(self):
         
         """
-        Make sure that circle_bound_constraint in sims.catalogs.generation.db.dbConnection.py
+        Make sure that circular_bound_constraint in sims.catalogs.generation.db.dbConnection.py
         does not admit any objects outside of the bounding circle
         """
         
