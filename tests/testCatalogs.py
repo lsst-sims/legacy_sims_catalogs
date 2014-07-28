@@ -52,26 +52,7 @@ class InstanceCatalogTestCase(unittest.TestCase):
                                                bandpassName='r')
         self.mystars = DBObject.from_objid('teststars')
         
-        conn=self.mystars.engine.raw_connection()
-        conn.create_function("COS",1,numpy.cos)
-        conn.create_function("SIN",1,numpy.sin)
-        conn.create_function("ASIN",1,numpy.arcsin)
-        conn.create_function("SQRT",1,numpy.sqrt)
-        conn.close()
-        
-        #this will let me play around here in real time
-        #see if I can execute a query using one of these functions
-        #import pdb
-        #pdb.set_trace()
-        
         self.mygals = DBObject.from_objid('testgals')
-        
-        gconn=self.mygals.engine.raw_connection()
-        gconn.create_function("COS",1,numpy.cos)
-        gconn.create_function("SIN",1,numpy.sin)
-        gconn.create_function("ASIN",1,numpy.arcsin)
-        gconn.create_function("SQRT",1,numpy.sqrt)
-        gconn.close()
         
         self.basedir = eups.productDir('sims_catalogs_measures')+"/tests/"
 
@@ -153,17 +134,6 @@ class boundingBoxTest(unittest.TestCase):
     def testBoxBounds(self):
         
         myCatalog = self.mystars.getCatalog('basic_catalog',obs_metadata = self.obsMdCirc)
-        """     
-        conn=self.mystars.engine.raw_connection()
-        conn.create_function("COS",1,numpy.cos)
-        conn.create_function("SIN",1,numpy.sin)
-        conn.create_function("ASIN",1,numpy.arcsin)
-        conn.create_function("SQRT",1,numpy.sqrt)
-        """
-    
-        #import pdb
-        #pdb.set_trace()
-        
 
         myIterator = myCatalog.iter_catalog(chunk_size=10)
         
