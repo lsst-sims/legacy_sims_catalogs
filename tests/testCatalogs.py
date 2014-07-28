@@ -107,14 +107,14 @@ def controlHaversine(ra1deg,dec1deg,ra2deg,dec2deg):
 class boundingBoxTest(unittest.TestCase):
     def setUp(self):
         
-        self.RAmin = 200.
-        self.RAmax = 215.
+        self.RAmin = 190.
+        self.RAmax = 210.
         self.DECmin = -70.
         self.DECmax = -50.
         
         self.RAcenter = 200.
         self.DECcenter = -60.
-        self.radius = 1.75
+        self.radius = 10.0
         
         if os.path.exists('testDatabase.db'):
             os.unlink('testDatabase.db')
@@ -152,7 +152,8 @@ class boundingBoxTest(unittest.TestCase):
             self.assertTrue(line[1]<self.RAmax)
             self.assertTrue(line[2]>self.DECmin)
             self.assertTrue(line[2]<self.DECmax)
-    
+       
+        
     def testCircBounds(self):
         
         """
@@ -166,6 +167,7 @@ class boundingBoxTest(unittest.TestCase):
         for line in myIterator:
             rtest = controlHaversine(self.RAcenter, self.DECcenter, line[1], line[2])
             self.assertTrue(rtest<self.radius)
+        
 
 
 def suite():
