@@ -50,6 +50,7 @@ class InstanceCatalogTestCase(unittest.TestCase):
                 
         self.obsMd = ObservationMetaData(circ_bounds=dict(ra=210., dec=-60, radius=1.75), mjd=52000.,
                                                bandpassName='r')
+                                               
         self.mystars = DBObject.from_objid('teststars')
         
         self.mygals = DBObject.from_objid('testgals')
@@ -67,6 +68,7 @@ class InstanceCatalogTestCase(unittest.TestCase):
         t.write_catalog('test_CUSTOM.out')
         self.assertTrue(compareFiles('test_CUSTOM.out', self.basedir+'testdata/CUSTOM_STAR.out'))
         os.unlink('test_CUSTOM.out')
+        
         t = self.mystars.getCatalog('basic_catalog', obs_metadata=self.obsMd)
         t.write_catalog('test_BASIC.out')
         self.assertTrue(compareFiles('test_BASIC.out', self.basedir+'testdata/BASIC_STAR.out'))
@@ -78,6 +80,7 @@ class InstanceCatalogTestCase(unittest.TestCase):
         t.write_catalog('test_CUSTOM.out')
         self.assertTrue(compareFiles('test_CUSTOM.out', self.basedir+'testdata/CUSTOM_GAL.out'))
         os.unlink('test_CUSTOM.out')
+        
         t = self.mygals.getCatalog('basic_catalog', obs_metadata=self.obsMd)
         t.write_catalog('test_BASIC.out')
         self.assertTrue(compareFiles('test_BASIC.out', self.basedir+'testdata/BASIC_GAL.out'))
@@ -161,7 +164,7 @@ def suite():
     """Returns a suite containing all the test cases in this module."""
     utilsTests.init()
     suites = []
-    #suites += unittest.makeSuite(InstanceCatalogTestCase)
+    suites += unittest.makeSuite(InstanceCatalogTestCase)
     suites += unittest.makeSuite(utilsTests.MemoryTestCase)
     suites += unittest.makeSuite(boundingBoxTest)
 
