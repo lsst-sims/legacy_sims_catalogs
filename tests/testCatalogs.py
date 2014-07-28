@@ -9,6 +9,10 @@ from lsst.sims.catalogs.generation.db import DBObject, ObservationMetaData
 from lsst.sims.catalogs.measures.instance import InstanceCatalog, compound
 import lsst.sims.catalogs.generation.utils.testUtils as tu
 
+#a class of catalog that outputs all the significant figures in
+#ra and dec so that it can be read back in to make sure that our
+#Haversine-based query actually returns all of the points that
+#are inside the circular bound desired
 class BoundsCatalog(InstanceCatalog):
     catalog_type = 'bounds_catalog'
     refIdCol = 'id'
@@ -75,11 +79,13 @@ class InstanceCatalogTestCase(unittest.TestCase):
     
         t = self.mystars.getCatalog('custom_catalog', obs_metadata=self.obsMd)
         t.write_catalog('test_CUSTOM.out')
+     
         self.assertTrue(compareFiles('test_CUSTOM.out', self.basedir+'testdata/CUSTOM_STAR.out'))
         os.unlink('test_CUSTOM.out')
         
         t = self.mystars.getCatalog('basic_catalog', obs_metadata=self.obsMd)
         t.write_catalog('test_BASIC.out')
+
         self.assertTrue(compareFiles('test_BASIC.out', self.basedir+'testdata/BASIC_STAR.out'))
         os.unlink('test_BASIC.out')
 
@@ -87,11 +93,13 @@ class InstanceCatalogTestCase(unittest.TestCase):
     
         t = self.mygals.getCatalog('custom_catalog', obs_metadata=self.obsMd)
         t.write_catalog('test_CUSTOM.out')
+ 
         self.assertTrue(compareFiles('test_CUSTOM.out', self.basedir+'testdata/CUSTOM_GAL.out'))
         os.unlink('test_CUSTOM.out')
         
         t = self.mygals.getCatalog('basic_catalog', obs_metadata=self.obsMd)
         t.write_catalog('test_BASIC.out')
+     
         self.assertTrue(compareFiles('test_BASIC.out', self.basedir+'testdata/BASIC_GAL.out'))
         os.unlink('test_BASIC.out')
 
@@ -123,7 +131,7 @@ class boundingBoxTest(unittest.TestCase):
         
         self.RAcenter = 200.
         self.DECcenter = -60.
-        self.radius = 10.0
+        self.radius = 40.0
         
         if os.path.exists('testDatabase.db'):
             os.unlink('testDatabase.db')
@@ -219,10 +227,10 @@ class boundingBoxTest(unittest.TestCase):
         myCatalog.write_catalog('circular_test_catalog.txt')
        
         #now we will test for the completeness of the circular bounds 
-        obsMdControl = ObservationMetaData(box_bounds=dict(ra_min = self.RAcenter-20.0, 
-                                                ra_max = self.RAcenter+20.0,
-                                                dec_min = self.DECcenter-20.0, 
-                                                dec_max = self.DECcenter+20.0),
+        obsMdControl = ObservationMetaData(box_bounds=dict(ra_min = self.RAcenter-70.0, 
+                                                ra_max = self.RAcenter+70.0,
+                                                dec_min = self.DECcenter-70.0, 
+                                                dec_max = self.DECcenter+70.0),
                                                 mjd=52000.0, bandpassName = 'r')
       
         controlCatalog = self.mystars.getCatalog('bounds_catalog',obs_metadata = obsMdControl)
