@@ -139,7 +139,10 @@ class boundingBoxTest(unittest.TestCase):
     
 
     def testBoxBounds(self):
-        
+        """
+        Make sure that box_bound_constraint in sims.catalogs.generation.db.dbConnection.py
+        does not admit any objects outside of the bounding box
+        """
         myCatalog = self.mystars.getCatalog('basic_catalog',obs_metadata = self.obsMdBox)
 
         myIterator = myCatalog.iter_catalog(chunk_size=10)
@@ -151,6 +154,11 @@ class boundingBoxTest(unittest.TestCase):
             self.assertTrue(line[2]<self.DECmax)
     
     def testCircBounds(self):
+        
+        """
+        Make sure that circle_bound_constraint in sims.catalogs.generation.db.dbConnection.py
+        does not admit any objects outside of the bounding circle
+        """
         
         myCatalog = self.mystars.getCatalog('basic_catalog',obs_metadata = self.obsMdCirc)
         myIterator = myCatalog.iter_catalog(chunk_size=10)
