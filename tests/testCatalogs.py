@@ -62,13 +62,6 @@ class InstanceCatalogTestCase(unittest.TestCase):
         del self.mygals
 
     def testStarLike(self):
-        conn=self.mystars.engine.raw_connection()
-        conn.create_function("COS",1,numpy.cos)
-        conn.create_function("SIN",1,numpy.sin)
-        conn.create_function("ASIN",1,numpy.arcsin)
-        conn.create_function("SQRT",1,numpy.sqrt)
-        conn.close()
-    
     
         t = self.mystars.getCatalog('custom_catalog', obs_metadata=self.obsMd)
         t.write_catalog('test_CUSTOM.out')
@@ -81,14 +74,6 @@ class InstanceCatalogTestCase(unittest.TestCase):
 
     def testGalLike(self):
     
-        gconn=self.mygals.engine.raw_connection()
-        gconn.create_function("COS",1,numpy.cos)
-        gconn.create_function("SIN",1,numpy.sin)
-        gconn.create_function("ASIN",1,numpy.arcsin)
-        gconn.create_function("SQRT",1,numpy.sqrt)
-        gconn.close()
-    
-    
         t = self.mygals.getCatalog('custom_catalog', obs_metadata=self.obsMd)
         t.write_catalog('test_CUSTOM.out')
         self.assertTrue(compareFiles('test_CUSTOM.out', self.basedir+'testdata/CUSTOM_GAL.out'))
@@ -97,6 +82,24 @@ class InstanceCatalogTestCase(unittest.TestCase):
         t.write_catalog('test_BASIC.out')
         self.assertTrue(compareFiles('test_BASIC.out', self.basedir+'testdata/BASIC_GAL.out'))
         os.unlink('test_BASIC.out')
+
+def controlHaversine(ra1deg,dec1deg,ra2deg,dec2deg):
+    """
+    Evaluate the Haversine formula.  For use testing circular bounds
+          
+    http://en.wikipedia.org/wiki/Haversine_formula
+    """
+        
+    conversion = numpy.pi/180.0
+    ra1 = ra1deg*conversion
+    dec1 = dec1deg*conversion
+    ra2 = ra2deg*conversion
+    dec2 = dec2deg*conversion
+        
+    arg = (numpy.sin(0.5*(dec1-dec2)))**2+numpy.cos(dec1)*numpy.cos(dec2)*(numpy.sin(0.5*(ra1-ra2)))**2
+    rr = 2.0*numpy.arcsin(numpy.sqrt(arg))
+        
+    return rr
 
 class boundingBoxTest(unittest.TestCase):
     def setUp(self):
@@ -130,18 +133,29 @@ class boundingBoxTest(unittest.TestCase):
         del self.obsMdCirc
         del self.obsMdBox
         del self.mystars
+    
 
     def testBoxBounds(self):
         
-        myCatalog = self.mystars.getCatalog('basic_catalog',obs_metadata = self.obsMdCirc)
+        myCatalog = self.mystars.getCatalog('basic_catalog',obs_metadata = self.obsMdBox)
 
         myIterator = myCatalog.iter_catalog(chunk_size=10)
         
         for line in myIterator:
-            print line
-        
-        myCatalog.write_catalog("myCatalog_junk.sav")
+            self.assertTrue(line[1]>self.RAmin)
+            self.assertTrue(line[1]<self.RAmax)
+            self.assertTrue(line[2]>self.DECmin)
+            self.assertTrue(line[2]<self.DECmax)
     
+    def testCircBounds(self):
+        
+        myCatalog = self.mystars.getCatalog('basic_catalog',obs_metadata = self.obsMdCirc)
+        myIterator = myCatalog.iter_catalog(chunk_size=10)
+    
+        for line in myIterator:
+            rtest = controlHaversine(self.RAcenter, self.DECcenter, line[1], line[2])
+            self.assertTrue(rtest<self.radius)
+
 
 def suite():
     """Returns a suite containing all the test cases in this module."""
