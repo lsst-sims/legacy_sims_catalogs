@@ -8,7 +8,7 @@ from lsst.sims.catalogs.generation.db import DBObject
 
 def makeTestDB(size=10, **kwargs):
     """
-    Make a test database to serve information to the mflarTest object
+    Make a test database
     """
     conn = sqlite3.connect('testDatabase.db')
     c = conn.cursor()
@@ -46,6 +46,9 @@ class testDBobject(DBObject):
                ('aa', None),
                ('bb', None)]
 
+#Below we define mixins which calculate the variables 'cc' and 'dd in different
+#ways.  The idea is to see if InstanceCatalog correctly identifies where
+#the columns come from in those cases
 class mixin1(object):
     @cached
     def get_cc(self):
@@ -76,7 +79,9 @@ class mixin3(object):
         bb = self.column_by_name('bb')
         
         return numpy.array(aa-bb)
-    
+
+#Below we define catalog classes that use different combinations
+#of the mixins above to calculate the columns 'cc' and 'dd'    
 class testCatalogDefaults(InstanceCatalog):
     column_outputs = ['objid','aa','bb','cc','dd','raJ2000','decJ2000']
     default_columns = [('cc',0.0,float),('dd',1.0,float)]
@@ -113,6 +118,9 @@ class testColumnOrigins(unittest.TestCase):
         del self.myDBobject
 
     def testDefaults(self):
+        """
+        Test case where the columns cc and dd come from defaults
+        """
         myCatalog = testCatalogDefaults(self.myDBobject)
         
         self.assertEqual(myCatalog._column_origins['objid'],'the database')
@@ -124,6 +132,9 @@ class testColumnOrigins(unittest.TestCase):
         self.assertEqual(myCatalog._column_origins['dd'],'default column')
 
     def testMixin1(self):
+        """
+        Test case where the columns cc and dd come from non-compound getters
+        """
         myCatalog = testCatalogMixin1(self.myDBobject)
         mixin1Name = '<class \'__main__.mixin1\'>'
         
@@ -136,6 +147,9 @@ class testColumnOrigins(unittest.TestCase):
         self.assertEqual(str(myCatalog._column_origins['dd']),mixin1Name)     
 
     def testMixin2(self):
+        """
+        Test case where the columns cc and dd come from a compound getter
+        """
         myCatalog = testCatalogMixin2(self.myDBobject)
         mixin2Name = '<class \'__main__.mixin2\'>'
         
@@ -148,6 +162,9 @@ class testColumnOrigins(unittest.TestCase):
         self.assertEqual(str(myCatalog._column_origins['dd']),mixin2Name) 
     
     def testMixin3(self):
+        """
+        Test case where cc comes from a mixin and dd comes from the default
+        """
         myCatalog = testCatalogMixin3(self.myDBobject)
         mixin3Name = '<class \'__main__.mixin3\'>'
         
@@ -160,6 +177,9 @@ class testColumnOrigins(unittest.TestCase):
         self.assertEqual(str(myCatalog._column_origins['dd']),'default column') 
 
     def testMixin3Mixin1(self):
+        """
+        Test case where one mixin overwrites another for calculating cc
+        """
         myCatalog = testCatalogMixin3Mixin1(self.myDBobject)
         mixin3Name = '<class \'__main__.mixin3\'>'
         mixin1Name = '<class \'__main__.mixin1\'>'
@@ -171,7 +191,6 @@ class testColumnOrigins(unittest.TestCase):
         self.assertEqual(myCatalog._column_origins['bb'],'the database')
         self.assertEqual(str(myCatalog._column_origins['cc']),mixin3Name)
         self.assertEqual(str(myCatalog._column_origins['dd']),mixin1Name) 
-
 
 def suite():
     utilsTests.init()
