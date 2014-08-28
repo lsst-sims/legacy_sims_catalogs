@@ -405,9 +405,15 @@ class InstanceCatalog(object):
         return None
 
     def _print_column_origins(self):
+        """
+        Print the origins of the columns in this database object
+        """
+        
         if self._column_origins_switch:
-            print 'where the columns in this database come from'
+            print '\nwhere the columns in ',self.__class__,' come from'
             for column_name in self._column_origins:
                 print column_name,self._column_origins[column_name]
+            
+            print '\n'
             
         self._column_origins_switch = False
