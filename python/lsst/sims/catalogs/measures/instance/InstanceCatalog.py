@@ -289,6 +289,10 @@ class InstanceCatalog(object):
                 if col not in defaults:
                     nodefault.append(col)
                 else:
+                    #Because some earlier part of the code copies default columns
+                    #into the same place as columns that exist natively in the
+                    #database, this is where we have to mark columns that are
+                    #set by default
                     self._column_origins[col] = 'default column'
                     
             if len(nodefault) > 0:
