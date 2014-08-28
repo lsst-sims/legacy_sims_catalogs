@@ -237,14 +237,32 @@ class InstanceCatalog(object):
         """Given a column name, return the column data"""
         getfunc = "get_%s" % column_name
         if hasattr(self, getfunc):
-            return getattr(self, getfunc)(*args, **kwargs)
+            function = getattr(self,getfunc)
+            
+            if self._print_column_origins:
+                self._column_origins[column_name] = self._get_class_that_defined_method(function)
+
+            return function(*args, **kwargs)
         elif column_name in self._compound_column_names:
             getfunc = self._compound_column_names[column_name]
-            compound_column = getattr(self, getfunc)(*args, **kwargs)
+            function = getattr(self,getfunc)
+            
+            if self._print_column_origins:
+                self._column_origins[column_name] = self._get_class_that_defined_method(function)
+                
+            compound_column = function(*args, **kwargs)
             return compound_column[column_name]
         elif isinstance(self._current_chunk, _MimicRecordArray) or column_name in self._current_chunk.dtype.names:
+            
+            if self._print_column_origins:
+                 self._column_origins[column_name] = 'the database'
+            
             return self._current_chunk[column_name]
         else:
+            
+            if self._print_column_origins:
+                self._column_origins[column_name] = 'default column'
+            
             return getattr(self, "default_%s"%column_name)(*args, **kwargs)
 
     def _check_requirements(self):
