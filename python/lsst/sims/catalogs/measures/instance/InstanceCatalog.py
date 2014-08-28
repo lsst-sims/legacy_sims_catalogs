@@ -365,3 +365,18 @@ class InstanceCatalog(object):
             return numpy.left_shift(self.column_by_name(self.refIdCol), nShift) + self.db_obj.getObjectTypeId()
         else:
             return arr
+
+    def _get_class_that_defined_method(f):
+        """
+        This method will return the name of the class that first defined the
+        input method.
+        
+        This is taken verbatim from
+        http://stackoverflow.com/questions/961048/get-class-that-defined-method
+        """
+        
+        for cls in inspect.getmro(f.im_class):
+            if meth.__name__ in cls.__dict__:
+                return cls
+        
+        return None
