@@ -193,6 +193,7 @@ class InstanceCatalog(object):
         #self._column_origins_switch tells column_by_name to log where it is getting
         #the columns in self._column_origins (we only want to do that once)
         self._column_origins_switch = True
+        
         self._check_requirements()
 
     def _all_columns(self):
@@ -279,7 +280,9 @@ class InstanceCatalog(object):
                 missing_cols.append(col)
             else:
                 self._active_columns.append(col)
-
+        
+        self._column_origins_switch = False #do not want to log column origins any more
+        
         if len(missing_cols) > 0:
             nodefault = []
             for col in missing_cols:
@@ -292,7 +295,6 @@ class InstanceCatalog(object):
                 raise ValueError("Required columns missing from database: "
                                  "({0})".format(', '.join(nodefault)))
         
-        self._column_origins_switch = False #do not want to log column origins any more
         if self.verbose:
             self.print_column_origins()
 
