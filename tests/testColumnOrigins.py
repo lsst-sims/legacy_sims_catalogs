@@ -116,10 +116,10 @@ class testColumnOrigins(unittest.TestCase):
         myCatalog = testCatalogDefaults(self.myDBobject)
         
         myCatalog.print_column_origins()
-        myCatalog.write_catalog('junk.sav')
-        print myCatalog.default_columns
+        #myCatalog.write_catalog('junk.sav')
+        #print myCatalog.default_columns
         
-        """
+        
         self.assertEqual(myCatalog._column_origins['objid'],'the database')
         self.assertEqual(myCatalog._column_origins['raJ2000'],'the database')
         self.assertEqual(myCatalog._column_origins['decJ2000'],'the database')
@@ -127,7 +127,7 @@ class testColumnOrigins(unittest.TestCase):
         self.assertEqual(myCatalog._column_origins['bb'],'the database')
         self.assertEqual(myCatalog._column_origins['cc'],'default column')
         self.assertEqual(myCatalog._column_origins['dd'],'default column')
-        """
+        
 
 def suite():
     utilsTests.init()
