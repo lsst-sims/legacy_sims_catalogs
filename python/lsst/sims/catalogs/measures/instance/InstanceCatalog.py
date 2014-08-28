@@ -177,7 +177,7 @@ class InstanceCatalog(object):
         
         #this variable will control whether or not column_by_name prints
         #the origin of columns to the screen (we only want to do this once)
-        self._print_column_origins = True
+        self._column_origins_switch = True
         self._column_origins = {}
 
         self.obs_metadata = obs_metadata
@@ -239,7 +239,7 @@ class InstanceCatalog(object):
         if hasattr(self, getfunc):
             function = getattr(self,getfunc)
             
-            if self._print_column_origins:
+            if self._column_origins_switch:
                 self._column_origins[column_name] = self._get_class_that_defined_method(function)
 
             return function(*args, **kwargs)
@@ -247,20 +247,20 @@ class InstanceCatalog(object):
             getfunc = self._compound_column_names[column_name]
             function = getattr(self,getfunc)
             
-            if self._print_column_origins:
+            if self._column_origins_switch:
                 self._column_origins[column_name] = self._get_class_that_defined_method(function)
                 
             compound_column = function(*args, **kwargs)
             return compound_column[column_name]
         elif isinstance(self._current_chunk, _MimicRecordArray) or column_name in self._current_chunk.dtype.names:
             
-            if self._print_column_origins:
+            if self._column_origins_switch:
                  self._column_origins[column_name] = 'the database'
             
             return self._current_chunk[column_name]
         else:
             
-            if self._print_column_origins:
+            if self._column_origins_switch:
                 self._column_origins[column_name] = 'default column'
             
             return getattr(self, "default_%s"%column_name)(*args, **kwargs)
@@ -387,7 +387,7 @@ class InstanceCatalog(object):
         else:
             return arr
 
-    def _get_class_that_defined_method(f):
+    def _get_class_that_defined_method(self,f):
         """
         This method will return the name of the class that first defined the
         input method.
@@ -401,3 +401,11 @@ class InstanceCatalog(object):
                 return cls
         
         return None
+
+    def _print_column_origins(self):
+        if self._column_origins_switch:
+            print 'where the columns in this database come from'
+            for column_name in self._column_origins:
+                print column_name,self._column_origins[column_name]
+            
+        self._column_origins_switch = False
