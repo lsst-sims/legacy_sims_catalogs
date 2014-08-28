@@ -146,6 +146,32 @@ class testColumnOrigins(unittest.TestCase):
         self.assertEqual(myCatalog._column_origins['bb'],'the database')
         self.assertEqual(str(myCatalog._column_origins['cc']),mixin2Name)
         self.assertEqual(str(myCatalog._column_origins['dd']),mixin2Name) 
+    
+    def testMixin3(self):
+        myCatalog = testCatalogMixin3(self.myDBobject)
+        mixin3Name = '<class \'__main__.mixin3\'>'
+        
+        self.assertEqual(myCatalog._column_origins['objid'],'the database')
+        self.assertEqual(myCatalog._column_origins['raJ2000'],'the database')
+        self.assertEqual(myCatalog._column_origins['decJ2000'],'the database')
+        self.assertEqual(myCatalog._column_origins['aa'],'the database')
+        self.assertEqual(myCatalog._column_origins['bb'],'the database')
+        self.assertEqual(str(myCatalog._column_origins['cc']),mixin3Name)
+        self.assertEqual(str(myCatalog._column_origins['dd']),'default column') 
+
+    def testMixin3Mixin1(self):
+        myCatalog = testCatalogMixin3Mixin1(self.myDBobject)
+        mixin3Name = '<class \'__main__.mixin3\'>'
+        mixin1Name = '<class \'__main__.mixin1\'>'
+   
+        self.assertEqual(myCatalog._column_origins['objid'],'the database')
+        self.assertEqual(myCatalog._column_origins['raJ2000'],'the database')
+        self.assertEqual(myCatalog._column_origins['decJ2000'],'the database')
+        self.assertEqual(myCatalog._column_origins['aa'],'the database')
+        self.assertEqual(myCatalog._column_origins['bb'],'the database')
+        self.assertEqual(str(myCatalog._column_origins['cc']),mixin3Name)
+        self.assertEqual(str(myCatalog._column_origins['dd']),mixin1Name) 
+
 
 def suite():
     utilsTests.init()
