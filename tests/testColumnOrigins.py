@@ -102,6 +102,10 @@ class testCatalogMixin3Mixin1(InstanceCatalog,mixin3,mixin1):
     column_outputs = ['objid','aa','bb','cc','dd','raJ2000','decJ2000']
     default_columns = [('cc',0.0,float),('dd',1.0,float)]
 
+class testCatalogAunspecified(InstanceCatalog,mixin3,mixin1):
+    column_outputs = ['objid','bb','cc','dd','raJ2000','decJ2000']
+    default_columns = [('aa',-1.0,float),('cc',0.0,float),('dd',1.0,float)]
+
 class testColumnOrigins(unittest.TestCase):
 
     def setUp(self):
@@ -181,6 +185,22 @@ class testColumnOrigins(unittest.TestCase):
         Test case where one mixin overwrites another for calculating cc
         """
         myCatalog = testCatalogMixin3Mixin1(self.myDBobject)
+        mixin3Name = '<class \'__main__.mixin3\'>'
+        mixin1Name = '<class \'__main__.mixin1\'>'
+   
+        self.assertEqual(myCatalog._column_origins['objid'],'the database')
+        self.assertEqual(myCatalog._column_origins['raJ2000'],'the database')
+        self.assertEqual(myCatalog._column_origins['decJ2000'],'the database')
+        self.assertEqual(myCatalog._column_origins['aa'],'the database')
+        self.assertEqual(myCatalog._column_origins['bb'],'the database')
+        self.assertEqual(str(myCatalog._column_origins['cc']),mixin3Name)
+        self.assertEqual(str(myCatalog._column_origins['dd']),mixin1Name) 
+
+    def testAunspecified(self):
+        """
+        Test case where aa is not specified in the catalog (and has a default)
+        """
+        myCatalog = testCatalogAunspecified(self.myDBobject)
         mixin3Name = '<class \'__main__.mixin3\'>'
         mixin1Name = '<class \'__main__.mixin1\'>'
    
