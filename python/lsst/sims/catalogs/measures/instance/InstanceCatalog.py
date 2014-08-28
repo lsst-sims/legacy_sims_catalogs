@@ -175,9 +175,8 @@ class InstanceCatalog(object):
         self.db_obj = db_obj
         self._current_chunk = None
         
-        #this variable will control whether or not column_by_name prints
-        #the origin of columns to the screen (we only want to do this once)
-        self._column_origins_switch = True
+        #this dict will contain information telling the user where the columns in
+        #the catalog come from
         self._column_origins = {}
 
         self.obs_metadata = obs_metadata
@@ -191,7 +190,11 @@ class InstanceCatalog(object):
 
         self._column_cache = {}
         
+        #self._column_origins_switch tells column_by_name to log where it is getting
+        #the columns in self._column_origins (we only want to do that once)
+        self._column_origins_switch = True
         self._check_requirements()
+        self._column_origins_switch = False
 
     def _all_columns(self):
         """
@@ -286,8 +289,8 @@ class InstanceCatalog(object):
             if len(nodefault) > 0:
                 raise ValueError("Required columns missing from database: "
                                  "({0})".format(', '.join(nodefault)))
-        
-        self._print_column_origins()
+        if self.verbose:
+            self.print_column_origins()
 
     def _make_line_template(self, chunk_cols):
         templ_list = []
@@ -404,16 +407,14 @@ class InstanceCatalog(object):
         
         return None
 
-    def _print_column_origins(self):
+    def print_column_origins(self):
         """
-        Print the origins of the columns in this database object
+        Print the origins of the columns in this catalog
         """
-        
-        if self._column_origins_switch:
-            print '\nwhere the columns in ',self.__class__,' come from'
-            for column_name in self._column_origins:
-                print column_name,self._column_origins[column_name]
+       
+        print '\nwhere the columns in ',self.__class__,' come from'
+        for column_name in self._column_origins:
+            print column_name,self._column_origins[column_name]
             
-            print '\n'
+        print '\n'
             
-        self._column_origins_switch = False
