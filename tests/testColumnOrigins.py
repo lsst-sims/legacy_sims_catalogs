@@ -116,6 +116,8 @@ class testColumnOrigins(unittest.TestCase):
         myCatalog = testCatalogDefaults(self.myDBobject)
         
         myCatalog.print_column_origins()
+        myCatalog.write_catalog('junk.sav')
+        print myCatalog.default_columns
         
         """
         self.assertEqual(myCatalog._column_origins['objid'],'the database')

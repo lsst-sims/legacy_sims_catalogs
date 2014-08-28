@@ -194,7 +194,6 @@ class InstanceCatalog(object):
         #the columns in self._column_origins (we only want to do that once)
         self._column_origins_switch = True
         self._check_requirements()
-        self._column_origins_switch = False
 
     def _all_columns(self):
         """
@@ -233,7 +232,7 @@ class InstanceCatalog(object):
         required_columns_with_defaults = default_columns_set&required_columns_set
 
         self._set_current_chunk(saved_chunk, saved_cache)
-
+        
         return db_required_columns, list(required_columns_with_defaults)
 
     def column_by_name(self, column_name, *args, **kwargs):
@@ -250,7 +249,7 @@ class InstanceCatalog(object):
             getfunc = self._compound_column_names[column_name]
             function = getattr(self,getfunc)
             
-            if self._column_origins_switch:
+            if self._column_origins_switch and column_name:
                 self._column_origins[column_name] = self._get_class_that_defined_method(function)
                 
             compound_column = function(*args, **kwargs)
@@ -262,7 +261,7 @@ class InstanceCatalog(object):
             
             return self._current_chunk[column_name]
         else:
-            
+
             if self._column_origins_switch:
                 self._column_origins[column_name] = 'default column'
             
@@ -286,9 +285,14 @@ class InstanceCatalog(object):
             for col in missing_cols:
                 if col not in defaults:
                     nodefault.append(col)
+                else:
+                    self._column_origins[col] = 'default column'
+                    
             if len(nodefault) > 0:
                 raise ValueError("Required columns missing from database: "
                                  "({0})".format(', '.join(nodefault)))
+        
+        self._column_origins_switch = False #do not want to log column origins any more
         if self.verbose:
             self.print_column_origins()
 
