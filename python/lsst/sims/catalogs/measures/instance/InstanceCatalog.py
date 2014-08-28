@@ -286,6 +286,8 @@ class InstanceCatalog(object):
             if len(nodefault) > 0:
                 raise ValueError("Required columns missing from database: "
                                  "({0})".format(', '.join(nodefault)))
+        
+        self._print_column_origins()
 
     def _make_line_template(self, chunk_cols):
         templ_list = []
@@ -387,7 +389,7 @@ class InstanceCatalog(object):
         else:
             return arr
 
-    def _get_class_that_defined_method(self,f):
+    def _get_class_that_defined_method(self,meth):
         """
         This method will return the name of the class that first defined the
         input method.
@@ -396,7 +398,7 @@ class InstanceCatalog(object):
         http://stackoverflow.com/questions/961048/get-class-that-defined-method
         """
         
-        for cls in inspect.getmro(f.im_class):
+        for cls in inspect.getmro(meth.im_class):
             if meth.__name__ in cls.__dict__:
                 return cls
         
