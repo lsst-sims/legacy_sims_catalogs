@@ -174,6 +174,11 @@ class InstanceCatalog(object):
         
         self.db_obj = db_obj
         self._current_chunk = None
+        
+        #this variable will control whether or not column_by_name prints
+        #the origin of columns to the screen (we only want to do this once)
+        self._print_column_origins = True
+        self._column_origins = {}
 
         self.obs_metadata = obs_metadata
         self.constraint = constraint
@@ -186,8 +191,6 @@ class InstanceCatalog(object):
 
         self._column_cache = {}
         
-        
-
         self._check_requirements()
 
     def _all_columns(self):
