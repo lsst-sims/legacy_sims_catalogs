@@ -1,7 +1,9 @@
 import os
 import numpy
 import unittest
-from lsst.sims.catalogs.measures.instance import InstanceCatalog, cached
+import sqlite3, json
+import lsst.utils.tests as utilsTests
+from lsst.sims.catalogs.measures.instance import InstanceCatalog, cached, compound
 from lsst.sims.catalogs.generation.db import DBObject
 
 def makeTestDB(size=10, **kwargs):
@@ -91,18 +93,48 @@ class testCatalogMixin3(InstanceCatalog,mixin3):
     column_outputs = ['objid','aa','bb','cc','dd','raJ2000','decJ2000']
     default_columns = [('cc',0.0,float),('dd',1.0,float)]
     
-class testCatalogMixin3Mixin1(InstanceCatalog,Mixin3,Mixin1):
+class testCatalogMixin3Mixin1(InstanceCatalog,mixin3,mixin1):
     column_outputs = ['objid','aa','bb','cc','dd','raJ2000','decJ2000']
     default_columns = [('cc',0.0,float),('dd',1.0,float)]
 
 class testColumnOrigins(unittest.TestCase):
 
-if os.path.exists('testDatabase.db'):
-    os.unlink('testDatabase.db')
+    def setUp(self):
+        if os.path.exists('testDatabase.db'):
+            os.unlink('testDatabase.db')
+        
+        makeTestDB()
+        self.myDBobject = testDBobject()
+    
+    def tearDown(self):
+        if os.path.exists('testDatabase.db'):
+            os.unlink('testDatabase.db')
+        
+        del self.myDBobject
 
-makeTestDB()
-myDBobject = testDBobject()
-myCatalog = testCatalog(myDBobject)
-myCatalog.print_column_origins()
-print myCatalog._column_origins
-myCatalog.write_catalog('catOutput.sav')
+    def testDefaults(self):
+        myCatalog = testCatalogDefaults(self.myDBobject)
+        
+        myCatalog.print_column_origins()
+        
+        """
+        self.assertEqual(myCatalog._column_origins['objid'],'the database')
+        self.assertEqual(myCatalog._column_origins['raJ2000'],'the database')
+        self.assertEqual(myCatalog._column_origins['decJ2000'],'the database')
+        self.assertEqual(myCatalog._column_origins['aa'],'the database')
+        self.assertEqual(myCatalog._column_origins['bb'],'the database')
+        self.assertEqual(myCatalog._column_origins['cc'],'default column')
+        self.assertEqual(myCatalog._column_origins['dd'],'default column')
+        """
+
+def suite():
+    utilsTests.init()
+    suites = []
+    suites += unittest.makeSuite(testColumnOrigins)
+    return unittest.TestSuite(suites)
+
+def run(shouldExit = False):
+    utilsTests.run(suite(),shouldExit)
+
+if __name__ == "__main__":
+    run(True)
