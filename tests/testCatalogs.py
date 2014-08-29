@@ -3,7 +3,6 @@ import os
 import numpy
 import unittest
 import eups
-import sqlalchemy
 import lsst.utils.tests as utilsTests
 from lsst.sims.catalogs.generation.db import DBObject, ObservationMetaData
 from lsst.sims.catalogs.measures.instance import InstanceCatalog, compound
@@ -145,9 +144,6 @@ class boundingBoxTest(unittest.TestCase):
                                             mjd=52000., bandpassName='r')
                                             
         self.mystars = DBObject.from_objid('teststars')
-
-        
-        #self.basedir = eups.productDir('sims_catalogs_measures')+"/tests/"
 
     def tearDown(self):
         del self.obsMdCirc
