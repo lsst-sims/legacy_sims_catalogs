@@ -174,6 +174,10 @@ class InstanceCatalog(object):
         
         self.db_obj = db_obj
         self._current_chunk = None
+        
+        #this dict will contain information telling the user where the columns in
+        #the catalog come from
+        self._column_origins = {}
 
         self.obs_metadata = obs_metadata
         self.constraint = constraint
@@ -186,8 +190,10 @@ class InstanceCatalog(object):
 
         self._column_cache = {}
         
+        #self._column_origins_switch tells column_by_name to log where it is getting
+        #the columns in self._column_origins (we only want to do that once)
+        self._column_origins_switch = True
         
-
         self._check_requirements()
 
     def _all_columns(self):
@@ -227,21 +233,39 @@ class InstanceCatalog(object):
         required_columns_with_defaults = default_columns_set&required_columns_set
 
         self._set_current_chunk(saved_chunk, saved_cache)
-
+        
         return db_required_columns, list(required_columns_with_defaults)
 
     def column_by_name(self, column_name, *args, **kwargs):
         """Given a column name, return the column data"""
         getfunc = "get_%s" % column_name
         if hasattr(self, getfunc):
-            return getattr(self, getfunc)(*args, **kwargs)
+            function = getattr(self,getfunc)
+            
+            if self._column_origins_switch:
+                self._column_origins[column_name] = self._get_class_that_defined_method(function)
+
+            return function(*args, **kwargs)
         elif column_name in self._compound_column_names:
             getfunc = self._compound_column_names[column_name]
-            compound_column = getattr(self, getfunc)(*args, **kwargs)
+            function = getattr(self,getfunc)
+            
+            if self._column_origins_switch and column_name:
+                self._column_origins[column_name] = self._get_class_that_defined_method(function)
+                
+            compound_column = function(*args, **kwargs)
             return compound_column[column_name]
         elif isinstance(self._current_chunk, _MimicRecordArray) or column_name in self._current_chunk.dtype.names:
+            
+            if self._column_origins_switch:
+                 self._column_origins[column_name] = 'the database'
+            
             return self._current_chunk[column_name]
         else:
+
+            if self._column_origins_switch:
+                self._column_origins[column_name] = 'default column'
+            
             return getattr(self, "default_%s"%column_name)(*args, **kwargs)
 
     def _check_requirements(self):
@@ -256,15 +280,27 @@ class InstanceCatalog(object):
                 missing_cols.append(col)
             else:
                 self._active_columns.append(col)
-
+        
+        self._column_origins_switch = False #do not want to log column origins any more
+        
         if len(missing_cols) > 0:
             nodefault = []
             for col in missing_cols:
                 if col not in defaults:
                     nodefault.append(col)
+                else:
+                    #Because some earlier part of the code copies default columns
+                    #into the same place as columns that exist natively in the
+                    #database, this is where we have to mark columns that are
+                    #set by default
+                    self._column_origins[col] = 'default column'
+                    
             if len(nodefault) > 0:
                 raise ValueError("Required columns missing from database: "
                                  "({0})".format(', '.join(nodefault)))
+        
+        if self.verbose:
+            self.print_column_origins()
 
     def _make_line_template(self, chunk_cols):
         templ_list = []
@@ -365,3 +401,30 @@ class InstanceCatalog(object):
             return numpy.left_shift(self.column_by_name(self.refIdCol), nShift) + self.db_obj.getObjectTypeId()
         else:
             return arr
+
+    def _get_class_that_defined_method(self,meth):
+        """
+        This method will return the name of the class that first defined the
+        input method.
+        
+        This is taken verbatim from
+        http://stackoverflow.com/questions/961048/get-class-that-defined-method
+        """
+        
+        for cls in inspect.getmro(meth.im_class):
+            if meth.__name__ in cls.__dict__:
+                return cls
+        
+        return None
+
+    def print_column_origins(self):
+        """
+        Print the origins of the columns in this catalog
+        """
+       
+        print '\nwhere the columns in ',self.__class__,' come from'
+        for column_name in self._column_origins:
+            print column_name,self._column_origins[column_name]
+            
+        print '\n'
+            
