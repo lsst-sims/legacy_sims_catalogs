@@ -55,17 +55,19 @@ def compareFiles(file1, file2):
 class InstanceCatalogTestCase(unittest.TestCase):
     def setUp(self):
         
-        if os.path.exists('testDatabase.db'):
-            os.unlink('testDatabase.db')
-        tu.makeStarTestDB(size=100000, seedVal=1)
-        tu.makeGalTestDB(size=100000, seedVal=1)
+        if os.path.exists('icStarTestDatabase.db'):
+            os.unlink('icStarTestDatabase.db')
+        if os.path.exists('icGalTestDatabase.db'):
+            os.unlink('icGalTestDatabase.db')
+        tu.makeStarTestDB(filename='icStarTestDatabase.db', size=100000, seedVal=1)
+        tu.makeGalTestDB(filename='icGalTestDatabase.db', size=100000, seedVal=1)
                 
         self.obsMd = ObservationMetaData(circ_bounds=dict(ra=210., dec=-60, radius=1.75), mjd=52000.,
                                                bandpassName='r')
                                                
-        self.mystars = DBObject.from_objid('teststars')
+        self.mystars = DBObject.from_objid('teststars', address='sqlite:///icStarTestDatabase.db')
         
-        self.mygals = DBObject.from_objid('testgals')
+        self.mygals = DBObject.from_objid('testgals', address='sqlite:///icGalTestDatabase.db')
         
         self.basedir = eups.productDir('sims_catalogs_measures')+"/tests/"
 
@@ -132,9 +134,9 @@ class boundingBoxTest(unittest.TestCase):
         self.DECcenter = -60.
         self.radius = 40.0
         
-        if os.path.exists('testDatabase.db'):
-            os.unlink('testDatabase.db')
-        tu.makeStarTestDB(size=100000, seedVal=1)
+        if os.path.exists('bboxStarTestDatabase.db'):
+            os.unlink('bboxStarTestDatabase.db')
+        tu.makeStarTestDB(filename='bboxStarTestDatabase.db', size=100000, seedVal=1)
         self.obsMdCirc = ObservationMetaData(
                          circ_bounds=dict(ra=self.RAcenter, dec=self.DECcenter, radius=self.radius), 
                          mjd=52000., bandpassName='r')
@@ -143,7 +145,7 @@ class boundingBoxTest(unittest.TestCase):
                                             dec_min=self.DECmin,dec_max=self.DECmax),
                                             mjd=52000., bandpassName='r')
                                             
-        self.mystars = DBObject.from_objid('teststars')
+        self.mystars = DBObject.from_objid('teststars', address='sqlite:///bboxStarTestDatabase.db')
 
     def tearDown(self):
         del self.obsMdCirc

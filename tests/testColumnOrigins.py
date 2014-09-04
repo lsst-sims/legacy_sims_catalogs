@@ -10,14 +10,14 @@ def makeTestDB(size=10, **kwargs):
     """
     Make a test database
     """
-    conn = sqlite3.connect('testDatabase.db')
+    conn = sqlite3.connect('colOriginsTestDatabase.db')
     c = conn.cursor()
-    try:
-        c.execute('''CREATE TABLE testTable
-                     (id int, aa float, bb float, ra float, decl float)''')
-        conn.commit()
-    except:
-        raise RuntimeError("Error creating database.")
+#    try:
+    c.execute('''CREATE TABLE testTable
+                 (id int, aa float, bb float, ra float, decl float)''')
+    conn.commit()
+#    except Exception:
+#        raise RuntimeError("Error creating database.")
     
     for i in xrange(size):
         
@@ -37,7 +37,7 @@ class testDBobject(DBObject):
     idColKey = 'id'
     #Make this implausibly large?  
     appendint = 1023
-    dbAddress = 'sqlite:///testDatabase.db'
+    dbAddress = 'sqlite:///colOriginsTestDatabase.db'
     raColName = 'ra'
     decColName = 'decl'
     columns = [('objid', 'id', int),
@@ -109,15 +109,15 @@ class testCatalogAunspecified(InstanceCatalog,mixin3,mixin1):
 class testColumnOrigins(unittest.TestCase):
 
     def setUp(self):
-        if os.path.exists('testDatabase.db'):
-            os.unlink('testDatabase.db')
+        if os.path.exists('colOriginsTestDatabase.db'):
+            os.unlink('colOriginsTestDatabase.db')
         
         makeTestDB()
         self.myDBobject = testDBobject()
     
     def tearDown(self):
-        if os.path.exists('testDatabase.db'):
-            os.unlink('testDatabase.db')
+        if os.path.exists('colOriginsTestDatabase.db'):
+            os.unlink('colOriginsTestDatabase.db')
         
         del self.myDBobject
 
