@@ -216,6 +216,7 @@ class InstanceCatalog(object):
             return None
         else:
             return self.obs_metadata.RotSkyPos
+            
     def _all_columns(self):
         """
         Return a list of all available column names, from those provided
