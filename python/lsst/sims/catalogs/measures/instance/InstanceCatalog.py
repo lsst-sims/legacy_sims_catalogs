@@ -173,7 +173,10 @@ class InstanceCatalog(object):
         #this dict will contain information telling the user where the columns in
         #the catalog come from
         self._column_origins = {}
-
+        
+        #Note: if the code alters the obs_metadata instance outside of this
+        #InstanceCatalog class, the data contained in this InstanceCatalog
+        #class will also change
         self.obs_metadata = obs_metadata
         
         self.constraint = constraint

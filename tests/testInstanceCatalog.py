@@ -79,7 +79,28 @@ class InstanceCatalogMetaDataTest(unittest.TestCase):
         self.assertAlmostEqual(testCat.site().meanPressure,500.0,10)
         self.assertAlmostEqual(testCat.site().meanHumidity,0.1,10)
         self.assertAlmostEqual(testCat.site().lapseRate,0.1,10)
-    
+        
+        #
+        #Note: because of how we have chosen to handle the observation
+        #metadata data, changing the obs_metadata object outside of 
+        #InstanceCatalog will change the results of calls to the InstanceCatalog
+        #methods
+        #
+        
+        phosimMD = OrderedDict([('Unrefracted_RA', (-2.0,float)), 
+                                ('Unrefracted_Dec', (0.9,float)),
+                                ('Opsim_rotskypos', (1.1,float)), 
+                                ('Opsim_expmjd',(4000.0,float)),
+                                ('Opsim_filter',(1,int))])
+        
+        testObsMD.assignPhoSimMetaData(phosimMD)
+        
+        self.assertAlmostEqual(testCat.mjd(),4000.0,10)
+        self.assertAlmostEqual(testCat.UnrefractedRA(),-2.0,10)
+        self.assertAlmostEqual(testCat.UnrefractedDec(),0.9,10)
+        self.assertAlmostEqual(testCat.RotSkyPos(),1.1,10)
+        self.assertEqual(testCat.bandpass(),'g')
+        
 def suite():
     """Returns a suite containing all the test cases in this module."""
     utilsTests.init()
