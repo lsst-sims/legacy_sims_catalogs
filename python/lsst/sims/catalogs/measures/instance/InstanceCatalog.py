@@ -175,7 +175,7 @@ class InstanceCatalog(object):
         self._column_origins = {}
 
         self.obs_metadata = obs_metadata
-        if self.obs_metadata = None:
+        if self.obs_metadata is None:
             self.site = None
         else:
             self.site = self.obs_metadata.site
