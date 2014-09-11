@@ -175,16 +175,6 @@ class InstanceCatalog(object):
         self._column_origins = {}
 
         self.obs_metadata = obs_metadata
-        if self.obs_metadata is None:
-            self.site = None
-            self.UnrefractedRA = None
-            self.UnrefractedDec = None
-            self.RotSkyPos = None
-        else:
-            self.site = self.obs_metadata.site
-            self.UnrefractedRA = self.obs_metadata.UnrefractedRA
-            self.UnrefractedDec = self.obs_metadata.UnrefractedDec
-            self.RotSkyPos = self.obs_metadata.RotSkyPos
         
         self.constraint = constraint
         self.specFileMap = specFileMap
@@ -201,7 +191,31 @@ class InstanceCatalog(object):
         self._column_origins_switch = True
         
         self._check_requirements()
-
+    
+    def site(self):
+        if self.obs_metadata is None:
+            return None
+        else:
+            return self.obs_metadata.site
+    
+    
+    def UnrefractedRA(self):
+        if self.obs_metadata is None:
+            return None
+        else:
+            return self.obs_metadata.UnrefractedRA
+    
+    def UnrefractedDec(self):
+        if self.obs_metadata is None:
+            return None
+        else:
+            return self.obs_metadata.UnrefractedDec
+    
+    def RotSkyPos(self):
+        if self.obs_metadata is None:
+            return None
+        else:
+            return self.obs_metadata.RotSkyPos
     def _all_columns(self):
         """
         Return a list of all available column names, from those provided
