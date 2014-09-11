@@ -194,7 +194,7 @@ class InstanceCatalog(object):
     
     def site(self):
         if self.obs_metadata is None:
-            return None
+            raise RuntimeError("Cannot ask catalog for site; it has no obs_metadata")
         else:
             return self.obs_metadata.site
     
