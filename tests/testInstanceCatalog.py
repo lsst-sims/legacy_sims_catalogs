@@ -47,7 +47,38 @@ class InstanceCatalogMetaDataTest(unittest.TestCase):
         self.assertAlmostEqual(testCat.site().meanPressure,749.3,10)
         self.assertAlmostEqual(testCat.site().meanHumidity,0.4,10)
         self.assertAlmostEqual(testCat.site().lapseRate,0.0065,10)
-    
+
+    def testAssignment(self):
+        mjd = 5120.0
+        RA = 1.5
+        Dec = -1.1
+        RotSkyPos = -0.2
+        
+        testSite = Site(longitude = 2.0, latitude = -1.0, height = 4.0,
+            xPolar = 0.5, yPolar = -0.5, meanTemperature = 100.0,
+            meanPressure = 500.0, meanHumidity = 0.1, lapseRate = 0.1)
+        
+        testObsMD = ObservationMetaData(site=testSite, 
+            mjd=mjd, UnrefractedRA=RA,
+            UnrefractedDec=Dec, RotSkyPos=RotSkyPos, bandpassName = 'z')    
+        
+        testCat = myCatalogClass(self.myDB,obs_metadata=testObsMD)
+        
+        self.assertAlmostEqual(testCat.mjd(),5120.0,10)
+        self.assertAlmostEqual(testCat.UnrefractedRA(),1.5,10)
+        self.assertAlmostEqual(testCat.UnrefractedDec(),-1.1,10)
+        self.assertAlmostEqual(testCat.RotSkyPos(),-0.2,10)
+        self.assertEqual(testCat.bandpass(),'z')
+        
+        self.assertAlmostEqual(testCat.site().longitude,2.0,10)
+        self.assertAlmostEqual(testCat.site().latitude,-1.0,10)
+        self.assertAlmostEqual(testCat.site().height,4.0,10)
+        self.assertAlmostEqual(testCat.site().xPolar,0.5,10)
+        self.assertAlmostEqual(testCat.site().yPolar,-0.5,10)
+        self.assertAlmostEqual(testCat.site().meanTemperature,100.0,10)
+        self.assertAlmostEqual(testCat.site().meanPressure,500.0,10)
+        self.assertAlmostEqual(testCat.site().meanHumidity,0.1,10)
+        self.assertAlmostEqual(testCat.site().lapseRate,0.1,10)
     
 def suite():
     """Returns a suite containing all the test cases in this module."""
