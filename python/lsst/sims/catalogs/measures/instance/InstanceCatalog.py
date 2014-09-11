@@ -4,7 +4,7 @@ import numpy
 import inspect
 import re
 from .fileMaps import defaultSpecMap
-from .Site import Site
+from lsst.sims.catalogs.generation.utils.Site import Site
 
 class InstanceCatalogMeta(type):
     """Meta class for registering instance catalogs.
