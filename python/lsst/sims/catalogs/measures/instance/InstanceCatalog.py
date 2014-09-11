@@ -4,7 +4,6 @@ import numpy
 import inspect
 import re
 from .fileMaps import defaultSpecMap
-from lsst.sims.catalogs.generation.utils.Site import Site
 
 class InstanceCatalogMeta(type):
     """Meta class for registering instance catalogs.
@@ -165,12 +164,8 @@ class InstanceCatalog(object):
             else:
                 yield column
 
-    def __init__(self, db_obj, obs_metadata=None, constraint=None, specFileMap=defaultSpecMap, site=None):
+    def __init__(self, db_obj, obs_metadata=None, constraint=None, specFileMap=defaultSpecMap):
         self.verbose = db_obj.verbose
-        if site == None:
-            self.site=Site()
-        else:
-            self.site=site
         
         self.db_obj = db_obj
         self._current_chunk = None
@@ -180,6 +175,11 @@ class InstanceCatalog(object):
         self._column_origins = {}
 
         self.obs_metadata = obs_metadata
+        if self.obs_metadata = None:
+            self.site = None
+        else:
+            self.site = self.obs_metadata.site
+        
         self.constraint = constraint
         self.specFileMap = specFileMap
 
