@@ -216,6 +216,12 @@ class InstanceCatalog(object):
             return None
         else:
             return self.obs_metadata.RotSkyPos
+    
+    def bandpass(self):
+        if self.obs_metadata is None:
+            return None
+        else:
+            return self.obs_metadata.bandpass
             
     def _all_columns(self):
         """
