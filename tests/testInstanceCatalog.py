@@ -102,6 +102,26 @@ class InstanceCatalogMetaDataTest(unittest.TestCase):
         self.assertAlmostEqual(testCat.rotSkyPos(),-0.2,10)
         self.assertEqual(testCat.bandpass(),'z')
         
+        testObsMD.site.longitude=-2.0
+        testObsMD.site.latitude=-2.0
+        testObsMD.site.height=-2.0
+        testObsMD.site.xPolar=-2.0
+        testObsMD.site.yPolar=-2.0
+        testObsMD.site.meanTemperature=-2.0
+        testObsMD.site.meanPressure=-2.0
+        testObsMD.site.meanHumidity=-2.0 
+        testObsMD.site.lapseRate=-2.0       
+                
+        self.assertAlmostEqual(testCat.site.longitude,2.0,10)
+        self.assertAlmostEqual(testCat.site.latitude,-1.0,10)
+        self.assertAlmostEqual(testCat.site.height,4.0,10)
+        self.assertAlmostEqual(testCat.site.xPolar,0.5,10)
+        self.assertAlmostEqual(testCat.site.yPolar,-0.5,10)
+        self.assertAlmostEqual(testCat.site.meanTemperature,100.0,10)
+        self.assertAlmostEqual(testCat.site.meanPressure,500.0,10)
+        self.assertAlmostEqual(testCat.site.meanHumidity,0.1,10)
+        self.assertAlmostEqual(testCat.site.lapseRate,0.1,10)
+        
 def suite():
     """Returns a suite containing all the test cases in this module."""
     utilsTests.init()
