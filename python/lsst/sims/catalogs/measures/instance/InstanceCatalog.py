@@ -178,19 +178,16 @@ class InstanceCatalog(object):
         #Note: if the code alters the obs_metadata instance outside of this
         #InstanceCatalog class, the data contained in this InstanceCatalog
         #class will also change
-        
-        if not isinstance(obs_metadata,ObservationMetaData):
-            raise ValueError("You passed InstanceCatalog something that was not ObservationMetaData")
-        
+
         if obs_metadata is not None:
+            if not isinstance(obs_metadata,ObservationMetaData):
+                raise ValueError("You passed InstanceCatalog something that was not ObservationMetaData")
+            
             self.obs_metadata = obs_metadata
         else:
             self.obs_metadata = ObservationMetaData()
-            
-        if obs_metadata is not None:
-            self.site = self.obs_metadata.site
-        else:
-            self.site = None
+        
+        self.site = self.obs_metadata.site
         
         self.constraint = constraint
         self.specFileMap = specFileMap

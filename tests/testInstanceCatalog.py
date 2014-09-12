@@ -27,11 +27,19 @@ class InstanceCatalogMetaDataTest(unittest.TestCase):
             os.unlink('testDatabase.db')
         
         del self.myDB
+    
+    def testObsMetaDataAssignment(self):
+        """
+        Test that you get an error when you pass something that is not
+        ObservationMetaData as obs_metadata
+        """
+        
+        xx=5.0
+        self.assertRaises(ValueError,myCatalogClass,self.myDB,obs_metadata=xx)
         
     def testDefault(self):
     
-        testObsMD = ObservationMetaData()
-        testCat = myCatalogClass(self.myDB,obs_metadata=testObsMD)
+        testCat = myCatalogClass(self.myDB)
         
         self.assertEqual(testCat.unrefractedRA(),None)
         self.assertEqual(testCat.unrefractedDec(),None)
