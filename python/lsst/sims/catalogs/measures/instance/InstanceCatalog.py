@@ -3,6 +3,7 @@ import warnings
 import numpy 
 import inspect
 import re
+import copy
 from .fileMaps import defaultSpecMap
 from lsst.sims.catalogs.generation.db import ObservationMetaData
 
@@ -174,16 +175,12 @@ class InstanceCatalog(object):
         #this dict will contain information telling the user where the columns in
         #the catalog come from
         self._column_origins = {}
-        
-        #Note: if the code alters the obs_metadata instance outside of this
-        #InstanceCatalog class, the data contained in this InstanceCatalog
-        #class will also change
 
         if obs_metadata is not None:
             if not isinstance(obs_metadata,ObservationMetaData):
                 raise ValueError("You passed InstanceCatalog something that was not ObservationMetaData")
             
-            self.obs_metadata = obs_metadata
+            self.obs_metadata = copy.deepcopy(obs_metadata)
         else:
             self.obs_metadata = ObservationMetaData()
         
