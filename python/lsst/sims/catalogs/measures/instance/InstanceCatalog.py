@@ -202,23 +202,23 @@ class InstanceCatalog(object):
             return self.obs_metadata.site
     
     
-    def UnrefractedRA(self):
+    def unrefractedRA(self):
         if self.obs_metadata is None:
             return None
         else:
-            return self.obs_metadata.UnrefractedRA
+            return self.obs_metadata.unrefractedRA
     
-    def UnrefractedDec(self):
+    def unrefractedDec(self):
         if self.obs_metadata is None:
             return None
         else:
-            return self.obs_metadata.UnrefractedDec
+            return self.obs_metadata.unrefractedDec
     
-    def RotSkyPos(self):
+    def rotSkyPos(self):
         if self.obs_metadata is None:
             return None
         else:
-            return self.obs_metadata.RotSkyPos
+            return self.obs_metadata.rotSkyPos
     
     def bandpass(self):
         if self.obs_metadata is None:
