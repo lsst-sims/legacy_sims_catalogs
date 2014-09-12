@@ -38,15 +38,15 @@ class InstanceCatalogMetaDataTest(unittest.TestCase):
         self.assertAlmostEqual(testCat.rotSkyPos(),0.0,10)
         self.assertEqual(testCat.bandpass(),'r')
         
-        self.assertAlmostEqual(testCat.site().longitude,-1.2320792,10)
-        self.assertAlmostEqual(testCat.site().latitude,-0.517781017,10)
-        self.assertAlmostEqual(testCat.site().height,2650,10)
-        self.assertAlmostEqual(testCat.site().xPolar,0,10)
-        self.assertAlmostEqual(testCat.site().yPolar,0,10)
-        self.assertAlmostEqual(testCat.site().meanTemperature,284.655,10)
-        self.assertAlmostEqual(testCat.site().meanPressure,749.3,10)
-        self.assertAlmostEqual(testCat.site().meanHumidity,0.4,10)
-        self.assertAlmostEqual(testCat.site().lapseRate,0.0065,10)
+        self.assertAlmostEqual(testCat.site.longitude,-1.2320792,10)
+        self.assertAlmostEqual(testCat.site.latitude,-0.517781017,10)
+        self.assertAlmostEqual(testCat.site.height,2650,10)
+        self.assertAlmostEqual(testCat.site.xPolar,0,10)
+        self.assertAlmostEqual(testCat.site.yPolar,0,10)
+        self.assertAlmostEqual(testCat.site.meanTemperature,284.655,10)
+        self.assertAlmostEqual(testCat.site.meanPressure,749.3,10)
+        self.assertAlmostEqual(testCat.site.meanHumidity,0.4,10)
+        self.assertAlmostEqual(testCat.site.lapseRate,0.0065,10)
 
     def testAssignment(self):
         mjd = 5120.0
@@ -70,15 +70,15 @@ class InstanceCatalogMetaDataTest(unittest.TestCase):
         self.assertAlmostEqual(testCat.rotSkyPos(),-0.2,10)
         self.assertEqual(testCat.bandpass(),'z')
         
-        self.assertAlmostEqual(testCat.site().longitude,2.0,10)
-        self.assertAlmostEqual(testCat.site().latitude,-1.0,10)
-        self.assertAlmostEqual(testCat.site().height,4.0,10)
-        self.assertAlmostEqual(testCat.site().xPolar,0.5,10)
-        self.assertAlmostEqual(testCat.site().yPolar,-0.5,10)
-        self.assertAlmostEqual(testCat.site().meanTemperature,100.0,10)
-        self.assertAlmostEqual(testCat.site().meanPressure,500.0,10)
-        self.assertAlmostEqual(testCat.site().meanHumidity,0.1,10)
-        self.assertAlmostEqual(testCat.site().lapseRate,0.1,10)
+        self.assertAlmostEqual(testCat.site.longitude,2.0,10)
+        self.assertAlmostEqual(testCat.site.latitude,-1.0,10)
+        self.assertAlmostEqual(testCat.site.height,4.0,10)
+        self.assertAlmostEqual(testCat.site.xPolar,0.5,10)
+        self.assertAlmostEqual(testCat.site.yPolar,-0.5,10)
+        self.assertAlmostEqual(testCat.site.meanTemperature,100.0,10)
+        self.assertAlmostEqual(testCat.site.meanPressure,500.0,10)
+        self.assertAlmostEqual(testCat.site.meanHumidity,0.1,10)
+        self.assertAlmostEqual(testCat.site.lapseRate,0.1,10)
         
         #
         #Note: because of how we have chosen to handle the observation

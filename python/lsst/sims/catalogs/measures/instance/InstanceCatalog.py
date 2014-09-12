@@ -179,6 +179,11 @@ class InstanceCatalog(object):
         #class will also change
         self.obs_metadata = obs_metadata
         
+        if obs_metadata is not None:
+            self.site = self.obs_metadata.site
+        else:
+            self.site = None
+        
         self.constraint = constraint
         self.specFileMap = specFileMap
 
@@ -195,13 +200,7 @@ class InstanceCatalog(object):
         
         self._check_requirements()
     
-    def site(self):
-        if self.obs_metadata is None:
-            raise RuntimeError("Cannot ask catalog for site; it has no obs_metadata")
-        else:
-            return self.obs_metadata.site
-    
-    
+
     def unrefractedRA(self):
         if self.obs_metadata is None:
             return None
