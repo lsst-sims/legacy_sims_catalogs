@@ -185,6 +185,11 @@ class InstanceCatalog(object):
             self.obs_metadata = ObservationMetaData()
         
         self.site = self.obs_metadata.site
+        self.unrefractedRA = self.obs_metadata.unrefractedRA
+        self.unrefractedDec = self.obs_metadata.unrefractedDec
+        self.rotSkyPos = self.obs_metadata.rotSkyPos
+        self.bandpass = self.obs_metadata.bandpass
+        self.mjd = self.obs_metadata.mjd
         
         self.constraint = constraint
         self.specFileMap = specFileMap
@@ -201,22 +206,6 @@ class InstanceCatalog(object):
         self._column_origins_switch = True
         
         self._check_requirements()
-    
-
-    def unrefractedRA(self):
-            return self.obs_metadata.unrefractedRA
-    
-    def unrefractedDec(self):
-            return self.obs_metadata.unrefractedDec
-    
-    def rotSkyPos(self):
-            return self.obs_metadata.rotSkyPos
-    
-    def bandpass(self):
-            return self.obs_metadata.bandpass
-    
-    def mjd(self):
-            return self.obs_metadata.mjd
             
     def _all_columns(self):
         """
