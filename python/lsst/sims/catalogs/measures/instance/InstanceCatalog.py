@@ -3,8 +3,9 @@ import warnings
 import numpy 
 import inspect
 import re
+import copy
 from .fileMaps import defaultSpecMap
-from .Site import Site
+from lsst.sims.catalogs.generation.db import ObservationMetaData
 
 class InstanceCatalogMeta(type):
     """Meta class for registering instance catalogs.
@@ -165,12 +166,8 @@ class InstanceCatalog(object):
             else:
                 yield column
 
-    def __init__(self, db_obj, obs_metadata=None, constraint=None, specFileMap=defaultSpecMap, site=None):
+    def __init__(self, db_obj, obs_metadata=None, constraint=None, specFileMap=defaultSpecMap):
         self.verbose = db_obj.verbose
-        if site == None:
-            self.site=Site()
-        else:
-            self.site=site
         
         self.db_obj = db_obj
         self._current_chunk = None
@@ -179,7 +176,21 @@ class InstanceCatalog(object):
         #the catalog come from
         self._column_origins = {}
 
-        self.obs_metadata = obs_metadata
+        if obs_metadata is not None:
+            if not isinstance(obs_metadata,ObservationMetaData):
+                raise ValueError("You passed InstanceCatalog something that was not ObservationMetaData")
+            
+            self.obs_metadata = copy.deepcopy(obs_metadata)
+        else:
+            self.obs_metadata = ObservationMetaData()
+        
+        self.site = self.obs_metadata.site
+        self.unrefractedRA = self.obs_metadata.unrefractedRA
+        self.unrefractedDec = self.obs_metadata.unrefractedDec
+        self.rotSkyPos = self.obs_metadata.rotSkyPos
+        self.bandpass = self.obs_metadata.bandpass
+        self.mjd = self.obs_metadata.mjd
+        
         self.constraint = constraint
         self.specFileMap = specFileMap
 
@@ -195,7 +206,7 @@ class InstanceCatalog(object):
         self._column_origins_switch = True
         
         self._check_requirements()
-
+            
     def _all_columns(self):
         """
         Return a list of all available column names, from those provided
