@@ -41,10 +41,10 @@ class InstanceCatalogMetaDataTest(unittest.TestCase):
     
         testCat = myCatalogClass(self.myDB)
         
-        self.assertEqual(testCat.unrefractedRA(),None)
-        self.assertEqual(testCat.unrefractedDec(),None)
-        self.assertAlmostEqual(testCat.rotSkyPos(),0.0,10)
-        self.assertEqual(testCat.bandpass(),'r')
+        self.assertEqual(testCat.unrefractedRA,None)
+        self.assertEqual(testCat.unrefractedDec,None)
+        self.assertAlmostEqual(testCat.rotSkyPos,0.0,10)
+        self.assertEqual(testCat.bandpass,'r')
         
         self.assertAlmostEqual(testCat.site.longitude,-1.2320792,10)
         self.assertAlmostEqual(testCat.site.latitude,-0.517781017,10)
@@ -72,11 +72,11 @@ class InstanceCatalogMetaDataTest(unittest.TestCase):
         
         testCat = myCatalogClass(self.myDB,obs_metadata=testObsMD)
         
-        self.assertAlmostEqual(testCat.mjd(),5120.0,10)
-        self.assertAlmostEqual(testCat.unrefractedRA(),1.5,10)
-        self.assertAlmostEqual(testCat.unrefractedDec(),-1.1,10)
-        self.assertAlmostEqual(testCat.rotSkyPos(),-0.2,10)
-        self.assertEqual(testCat.bandpass(),'z')
+        self.assertAlmostEqual(testCat.mjd,5120.0,10)
+        self.assertAlmostEqual(testCat.unrefractedRA,1.5,10)
+        self.assertAlmostEqual(testCat.unrefractedDec,-1.1,10)
+        self.assertAlmostEqual(testCat.rotSkyPos,-0.2,10)
+        self.assertEqual(testCat.bandpass,'z')
         
         self.assertAlmostEqual(testCat.site.longitude,2.0,10)
         self.assertAlmostEqual(testCat.site.latitude,-1.0,10)
@@ -96,11 +96,11 @@ class InstanceCatalogMetaDataTest(unittest.TestCase):
         
         testObsMD.assignPhoSimMetaData(phosimMD)
         
-        self.assertAlmostEqual(testCat.mjd(),5120.0,10)
-        self.assertAlmostEqual(testCat.unrefractedRA(),1.5,10)
-        self.assertAlmostEqual(testCat.unrefractedDec(),-1.1,10)
-        self.assertAlmostEqual(testCat.rotSkyPos(),-0.2,10)
-        self.assertEqual(testCat.bandpass(),'z')
+        self.assertAlmostEqual(testCat.mjd,5120.0,10)
+        self.assertAlmostEqual(testCat.unrefractedRA,1.5,10)
+        self.assertAlmostEqual(testCat.unrefractedDec,-1.1,10)
+        self.assertAlmostEqual(testCat.rotSkyPos,-0.2,10)
+        self.assertEqual(testCat.bandpass,'z')
         
         testObsMD.site.longitude=-2.0
         testObsMD.site.latitude=-2.0
