@@ -4,7 +4,7 @@ import unittest
 import sqlite3, json
 import lsst.utils.tests as utilsTests
 from lsst.sims.catalogs.measures.instance import InstanceCatalog, cached, compound
-from lsst.sims.catalogs.generation.db import DBObject
+from lsst.sims.catalogs.generation.db import CatalogDBObject
 
 def makeTestDB(size=10, **kwargs):
     """
@@ -31,7 +31,7 @@ def makeTestDB(size=10, **kwargs):
     conn.commit()
     conn.close()
 
-class testDBobject(DBObject):
+class testDBobject(CatalogDBObject):
     objid = 'testDBobject'
     tableid = 'testTable'
     idColKey = 'id'

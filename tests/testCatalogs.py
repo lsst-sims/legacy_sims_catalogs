@@ -4,7 +4,7 @@ import numpy
 import unittest
 import eups
 import lsst.utils.tests as utilsTests
-from lsst.sims.catalogs.generation.db import DBObject, ObservationMetaData
+from lsst.sims.catalogs.generation.db import CatalogDBObject, ObservationMetaData
 from lsst.sims.catalogs.measures.instance import InstanceCatalog, compound
 import lsst.sims.catalogs.generation.utils.testUtils as tu
 
@@ -65,9 +65,9 @@ class InstanceCatalogTestCase(unittest.TestCase):
         self.obsMd = ObservationMetaData(circ_bounds=dict(ra=210., dec=-60, radius=1.75), mjd=52000.,
                                                bandpassName='r')
                                                
-        self.mystars = DBObject.from_objid('teststars', address='sqlite:///icStarTestDatabase.db')
+        self.mystars = CatalogDBObject.from_objid('teststars', address='sqlite:///icStarTestDatabase.db')
         
-        self.mygals = DBObject.from_objid('testgals', address='sqlite:///icGalTestDatabase.db')
+        self.mygals = CatalogDBObject.from_objid('testgals', address='sqlite:///icGalTestDatabase.db')
         
         self.basedir = eups.productDir('sims_catalogs_measures')+"/tests/"
 
@@ -145,7 +145,7 @@ class boundingBoxTest(unittest.TestCase):
                                             dec_min=self.DECmin,dec_max=self.DECmax),
                                             mjd=52000., bandpassName='r')
                                             
-        self.mystars = DBObject.from_objid('teststars', address='sqlite:///bboxStarTestDatabase.db')
+        self.mystars = CatalogDBObject.from_objid('teststars', address='sqlite:///bboxStarTestDatabase.db')
 
     def tearDown(self):
         del self.obsMdCirc
