@@ -62,8 +62,8 @@ class InstanceCatalogTestCase(unittest.TestCase):
         tu.makeStarTestDB(filename='icStarTestDatabase.db', size=100000, seedVal=1)
         tu.makeGalTestDB(filename='icGalTestDatabase.db', size=100000, seedVal=1)
                 
-        self.obsMd = ObservationMetaData(circ_bounds=dict(ra=210., dec=-60, radius=1.75), mjd=52000.,
-                                               bandpassName='r')
+        self.obsMd = ObservationMetaData(boundType = 'circle', unrefractedRA = 210.0, unrefractedDec = -60.0,
+                     boundLength=1.75, mjd=52000.,bandpassName='r')
                                                
         self.mystars = CatalogDBObject.from_objid('teststars', address='sqlite:///icStarTestDatabase.db')
         
@@ -137,13 +137,13 @@ class boundingBoxTest(unittest.TestCase):
         if os.path.exists('bboxStarTestDatabase.db'):
             os.unlink('bboxStarTestDatabase.db')
         tu.makeStarTestDB(filename='bboxStarTestDatabase.db', size=100000, seedVal=1)
-        self.obsMdCirc = ObservationMetaData(
-                         circ_bounds=dict(ra=self.RAcenter, dec=self.DECcenter, radius=self.radius), 
-                         mjd=52000., bandpassName='r')
+        self.obsMdCirc = ObservationMetaData(boundType='circle',unrefractedRA=self.RAcenter,unrefractedDec=self.DECcenter,
+                         boundLength=self.radius,mjd=52000., bandpassName='r')
                          
-        self.obsMdBox = ObservationMetaData(box_bounds=dict(ra_min=self.RAmin,ra_max=self.RAmax,
-                                            dec_min=self.DECmin,dec_max=self.DECmax),
-                                            mjd=52000., bandpassName='r')
+        self.obsMdBox = ObservationMetaData(boundType='box', unrefractedRA=0.5*(self.RAmax+self.RAmin),
+                        unrefractedDec=0.5*(self.DECmin+self.DECmax),
+                        boundLength=numpy.array([0.5*(self.RAmax-self.RAmin),0.5*(self.DECmax-self.DECmin)]),
+                        mjd=52000., bandpassName='r')
                                             
         self.mystars = CatalogDBObject.from_objid('teststars', address='sqlite:///bboxStarTestDatabase.db')
 
@@ -171,11 +171,9 @@ class boundingBoxTest(unittest.TestCase):
         myCatalog.write_catalog('box_test_catalog.txt')
         
         #now we will test for the completeness of the box bounds 
-        obsMdControl = ObservationMetaData(box_bounds=dict(ra_min = self.RAcenter-20.0, 
-                                                ra_max = self.RAcenter+20.0,
-                                                dec_min = self.DECcenter-20.0, 
-                                                dec_max = self.DECcenter+20.0),
-                                                mjd=52000.0, bandpassName = 'r')
+        obsMdControl = ObservationMetaData(boundType = 'box',
+                       unrefractedRA = self.RAcenter,unrefractedDec=self.DECcenter,
+                       boundLength=20.0,mjd=52000.0, bandpassName = 'r')
       
         controlCatalog = self.mystars.getCatalog('bounds_catalog',obs_metadata = obsMdControl)
         controlCatalog.write_catalog('box_control_catalog.txt')
@@ -225,11 +223,8 @@ class boundingBoxTest(unittest.TestCase):
         myCatalog.write_catalog('circular_test_catalog.txt')
        
         #now we will test for the completeness of the circular bounds 
-        obsMdControl = ObservationMetaData(box_bounds=dict(ra_min = self.RAcenter-70.0, 
-                                                ra_max = self.RAcenter+70.0,
-                                                dec_min = self.DECcenter-70.0, 
-                                                dec_max = self.DECcenter+70.0),
-                                                mjd=52000.0, bandpassName = 'r')
+        obsMdControl = ObservationMetaData(boundType='box',unrefractedRA=self.RAcenter,unrefractedDec=self.DECcenter,
+                       boundLength=70.0,mjd=52000.0, bandpassName = 'r')
       
         controlCatalog = self.mystars.getCatalog('bounds_catalog',obs_metadata = obsMdControl)
         controlCatalog.write_catalog('circular_control_catalog.txt')
