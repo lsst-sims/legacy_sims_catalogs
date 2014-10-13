@@ -7,6 +7,21 @@ import copy
 from .fileMaps import defaultSpecMap
 from lsst.sims.catalogs.generation.db import ObservationMetaData
 
+def is_null(argument):
+    if argument is None:
+        return True
+    elif isinstance(argument,str):
+        if argument.lower() == 'null':
+            return True
+        elif argument.lower() == 'nan':
+            return True
+        elif argument.lower() == 'none':
+            return True
+    elif numpy.isnan(argument):
+        return True
+
+    return False
+
 class InstanceCatalogMeta(type):
     """Meta class for registering instance catalogs.
 
@@ -375,8 +390,7 @@ class InstanceCatalog(object):
             # for memory efficiency
             file_handle.writelines(template % line
                                    for line in zip(*chunk_cols)
-                                   if numpy.array([line[i] is not None
-                                       and (isinstance(line[i],str) or not numpy.isnan(line[i])) for i in cannotBeNullDexes]).all())
+                                   if numpy.array([not is_null(line[i]) for i in cannotBeNullDexes]).all())
         
         file_handle.close()
     
