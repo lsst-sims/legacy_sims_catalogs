@@ -24,6 +24,13 @@ class SpecMap(object):
         raise KeyError("No path found for spectrum name: %s"%(item))
 
     def has_key(self, item):
+        """
+        Returns True if there is a map for 'item'; False if not.
+
+        This exists primarily so that phoSim input catalog classes
+        can identify columns which have no sedFilePath and then remove
+        them when writing the catalog.
+        """
         try:
             self.__getitem__(item)
             return True
