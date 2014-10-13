@@ -375,7 +375,8 @@ class InstanceCatalog(object):
             # for memory efficiency
             file_handle.writelines(template % line
                                    for line in zip(*chunk_cols)
-                                   if numpy.array([line[i] is not None for i in cannotBeNullDexes]).all())
+                                   if numpy.array([line[i] is not None
+                                       and (isinstance(line[i],str) or not numpy.isnan(line[i])) for i in cannotBeNullDexes]).all())
         
         file_handle.close()
     

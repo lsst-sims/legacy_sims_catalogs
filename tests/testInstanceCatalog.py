@@ -1,10 +1,81 @@
 import os
+import numpy
+import sqlite3
 import unittest
 import lsst.utils.tests as utilsTests
 from collections import OrderedDict
-from lsst.sims.catalogs.generation.db import ObservationMetaData, Site
+from lsst.sims.catalogs.generation.db import ObservationMetaData, CatalogDBObject, Site
 from lsst.sims.catalogs.generation.utils import myTestStars, makeStarTestDB
 from lsst.sims.catalogs.measures.instance import InstanceCatalog
+
+def createCannotBeNullTestDB():
+    """
+    Create a database to test the 'cannot_be_null' functionality in InstanceCatalog
+    """
+
+    dbName = 'cannotBeNullTest.db'
+    numpy.random.seed(32)
+    dtype = numpy.dtype([('id',int),('n1',numpy.float64),('n2',numpy.float64),('n3',numpy.float64)])
+    output = None
+
+    if os.path.exists(dbName):
+        os.unlink(dbName)
+
+    conn = sqlite3.connect(dbName)
+    c = conn.cursor()
+    try:
+        c.execute('''CREATE TABLE testTable (id int, n1 float, n2 float, n3 float)''')
+        conn.commit()
+    except:
+        raise RuntimeError("Error creating database.")
+
+    for ii in range(100):
+
+        values = numpy.random.sample(3);
+        for i in range(len(values)):
+            draw = numpy.random.sample(1)
+            if draw[0]<0.5:
+                values[i] = None
+
+        if output is None:
+            output=numpy.array([(ii,values[0],values[1],values[2])], dtype = dtype)
+        else:
+            size = output.size
+            output.resize(size+1)
+            output[size] = (ii, values[0], values[1], values[2])
+
+        if numpy.isnan(values[0]):
+            v0 = 'NULL'
+        else:
+            v0 = str(values[0])
+
+        if numpy.isnan(values[1]):
+            v1 = 'NULL'
+        else:
+            v1 = str(values[1])
+
+        if numpy.isnan(values[2]):
+            v2 = 'NULL'
+        else:
+            v2 = str(values[2])
+
+        cmd = '''INSERT INTO testTable VALUES (%s, %s, %s, %s)''' % (ii,v0,v1,v2)
+        c.execute(cmd)
+
+    conn.commit()
+    conn.close()
+    return output
+
+class myCannotBeNullDBObject(CatalogDBObject):
+    dbAddress = 'sqlite:///cannotBeNullTest.db'
+    tableid = 'testTable'
+    objid = 'cannotBeNull'
+    idColKey = 'id'
+
+class myCannotBeNullCatalog(InstanceCatalog):
+    column_outputs = ['id','n1','n2','n3']
+    cannot_be_null = ['n2']
+    catalog_type = 'cannotBeNull'
 
 class myCatalogClass(InstanceCatalog):
     column_outputs = ['raJ2000','decJ2000']
@@ -122,12 +193,40 @@ class InstanceCatalogMetaDataTest(unittest.TestCase):
         self.assertAlmostEqual(testCat.site.meanPressure,500.0,10)
         self.assertAlmostEqual(testCat.site.meanHumidity,0.1,10)
         self.assertAlmostEqual(testCat.site.lapseRate,0.1,10)
+
+class InstanceCatalogCannotBeNullTest(unittest.TestCase):
         
+        def testCannotBeNull(self):
+            baselineOutput = createCannotBeNullTestDB()
+            dbobj = CatalogDBObject.from_objid('cannotBeNull')
+            cat = dbobj.getCatalog('cannotBeNull')
+            fileName = 'cannotBeNullTestFile.txt'
+            cat.write_catalog(fileName)
+            dtype = numpy.dtype([('id',int),('n1',numpy.float64),('n2',numpy.float64),('n3',numpy.float64)])
+            testData = numpy.genfromtxt(fileName,dtype=dtype,delimiter=',')
+
+            j = 0
+            for i in range(len(baselineOutput)):
+                if not numpy.isnan(baselineOutput['n2'][i]):
+                    for (k,xx) in enumerate(baselineOutput[i]):
+                        if not numpy.isnan(xx):
+                            self.assertAlmostEqual(xx,testData[j][k],3)
+                        else:
+                            self.assertTrue(numpy.isnan(testData[j][k]))
+                    j+=1
+
+            self.assertEqual(i,99)
+            self.assertEqual(j,len(testData))
+
+            if os.path.exists(fileName):
+                os.unlink(fileName)
+
 def suite():
     """Returns a suite containing all the test cases in this module."""
     utilsTests.init()
     suites = []
     suites += unittest.makeSuite(InstanceCatalogMetaDataTest)
+    suites += unittest.makeSuite(InstanceCatalogCannotBeNullTest)
 
     return unittest.TestSuite(suites)
 
