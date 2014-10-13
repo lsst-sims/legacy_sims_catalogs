@@ -16,15 +16,16 @@ class InstanceCatalogMetaDataTest(unittest.TestCase):
     """
     
     def setUp(self):
-        if os.path.exists('testDatabase.db'):
-            os.unlink('testDatabase.db')
+        if os.path.exists('testInstanceCatalogDatabase.db'):
+            os.unlink('testInstanceCatalogDatabase.db')
             
-        makeStarTestDB()
+        makeStarTestDB(filename='testInstanceCatalogDatabase.db')
         self.myDB = myTestStars()
+        self.myDB.dbAddress = 'sqlite://testInstanceCatalogDatabase.db'
     
     def tearDown(self):
-        if os.path.exists('testDatabase.db'):
-            os.unlink('testDatabase.db')
+        if os.path.exists('testInstanceCatalogDatabase.db'):
+            os.unlink('testInstanceCatalogDatabase.db')
         
         del self.myDB
     
