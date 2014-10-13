@@ -23,6 +23,13 @@ class SpecMap(object):
                 return '{0}/{1}.gz'.format(val, item)
         raise KeyError("No path found for spectrum name: %s"%(item))
 
+    def has_key(self, item):
+        try:
+            self.__getitem__(item)
+            return True
+        except:
+            return False
+
 defaultSpecMap = SpecMap(
     {'A.dat':'ssmSED/A.dat.gz',
      'Sa.dat':'ssmSED/Sa.dat.gz',
