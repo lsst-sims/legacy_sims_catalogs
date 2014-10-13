@@ -11,6 +11,9 @@ from lsst.sims.catalogs.measures.instance import InstanceCatalog
 def createCannotBeNullTestDB():
     """
     Create a database to test the 'cannot_be_null' functionality in InstanceCatalog
+
+    This method will return the contents of the database as a recarray for baseline comparison
+    in the unit tests.
     """
 
     dbName = 'cannotBeNullTest.db'
@@ -73,11 +76,17 @@ class myCannotBeNullDBObject(CatalogDBObject):
     idColKey = 'id'
 
 class myCannotBeNullCatalog(InstanceCatalog):
+    """
+    This catalog class will not write rows with a null value in the n2 column
+    """
     column_outputs = ['id','n1','n2','n3']
     cannot_be_null = ['n2']
     catalog_type = 'cannotBeNull'
 
 class myCanBeNullCatalog(InstanceCatalog):
+    """
+    This catalog class will write all rows to the catalog
+    """
     column_outputs = ['id','n1','n2','n3']
     catalog_type = 'canBeNull'
 
@@ -201,6 +210,10 @@ class InstanceCatalogMetaDataTest(unittest.TestCase):
 class InstanceCatalogCannotBeNullTest(unittest.TestCase):
         
         def testCannotBeNull(self):
+            """
+            Test to make sure that the code for filtering out rows with null values
+            in key catalogs works.
+            """
             baselineOutput = createCannotBeNullTestDB()
             dbobj = CatalogDBObject.from_objid('cannotBeNull')
             cat = dbobj.getCatalog('cannotBeNull')
@@ -226,6 +239,10 @@ class InstanceCatalogCannotBeNullTest(unittest.TestCase):
                 os.unlink(fileName)
 
         def testCanBeNull(self):
+            """
+            Test to make sure that we can still write all rows to catalogs,
+            even those with null values in key columns
+            """
             baselineOutput = createCannotBeNullTestDB()
             dbobj = CatalogDBObject.from_objid('cannotBeNull')
             cat = dbobj.getCatalog('canBeNull')
