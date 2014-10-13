@@ -129,6 +129,7 @@ class InstanceCatalog(object):
     catalog_type = 'instance_catalog'
     column_outputs = 'all'
     default_columns = []
+    cannot_be_null = []
     default_formats = {'S':'%s', 'f':'%.4f', 'i':'%i'}
     override_formats = {}
     transformations = {}
@@ -353,6 +354,12 @@ class InstanceCatalog(object):
                                                  constraint=self.constraint,
                                                  chunk_size=chunk_size)
 
+        #find the indices referring to columns that cannot be null
+        cannotBeNullDexes = []
+        for (i,col) in enumerate(self.iter_column_names()):
+            if col in self.cannot_be_null:
+                cannotBeNullDexes.append(i)
+  
         for chunk in query_result:
             self._set_current_chunk(chunk)
             chunk_cols = [self.transformations[col](self.column_by_name(col))
@@ -367,7 +374,8 @@ class InstanceCatalog(object):
             # use a generator expression for lines rather than a list
             # for memory efficiency
             file_handle.writelines(template % line
-                                   for line in zip(*chunk_cols))
+                                   for line in zip(*chunk_cols)
+                                   if numpy.array([line[i] is not None for i in cannotBeNullDexes]).all())
         
         file_handle.close()
     
