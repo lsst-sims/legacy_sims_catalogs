@@ -77,6 +77,10 @@ class myCannotBeNullCatalog(InstanceCatalog):
     cannot_be_null = ['n2']
     catalog_type = 'cannotBeNull'
 
+class myCanBeNullCatalog(InstanceCatalog):
+    column_outputs = ['id','n1','n2','n3']
+    catalog_type = 'canBeNull'
+
 class myCatalogClass(InstanceCatalog):
     column_outputs = ['raJ2000','decJ2000']
 
@@ -217,6 +221,28 @@ class InstanceCatalogCannotBeNullTest(unittest.TestCase):
 
             self.assertEqual(i,99)
             self.assertEqual(j,len(testData))
+
+            if os.path.exists(fileName):
+                os.unlink(fileName)
+
+        def testCanBeNull(self):
+            baselineOutput = createCannotBeNullTestDB()
+            dbobj = CatalogDBObject.from_objid('cannotBeNull')
+            cat = dbobj.getCatalog('canBeNull')
+            fileName = 'canBeNullTestFile.txt'
+            cat.write_catalog(fileName)
+            dtype = numpy.dtype([('id',int),('n1',numpy.float64),('n2',numpy.float64),('n3',numpy.float64)])
+            testData = numpy.genfromtxt(fileName,dtype=dtype,delimiter=',')
+
+            for i in range(len(baselineOutput)):
+                if not numpy.isnan(baselineOutput['n2'][i]):
+                    for (k,xx) in enumerate(baselineOutput[i]):
+                        if not numpy.isnan(xx):
+                            self.assertAlmostEqual(xx,testData[i][k],3)
+                        else:
+                            self.assertTrue(numpy.isnan(testData[i][k]))
+
+            self.assertEqual(i,99)
 
             if os.path.exists(fileName):
                 os.unlink(fileName)
