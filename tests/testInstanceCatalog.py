@@ -104,8 +104,7 @@ class InstanceCatalogMetaDataTest(unittest.TestCase):
             os.unlink('testInstanceCatalogDatabase.db')
             
         makeStarTestDB(filename='testInstanceCatalogDatabase.db')
-        self.myDB = myTestStars()
-        self.myDB.dbAddress = 'sqlite://testInstanceCatalogDatabase.db'
+        self.myDB = myTestStars(address = 'sqlite:///testInstanceCatalogDatabase.db')
     
     def tearDown(self):
         if os.path.exists('testInstanceCatalogDatabase.db'):
