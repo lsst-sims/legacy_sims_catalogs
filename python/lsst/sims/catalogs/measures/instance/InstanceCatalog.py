@@ -7,6 +7,30 @@ import copy
 from .fileMaps import defaultSpecMap
 from lsst.sims.catalogs.generation.db import ObservationMetaData
 
+def is_null(argument):
+    """
+    Return True if 'argument' is some null value
+    (i.e. 'Null', None, nan).
+
+    False otherwise.
+
+    This is used by InstanceCatalog.write_catalog() to identify rows
+    with null values in key columns.
+    """
+    if argument is None:
+        return True
+    elif isinstance(argument,str):
+        if argument.lower() == 'null':
+            return True
+        elif argument.lower() == 'nan':
+            return True
+        elif argument.lower() == 'none':
+            return True
+    elif numpy.isnan(argument):
+        return True
+
+    return False
+
 class InstanceCatalogMeta(type):
     """Meta class for registering instance catalogs.
 
@@ -129,6 +153,7 @@ class InstanceCatalog(object):
     catalog_type = 'instance_catalog'
     column_outputs = 'all'
     default_columns = []
+    cannot_be_null = [] #a list of columns which, if null, cause a row not to be printed by write_catalog()
     default_formats = {'S':'%s', 'f':'%.4f', 'i':'%i'}
     override_formats = {}
     transformations = {}
@@ -353,6 +378,12 @@ class InstanceCatalog(object):
                                                  constraint=self.constraint,
                                                  chunk_size=chunk_size)
 
+        #find the indices of columns that cannot be null
+        cannotBeNullDexes = []
+        for (i,col) in enumerate(self.iter_column_names()):
+            if col in self.cannot_be_null:
+                cannotBeNullDexes.append(i)
+  
         for chunk in query_result:
             self._set_current_chunk(chunk)
             chunk_cols = [self.transformations[col](self.column_by_name(col))
@@ -367,8 +398,12 @@ class InstanceCatalog(object):
             # use a generator expression for lines rather than a list
             # for memory efficiency
             file_handle.writelines(template % line
-                                   for line in zip(*chunk_cols))
-        
+                                   for line in zip(*chunk_cols)
+                                   if numpy.array([not is_null(line[i]) for i in cannotBeNullDexes]).all())
+                                   #the last boolean in this line causes a row not to be printed if it has
+                                   #a null value in one of the columns that cannot be null; it is ignored
+                                   #if no olumns are specified by cannot_be_null
+
         file_handle.close()
     
     def iter_catalog(self, chunk_size=None):
