@@ -122,6 +122,18 @@ def controlHaversine(ra1deg,dec1deg,ra2deg,dec2deg):
     return numpy.degrees(raw)
 
 class boundingBoxTest(unittest.TestCase):
+    
+    @classmethod
+    def setUpClass(cls):
+        if os.path.exists('bboxStarTestDatabase.db'):
+            os.unlink('bboxStarTestDatabase.db')
+        tu.makeStarTestDB(filename='bboxStarTestDatabase.db', size=100000, seedVal=1)
+
+    @classmethod
+    def tearDownClass(cls):
+        if os.path.exists('bboxStarTestDatabase.db'):
+            os.unlink('bboxStarTestDatabase.db')
+    
     def setUp(self):
         
         self.RAmin = 190.
@@ -133,9 +145,7 @@ class boundingBoxTest(unittest.TestCase):
         self.DECcenter = -60.
         self.radius = 40.0
         
-        if os.path.exists('bboxStarTestDatabase.db'):
-            os.unlink('bboxStarTestDatabase.db')
-        tu.makeStarTestDB(filename='bboxStarTestDatabase.db', size=100000, seedVal=1)
+        
         self.obsMdCirc = ObservationMetaData(boundType='circle',unrefractedRA=self.RAcenter,unrefractedDec=self.DECcenter,
                          boundLength=self.radius,mjd=52000., bandpassName='r')
                          
