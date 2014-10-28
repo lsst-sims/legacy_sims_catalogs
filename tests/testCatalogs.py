@@ -71,7 +71,6 @@ class InstanceCatalogTestCase(unittest.TestCase):
             os.unlink('icGalTestDatabase.db')     
 
     def setUp(self):
-
         self.obsMd = ObservationMetaData(boundType = 'circle', unrefractedRA = 210.0, unrefractedDec = -60.0,
                      boundLength=1.75, mjd=52000.,bandpassName='r')
                                                
