@@ -4,7 +4,7 @@ import numpy
 import unittest
 import eups
 import lsst.utils.tests as utilsTests
-from lsst.sims.catalogs.generation.db import CatalogDBObject, ObservationMetaData
+from lsst.sims.catalogs.generation.db import CatalogDBObject, ObservationMetaData, haversine
 from lsst.sims.catalogs.measures.instance import InstanceCatalog, compound
 import lsst.sims.catalogs.generation.utils.testUtils as tu
 
@@ -116,22 +116,11 @@ class InstanceCatalogTestCase(unittest.TestCase):
         os.unlink('test_BASIC.out')
 
 def controlHaversine(ra1deg,dec1deg,ra2deg,dec2deg):
-    """
-    Evaluate the Haversine formula.  For use testing circular bounds
-          
-    http://en.wikipedia.org/wiki/Haversine_formula
-    """
+    #for use testing circular bounds
+    raw = haversine(numpy.radians(ra1deg), numpy.radians(dec1deg),
+                    numpy.radians(ra2deg), numpy.radians(dec2deg))
         
-    conversion = numpy.pi/180.0
-    ra1 = ra1deg*conversion
-    dec1 = dec1deg*conversion
-    ra2 = ra2deg*conversion
-    dec2 = dec2deg*conversion
-        
-    arg = (numpy.sin(0.5*(dec1-dec2)))**2+numpy.cos(dec1)*numpy.cos(dec2)*(numpy.sin(0.5*(ra1-ra2)))**2
-    rr = 2.0*numpy.arcsin(numpy.sqrt(arg))
-        
-    return rr/conversion
+    return numpy.degrees(raw)
 
 class boundingBoxTest(unittest.TestCase):
     def setUp(self):
