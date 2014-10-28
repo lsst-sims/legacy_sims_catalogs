@@ -108,18 +108,29 @@ class testCatalogAunspecified(InstanceCatalog,mixin3,mixin1):
 
 class testColumnOrigins(unittest.TestCase):
 
-    def setUp(self):
+    @classmethod
+    def setUpClass(cls):
         if os.path.exists('colOriginsTestDatabase.db'):
             os.unlink('colOriginsTestDatabase.db')
-        
+
         makeTestDB()
+
+    @classmethod
+    def tearDownClass(cls):
+        if os.path.exists('colOriginsTestDatabase.db'):
+            os.unlink('colOriginsTestDatabase.db')
+            
+    def setUp(self):
         self.myDBobject = testDBobject()
+        self.mixin1Name = '<class \'__main__.mixin1\'>'
+        self.mixin2Name = '<class \'__main__.mixin2\'>'
+        self.mixin3Name = '<class \'__main__.mixin3\'>'
     
     def tearDown(self):
-        if os.path.exists('colOriginsTestDatabase.db'):
-            os.unlink('colOriginsTestDatabase.db')
-        
         del self.myDBobject
+        del self.mixin1Name
+        del self.mixin2Name
+        del self.mixin3Name
 
     def testDefaults(self):
         """
@@ -140,44 +151,41 @@ class testColumnOrigins(unittest.TestCase):
         Test case where the columns cc and dd come from non-compound getters
         """
         myCatalog = testCatalogMixin1(self.myDBobject)
-        mixin1Name = '<class \'__main__.mixin1\'>'
-        
+
         self.assertEqual(myCatalog._column_origins['objid'],'the database')
         self.assertEqual(myCatalog._column_origins['raJ2000'],'the database')
         self.assertEqual(myCatalog._column_origins['decJ2000'],'the database')
         self.assertEqual(myCatalog._column_origins['aa'],'the database')
         self.assertEqual(myCatalog._column_origins['bb'],'the database')
-        self.assertEqual(str(myCatalog._column_origins['cc']),mixin1Name)
-        self.assertEqual(str(myCatalog._column_origins['dd']),mixin1Name)     
+        self.assertEqual(str(myCatalog._column_origins['cc']),self.mixin1Name)
+        self.assertEqual(str(myCatalog._column_origins['dd']),self.mixin1Name)     
 
     def testMixin2(self):
         """
         Test case where the columns cc and dd come from a compound getter
         """
         myCatalog = testCatalogMixin2(self.myDBobject)
-        mixin2Name = '<class \'__main__.mixin2\'>'
-        
+
         self.assertEqual(myCatalog._column_origins['objid'],'the database')
         self.assertEqual(myCatalog._column_origins['raJ2000'],'the database')
         self.assertEqual(myCatalog._column_origins['decJ2000'],'the database')
         self.assertEqual(myCatalog._column_origins['aa'],'the database')
         self.assertEqual(myCatalog._column_origins['bb'],'the database')
-        self.assertEqual(str(myCatalog._column_origins['cc']),mixin2Name)
-        self.assertEqual(str(myCatalog._column_origins['dd']),mixin2Name) 
+        self.assertEqual(str(myCatalog._column_origins['cc']),self.mixin2Name)
+        self.assertEqual(str(myCatalog._column_origins['dd']),self.mixin2Name) 
     
     def testMixin3(self):
         """
         Test case where cc comes from a mixin and dd comes from the default
         """
         myCatalog = testCatalogMixin3(self.myDBobject)
-        mixin3Name = '<class \'__main__.mixin3\'>'
         
         self.assertEqual(myCatalog._column_origins['objid'],'the database')
         self.assertEqual(myCatalog._column_origins['raJ2000'],'the database')
         self.assertEqual(myCatalog._column_origins['decJ2000'],'the database')
         self.assertEqual(myCatalog._column_origins['aa'],'the database')
         self.assertEqual(myCatalog._column_origins['bb'],'the database')
-        self.assertEqual(str(myCatalog._column_origins['cc']),mixin3Name)
+        self.assertEqual(str(myCatalog._column_origins['cc']),self.mixin3Name)
         self.assertEqual(str(myCatalog._column_origins['dd']),'default column') 
 
     def testMixin3Mixin1(self):
@@ -185,32 +193,28 @@ class testColumnOrigins(unittest.TestCase):
         Test case where one mixin overwrites another for calculating cc
         """
         myCatalog = testCatalogMixin3Mixin1(self.myDBobject)
-        mixin3Name = '<class \'__main__.mixin3\'>'
-        mixin1Name = '<class \'__main__.mixin1\'>'
-   
+
         self.assertEqual(myCatalog._column_origins['objid'],'the database')
         self.assertEqual(myCatalog._column_origins['raJ2000'],'the database')
         self.assertEqual(myCatalog._column_origins['decJ2000'],'the database')
         self.assertEqual(myCatalog._column_origins['aa'],'the database')
         self.assertEqual(myCatalog._column_origins['bb'],'the database')
-        self.assertEqual(str(myCatalog._column_origins['cc']),mixin3Name)
-        self.assertEqual(str(myCatalog._column_origins['dd']),mixin1Name) 
+        self.assertEqual(str(myCatalog._column_origins['cc']),self.mixin3Name)
+        self.assertEqual(str(myCatalog._column_origins['dd']),self.mixin1Name) 
 
     def testAunspecified(self):
         """
         Test case where aa is not specified in the catalog (and has a default)
         """
         myCatalog = testCatalogAunspecified(self.myDBobject)
-        mixin3Name = '<class \'__main__.mixin3\'>'
-        mixin1Name = '<class \'__main__.mixin1\'>'
    
         self.assertEqual(myCatalog._column_origins['objid'],'the database')
         self.assertEqual(myCatalog._column_origins['raJ2000'],'the database')
         self.assertEqual(myCatalog._column_origins['decJ2000'],'the database')
         self.assertEqual(myCatalog._column_origins['aa'],'the database')
         self.assertEqual(myCatalog._column_origins['bb'],'the database')
-        self.assertEqual(str(myCatalog._column_origins['cc']),mixin3Name)
-        self.assertEqual(str(myCatalog._column_origins['dd']),mixin1Name) 
+        self.assertEqual(str(myCatalog._column_origins['cc']),self.mixin3Name)
+        self.assertEqual(str(myCatalog._column_origins['dd']),self.mixin1Name) 
 
 def suite():
     utilsTests.init()
