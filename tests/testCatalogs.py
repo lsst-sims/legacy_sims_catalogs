@@ -160,6 +160,13 @@ class boundingBoxTest(unittest.TestCase):
         del self.obsMdCirc
         del self.obsMdBox
         del self.mystars
+        del self.RAmin
+        del self.DECmin
+        del self.RAmax
+        del self.DECmax
+        del self.RAcenter
+        del self.DECcenter
+        del self.radius
     
 
     def testBoxBounds(self):
