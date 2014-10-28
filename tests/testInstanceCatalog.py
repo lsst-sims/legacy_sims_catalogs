@@ -213,12 +213,19 @@ class InstanceCatalogMetaDataTest(unittest.TestCase):
 
 class InstanceCatalogCannotBeNullTest(unittest.TestCase):
         
+        def setUp(self):
+            self.baselineOutput = createCannotBeNullTestDB()
+        
+        def tearDown(self):
+            del self.baselineOutput
+            if os.path.exists('cannotBeNullTest.db'):
+                os.unlink('cannotBeNullTest.db')
+        
         def testCannotBeNull(self):
             """
             Test to make sure that the code for filtering out rows with null values
             in key catalogs works.
             """
-            baselineOutput = createCannotBeNullTestDB()
             dbobj = CatalogDBObject.from_objid('cannotBeNull')
             cat = dbobj.getCatalog('cannotBeNull')
             fileName = 'cannotBeNullTestFile.txt'
@@ -227,9 +234,9 @@ class InstanceCatalogCannotBeNullTest(unittest.TestCase):
             testData = numpy.genfromtxt(fileName,dtype=dtype,delimiter=',')
 
             j = 0
-            for i in range(len(baselineOutput)):
-                if not numpy.isnan(baselineOutput['n2'][i]):
-                    for (k,xx) in enumerate(baselineOutput[i]):
+            for i in range(len(self.baselineOutput)):
+                if not numpy.isnan(self.baselineOutput['n2'][i]):
+                    for (k,xx) in enumerate(self.baselineOutput[i]):
                         if not numpy.isnan(xx):
                             self.assertAlmostEqual(xx,testData[j][k],3)
                         else:
@@ -247,7 +254,6 @@ class InstanceCatalogCannotBeNullTest(unittest.TestCase):
             Test to make sure that we can still write all rows to catalogs,
             even those with null values in key columns
             """
-            baselineOutput = createCannotBeNullTestDB()
             dbobj = CatalogDBObject.from_objid('cannotBeNull')
             cat = dbobj.getCatalog('canBeNull')
             fileName = 'canBeNullTestFile.txt'
@@ -255,9 +261,9 @@ class InstanceCatalogCannotBeNullTest(unittest.TestCase):
             dtype = numpy.dtype([('id',int),('n1',numpy.float64),('n2',numpy.float64),('n3',numpy.float64)])
             testData = numpy.genfromtxt(fileName,dtype=dtype,delimiter=',')
 
-            for i in range(len(baselineOutput)):
-                if not numpy.isnan(baselineOutput['n2'][i]):
-                    for (k,xx) in enumerate(baselineOutput[i]):
+            for i in range(len(self.baselineOutput)):
+                if not numpy.isnan(self.baselineOutput['n2'][i]):
+                    for (k,xx) in enumerate(self.baselineOutput[i]):
                         if not numpy.isnan(xx):
                             self.assertAlmostEqual(xx,testData[i][k],3)
                         else:
