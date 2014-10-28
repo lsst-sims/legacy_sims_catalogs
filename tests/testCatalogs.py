@@ -53,15 +53,25 @@ def compareFiles(file1, file2):
     return str1 == str2
 
 class InstanceCatalogTestCase(unittest.TestCase):
-    def setUp(self):
-        
+    
+    @classmethod
+    def setUpClass(cls):
         if os.path.exists('icStarTestDatabase.db'):
             os.unlink('icStarTestDatabase.db')
         if os.path.exists('icGalTestDatabase.db'):
             os.unlink('icGalTestDatabase.db')
         tu.makeStarTestDB(filename='icStarTestDatabase.db', size=100000, seedVal=1)
         tu.makeGalTestDB(filename='icGalTestDatabase.db', size=100000, seedVal=1)
-                
+
+    @classmethod
+    def tearDownClass(cls):
+        if os.path.exists('icStarTestDatabase.db'):
+            os.unlink('icStarTestDatabase.db')
+        if os.path.exists('icGalTestDatabase.db'):
+            os.unlink('icGalTestDatabase.db')     
+
+    def setUp(self):
+
         self.obsMd = ObservationMetaData(boundType = 'circle', unrefractedRA = 210.0, unrefractedDec = -60.0,
                      boundLength=1.75, mjd=52000.,bandpassName='r')
                                                
@@ -75,6 +85,7 @@ class InstanceCatalogTestCase(unittest.TestCase):
         del self.obsMd
         del self.mystars
         del self.mygals
+        del self.basedir
 
     def testStarLike(self):
     
