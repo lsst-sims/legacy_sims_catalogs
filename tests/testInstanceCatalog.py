@@ -99,17 +99,22 @@ class InstanceCatalogMetaDataTest(unittest.TestCase):
     class variables (unrefractedRA, unrefractedDec, etc.)
     """
     
-    def setUp(self):
+    @classmethod
+    def setUpClass(cls):
         if os.path.exists('testInstanceCatalogDatabase.db'):
             os.unlink('testInstanceCatalogDatabase.db')
             
         makeStarTestDB(filename='testInstanceCatalogDatabase.db')
+    
+    @classmethod
+    def tearDownClass(cls):
+        if os.path.exists('testInstanceCatalogDatabase.db'):
+            os.unlink('testInstanceCatalogDatabase.db')
+    
+    def setUp(self):
         self.myDB = myTestStars(address = 'sqlite:///testInstanceCatalogDatabase.db')
     
     def tearDown(self):
-        if os.path.exists('testInstanceCatalogDatabase.db'):
-            os.unlink('testInstanceCatalogDatabase.db')
-        
         del self.myDB
     
     def testObsMetaDataAssignment(self):
