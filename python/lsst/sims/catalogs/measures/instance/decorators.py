@@ -1,5 +1,8 @@
 from functools import wraps
 from collections import OrderedDict
+
+__all__ = ["cached", "compound", "register_class", "register_method"]
+
 #---------------------------------------------------------------------- 
 # Define decorators for get_* methods
 

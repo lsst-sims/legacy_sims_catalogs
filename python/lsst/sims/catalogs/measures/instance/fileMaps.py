@@ -1,5 +1,7 @@
 import re
 
+__all__ = ["SpecMap", "defaultSpecMap"]
+
 class SpecMap(object):
     subdir_map = {'(^km)|(^kp)':'starSED/kurucz',
                   '(^bergeron)':'starSED/wDs',
