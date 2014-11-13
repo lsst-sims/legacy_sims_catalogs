@@ -7,7 +7,7 @@ import copy
 from .fileMaps import defaultSpecMap
 from lsst.sims.catalogs.generation.db import ObservationMetaData
 
-__all__ = ["InstanceCatalog"]
+__all__ = ["InstanceCatalog", "is_null"]
 
 def is_null(argument):
     """
