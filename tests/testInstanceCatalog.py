@@ -162,8 +162,8 @@ class InstanceCatalogMetaDataTest(unittest.TestCase):
         testCat = myCatalogClass(self.myDB,obs_metadata=testObsMD)
 
         self.assertAlmostEqual(testCat.mjd,5120.0,10)
-        self.assertAlmostEqual(testCat.unrefractedRA,1.5,10)
-        self.assertAlmostEqual(testCat.unrefractedDec,-1.1,10)
+        self.assertAlmostEqual(numpy.degrees(testCat.unrefractedRA),1.5,10)
+        self.assertAlmostEqual(numpy.degrees(testCat.unrefractedDec),-1.1,10)
         self.assertAlmostEqual(testCat.rotSkyPos,-0.2,10)
         self.assertEqual(testCat.bandpass,'z')
 
@@ -186,8 +186,8 @@ class InstanceCatalogMetaDataTest(unittest.TestCase):
         testObsMD.assignPhoSimMetaData(phosimMD)
 
         self.assertAlmostEqual(testCat.mjd,5120.0,10)
-        self.assertAlmostEqual(testCat.unrefractedRA,1.5,10)
-        self.assertAlmostEqual(testCat.unrefractedDec,-1.1,10)
+        self.assertAlmostEqual(numpy.degrees(testCat.unrefractedRA),1.5,10)
+        self.assertAlmostEqual(numpy.degrees(testCat.unrefractedDec),-1.1,10)
         self.assertAlmostEqual(testCat.rotSkyPos,-0.2,10)
         self.assertEqual(testCat.bandpass,'z')
 
