@@ -149,7 +149,7 @@ class InstanceCatalogMetaDataTest(unittest.TestCase):
         mjd = 5120.0
         RA = 1.5
         Dec = -1.1
-        rotSkyPos = -0.2
+        rotSkyPos = -10.0
 
         testSite = Site(longitude = 2.0, latitude = -1.0, height = 4.0,
             xPolar = 0.5, yPolar = -0.5, meanTemperature = 100.0,
@@ -164,7 +164,7 @@ class InstanceCatalogMetaDataTest(unittest.TestCase):
         self.assertAlmostEqual(testCat.mjd,5120.0,10)
         self.assertAlmostEqual(numpy.degrees(testCat.unrefractedRA),1.5,10)
         self.assertAlmostEqual(numpy.degrees(testCat.unrefractedDec),-1.1,10)
-        self.assertAlmostEqual(testCat.rotSkyPos,-0.2,10)
+        self.assertAlmostEqual(numpy.degrees(testCat.rotSkyPos),-10.0,10)
         self.assertEqual(testCat.bandpass,'z')
 
         self.assertAlmostEqual(testCat.site.longitude,2.0,10)
@@ -188,7 +188,7 @@ class InstanceCatalogMetaDataTest(unittest.TestCase):
         self.assertAlmostEqual(testCat.mjd,5120.0,10)
         self.assertAlmostEqual(numpy.degrees(testCat.unrefractedRA),1.5,10)
         self.assertAlmostEqual(numpy.degrees(testCat.unrefractedDec),-1.1,10)
-        self.assertAlmostEqual(testCat.rotSkyPos,-0.2,10)
+        self.assertAlmostEqual(numpy.degrees(testCat.rotSkyPos),-10.0,10)
         self.assertEqual(testCat.bandpass,'z')
 
         testObsMD.site.longitude=-2.0
