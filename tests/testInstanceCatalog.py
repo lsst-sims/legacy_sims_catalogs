@@ -4,9 +4,10 @@ import sqlite3
 import unittest
 import lsst.utils.tests as utilsTests
 from collections import OrderedDict
-from lsst.sims.catalogs.generation.db import ObservationMetaData, CatalogDBObject, Site
+from lsst.sims.catalogs.generation.db import ObservationMetaData, CatalogDBObject
 from lsst.sims.catalogs.generation.utils import myTestStars, makeStarTestDB
 from lsst.sims.catalogs.measures.instance import InstanceCatalog
+from lsst.sims.utils import Site
 
 def createCannotBeNullTestDB():
     """
