@@ -4,9 +4,10 @@ import numpy
 import unittest
 import eups
 import lsst.utils.tests as utilsTests
-from lsst.sims.catalogs.generation.db import CatalogDBObject, ObservationMetaData, haversine
+from lsst.sims.catalogs.generation.db import CatalogDBObject, ObservationMetaData
 from lsst.sims.catalogs.measures.instance import InstanceCatalog, compound
 import lsst.sims.catalogs.generation.utils.testUtils as tu
+from lsst.sims.utils import haversine
 
 #a class of catalog that outputs all the significant figures in
 #ra and dec so that it can be read back in to make sure that our
