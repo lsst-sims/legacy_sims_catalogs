@@ -21,7 +21,7 @@ def is_null(argument):
     """
     if argument is None:
         return True
-    elif isinstance(argument,str):
+    elif isinstance(argument,str) or isinstance(argument,unicode):
         if argument.lower() == 'null':
             return True
         elif argument.lower() == 'nan':
