@@ -252,10 +252,11 @@ class InstanceCatalogCannotBeNullTest(unittest.TestCase):
         def testCannotBeNull(self):
             """
             Test to make sure that the code for filtering out rows with null values
-            in key catalogs works.
+            in key rowss works.
             """
-            availableCatalogs = [floatCannotBeNullCatalog,
-                                 strCannotBeNullCatalog, unicodeCannotBeNullCatalog]
+
+            #each of these classes flags a different column with a different datatype as cannot_be_null
+            availableCatalogs = [floatCannotBeNullCatalog, strCannotBeNullCatalog, unicodeCannotBeNullCatalog]
             dbobj = CatalogDBObject.from_objid('cannotBeNull')
 
             for catClass in availableCatalogs:
@@ -266,8 +267,13 @@ class InstanceCatalogCannotBeNullTest(unittest.TestCase):
                                      ('n4',(str,40)), ('n5',(unicode,40))])
                 testData = numpy.genfromtxt(fileName,dtype=dtype,delimiter=',')
 
-                j = 0
+                j = 0 #a counter to keep track of the rows read in from the catalog
+
                 for i in range(len(self.baselineOutput)):
+
+                    #self.baselineOutput contains all of the rows from the dbobj
+                    #first, we must assess whether or not the row we are currently
+                    #testing would, in fact, pass the cannot_be_null test
                     validLine = True
                     if isinstance(self.baselineOutput[cat.cannot_be_null[0]][i],str) or \
                        isinstance(self.baselineOutput[cat.cannot_be_null[0]][i],unicode):
@@ -279,6 +285,9 @@ class InstanceCatalogCannotBeNullTest(unittest.TestCase):
                             validLine = False
 
                     if validLine:
+                        #if the row in self.baslineOutput should be in the catalog, we now check
+                        #that baseline and testData agree on column values (there are some gymnastics
+                        #here because you cannot do an == on NaN's
                         for (k,xx) in enumerate(self.baselineOutput[i]):
                             if k<4:
                                 if not numpy.isnan(xx):
@@ -291,10 +300,10 @@ class InstanceCatalogCannotBeNullTest(unittest.TestCase):
                                 self.assertEqual(xx.strip(),testData[j][k].strip(), msg=msg)
                         j+=1
 
-                self.assertEqual(i,99)
-                self.assertEqual(j,len(testData))
+                self.assertEqual(i,99) #make sure that we tested all of the baseline rows
+                self.assertEqual(j,len(testData)) #make sure that we tested all of the testData rows
                 msg = '%d >= %d' % (j,i)
-                self.assertTrue(j<i, msg=msg)
+                self.assertTrue(j<i, msg=msg) #make sure that some rows did not make it into the catalog
 
             if os.path.exists(fileName):
                 os.unlink(fileName)
@@ -313,6 +322,8 @@ class InstanceCatalogCannotBeNullTest(unittest.TestCase):
             testData = numpy.genfromtxt(fileName,dtype=dtype,delimiter=',')
 
             for i in range(len(self.baselineOutput)):
+                #make sure that all of the rows in self.baselineOutput are represented in
+                #testData
                 for (k,xx) in enumerate(self.baselineOutput[i]):
                     if k<4:
                         if not numpy.isnan(xx):
@@ -324,6 +335,7 @@ class InstanceCatalogCannotBeNullTest(unittest.TestCase):
                         self.assertEqual(xx.strip(),testData[i][k].strip(),msg=msg)
 
             self.assertEqual(i,99)
+            self.assertEqual(len(testData), len(self.baselineOutput))
 
             if os.path.exists(fileName):
                 os.unlink(fileName)
