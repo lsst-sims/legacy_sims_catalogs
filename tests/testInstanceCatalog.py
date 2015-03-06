@@ -6,7 +6,7 @@ import lsst.utils.tests as utilsTests
 from collections import OrderedDict
 from lsst.sims.catalogs.generation.db import ObservationMetaData, CatalogDBObject
 from lsst.sims.catalogs.generation.utils import myTestStars, makeStarTestDB
-from lsst.sims.catalogs.measures.instance import InstanceCatalog
+from lsst.sims.catalogs.measures.instance import InstanceCatalog, is_null
 from lsst.sims.utils import Site
 
 def createCannotBeNullTestDB():
@@ -19,7 +19,8 @@ def createCannotBeNullTestDB():
 
     dbName = 'cannotBeNullTest.db'
     numpy.random.seed(32)
-    dtype = numpy.dtype([('id',int),('n1',numpy.float64),('n2',numpy.float64),('n3',numpy.float64)])
+    dtype = numpy.dtype([('id',int),('n1',numpy.float64),('n2',numpy.float64),('n3',numpy.float64),
+                         ('n4',(str,40)), ('n5',(unicode,40))])
     output = None
 
     if os.path.exists(dbName):
@@ -28,7 +29,7 @@ def createCannotBeNullTestDB():
     conn = sqlite3.connect(dbName)
     c = conn.cursor()
     try:
-        c.execute('''CREATE TABLE testTable (id int, n1 float, n2 float, n3 float)''')
+        c.execute('''CREATE TABLE testTable (id int, n1 float, n2 float, n3 float, n4 text, n5 text)''')
         conn.commit()
     except:
         raise RuntimeError("Error creating database.")
@@ -41,12 +42,24 @@ def createCannotBeNullTestDB():
             if draw[0]<0.5:
                 values[i] = None
 
+        draw = numpy.random.sample(1)
+        if draw[0]<0.5:
+            w1 = 'None'
+        else:
+            w1 = 'word'
+
+        draw = numpy.random.sample(1)
+        if draw[0]<0.5:
+            w2 = unicode('None')
+        else:
+            w2 = unicode('word')
+
         if output is None:
-            output=numpy.array([(ii,values[0],values[1],values[2])], dtype = dtype)
+            output=numpy.array([(ii,values[0],values[1],values[2],w1,w2)], dtype = dtype)
         else:
             size = output.size
             output.resize(size+1)
-            output[size] = (ii, values[0], values[1], values[2])
+            output[size] = (ii, values[0], values[1], values[2], w1, w2)
 
         if numpy.isnan(values[0]):
             v0 = 'NULL'
@@ -63,7 +76,7 @@ def createCannotBeNullTestDB():
         else:
             v2 = str(values[2])
 
-        cmd = '''INSERT INTO testTable VALUES (%s, %s, %s, %s)''' % (ii,v0,v1,v2)
+        cmd = '''INSERT INTO testTable VALUES (%s, %s, %s, %s, '%s', '%s')''' % (ii,v0,v1,v2,w1,w2)
         c.execute(cmd)
 
     conn.commit()
@@ -75,20 +88,34 @@ class myCannotBeNullDBObject(CatalogDBObject):
     tableid = 'testTable'
     objid = 'cannotBeNull'
     idColKey = 'id'
+    columns = [('n5','n5',unicode,40)]
 
-class myCannotBeNullCatalog(InstanceCatalog):
+class floatCannotBeNullCatalog(InstanceCatalog):
     """
     This catalog class will not write rows with a null value in the n2 column
     """
-    column_outputs = ['id','n1','n2','n3']
+    column_outputs = ['id','n1','n2','n3', 'n4', 'n5']
     cannot_be_null = ['n2']
-    catalog_type = 'cannotBeNull'
 
-class myCanBeNullCatalog(InstanceCatalog):
+class strCannotBeNullCatalog(InstanceCatalog):
+    """
+    This catalog class will not write rows with a null value in the n2 column
+    """
+    column_outputs = ['id','n1','n2','n3', 'n4', 'n5']
+    cannot_be_null = ['n4']
+
+class unicodeCannotBeNullCatalog(InstanceCatalog):
+    """
+    This catalog class will not write rows with a null value in the n2 column
+    """
+    column_outputs = ['id','n1','n2','n3', 'n4', 'n5']
+    cannot_be_null = ['n5']
+
+class CanBeNullCatalog(InstanceCatalog):
     """
     This catalog class will write all rows to the catalog
     """
-    column_outputs = ['id','n1','n2','n3']
+    column_outputs = ['id','n1','n2','n3', 'n4', 'n5']
     catalog_type = 'canBeNull'
 
 class myCatalogClass(InstanceCatalog):
@@ -225,27 +252,58 @@ class InstanceCatalogCannotBeNullTest(unittest.TestCase):
         def testCannotBeNull(self):
             """
             Test to make sure that the code for filtering out rows with null values
-            in key catalogs works.
+            in key rowss works.
             """
+
+            #each of these classes flags a different column with a different datatype as cannot_be_null
+            availableCatalogs = [floatCannotBeNullCatalog, strCannotBeNullCatalog, unicodeCannotBeNullCatalog]
             dbobj = CatalogDBObject.from_objid('cannotBeNull')
-            cat = dbobj.getCatalog('cannotBeNull')
-            fileName = 'cannotBeNullTestFile.txt'
-            cat.write_catalog(fileName)
-            dtype = numpy.dtype([('id',int),('n1',numpy.float64),('n2',numpy.float64),('n3',numpy.float64)])
-            testData = numpy.genfromtxt(fileName,dtype=dtype,delimiter=',')
 
-            j = 0
-            for i in range(len(self.baselineOutput)):
-                if not numpy.isnan(self.baselineOutput['n2'][i]):
-                    for (k,xx) in enumerate(self.baselineOutput[i]):
-                        if not numpy.isnan(xx):
-                            self.assertAlmostEqual(xx,testData[j][k],3)
-                        else:
-                            self.assertTrue(numpy.isnan(testData[j][k]))
-                    j+=1
+            for catClass in availableCatalogs:
+                cat = catClass(dbobj)
+                fileName = 'cannotBeNullTestFile.txt'
+                cat.write_catalog(fileName)
+                dtype = numpy.dtype([('id',int),('n1',numpy.float64),('n2',numpy.float64),('n3',numpy.float64),
+                                     ('n4',(str,40)), ('n5',(unicode,40))])
+                testData = numpy.genfromtxt(fileName,dtype=dtype,delimiter=',')
 
-            self.assertEqual(i,99)
-            self.assertEqual(j,len(testData))
+                j = 0 #a counter to keep track of the rows read in from the catalog
+
+                for i in range(len(self.baselineOutput)):
+
+                    #self.baselineOutput contains all of the rows from the dbobj
+                    #first, we must assess whether or not the row we are currently
+                    #testing would, in fact, pass the cannot_be_null test
+                    validLine = True
+                    if isinstance(self.baselineOutput[cat.cannot_be_null[0]][i],str) or \
+                       isinstance(self.baselineOutput[cat.cannot_be_null[0]][i],unicode):
+
+                        if self.baselineOutput[cat.cannot_be_null[0]][i].strip().lower() == 'none':
+                            validLine = False
+                    else:
+                        if numpy.isnan(self.baselineOutput[cat.cannot_be_null[0]][i]):
+                            validLine = False
+
+                    if validLine:
+                        #if the row in self.baslineOutput should be in the catalog, we now check
+                        #that baseline and testData agree on column values (there are some gymnastics
+                        #here because you cannot do an == on NaN's
+                        for (k,xx) in enumerate(self.baselineOutput[i]):
+                            if k<4:
+                                if not numpy.isnan(xx):
+                                    msg = 'k: %d -- %s %s -- %s' % (k,str(xx),str(testData[j][k]),cat.cannot_be_null)
+                                    self.assertAlmostEqual(xx, testData[j][k],3, msg=msg)
+                                else:
+                                    self.assertTrue(numpy.isnan(testData[j][k]))
+                            else:
+                                msg = '%s (%s) is not %s (%s)' % (xx,type(xx),testData[j][k],type(testData[j][k]))
+                                self.assertEqual(xx.strip(),testData[j][k].strip(), msg=msg)
+                        j+=1
+
+                self.assertEqual(i,99) #make sure that we tested all of the baseline rows
+                self.assertEqual(j,len(testData)) #make sure that we tested all of the testData rows
+                msg = '%d >= %d' % (j,i)
+                self.assertTrue(j<i, msg=msg) #make sure that some rows did not make it into the catalog
 
             if os.path.exists(fileName):
                 os.unlink(fileName)
@@ -259,18 +317,25 @@ class InstanceCatalogCannotBeNullTest(unittest.TestCase):
             cat = dbobj.getCatalog('canBeNull')
             fileName = 'canBeNullTestFile.txt'
             cat.write_catalog(fileName)
-            dtype = numpy.dtype([('id',int),('n1',numpy.float64),('n2',numpy.float64),('n3',numpy.float64)])
+            dtype = numpy.dtype([('id',int),('n1',numpy.float64),('n2',numpy.float64),('n3',numpy.float64),
+                                 ('n4',(str,40)), ('n5',(unicode,40))])
             testData = numpy.genfromtxt(fileName,dtype=dtype,delimiter=',')
 
             for i in range(len(self.baselineOutput)):
-                if not numpy.isnan(self.baselineOutput['n2'][i]):
-                    for (k,xx) in enumerate(self.baselineOutput[i]):
+                #make sure that all of the rows in self.baselineOutput are represented in
+                #testData
+                for (k,xx) in enumerate(self.baselineOutput[i]):
+                    if k<4:
                         if not numpy.isnan(xx):
-                            self.assertAlmostEqual(xx,testData[i][k],3)
+                            self.assertAlmostEqual(xx,testData[i][k], 3)
                         else:
                             self.assertTrue(numpy.isnan(testData[i][k]))
+                    else:
+                        msg = '%s is not %s' % (xx,testData[i][k])
+                        self.assertEqual(xx.strip(),testData[i][k].strip(),msg=msg)
 
             self.assertEqual(i,99)
+            self.assertEqual(len(testData), len(self.baselineOutput))
 
             if os.path.exists(fileName):
                 os.unlink(fileName)
