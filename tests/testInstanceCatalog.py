@@ -47,7 +47,7 @@ def createCannotBeNullTestDB():
             w1 = 'None'
         else:
             w1 = 'word'
-        
+
         draw = numpy.random.sample(1)
         if draw[0]<0.5:
             w2 = unicode('None')
@@ -90,15 +90,28 @@ class myCannotBeNullDBObject(CatalogDBObject):
     idColKey = 'id'
     columns = [('n5','n5',unicode,40)]
 
-class myCannotBeNullCatalog(InstanceCatalog):
+class floatCannotBeNullCatalog(InstanceCatalog):
     """
     This catalog class will not write rows with a null value in the n2 column
     """
     column_outputs = ['id','n1','n2','n3', 'n4', 'n5']
     cannot_be_null = ['n2']
-    catalog_type = 'cannotBeNull'
 
-class myCanBeNullCatalog(InstanceCatalog):
+class strCannotBeNullCatalog(InstanceCatalog):
+    """
+    This catalog class will not write rows with a null value in the n2 column
+    """
+    column_outputs = ['id','n1','n2','n3', 'n4', 'n5']
+    cannot_be_null = ['n4']
+
+class unicodeCannotBeNullCatalog(InstanceCatalog):
+    """
+    This catalog class will not write rows with a null value in the n2 column
+    """
+    column_outputs = ['id','n1','n2','n3', 'n4', 'n5']
+    cannot_be_null = ['n5']
+
+class CanBeNullCatalog(InstanceCatalog):
     """
     This catalog class will write all rows to the catalog
     """
@@ -241,30 +254,47 @@ class InstanceCatalogCannotBeNullTest(unittest.TestCase):
             Test to make sure that the code for filtering out rows with null values
             in key catalogs works.
             """
+            availableCatalogs = [floatCannotBeNullCatalog,
+                                 strCannotBeNullCatalog, unicodeCannotBeNullCatalog]
             dbobj = CatalogDBObject.from_objid('cannotBeNull')
-            cat = dbobj.getCatalog('cannotBeNull')
-            fileName = 'cannotBeNullTestFile.txt'
-            cat.write_catalog(fileName)
-            dtype = numpy.dtype([('id',int),('n1',numpy.float64),('n2',numpy.float64),('n3',numpy.float64),
-                                 ('n4',(str,40)), ('n5',(unicode,40))])
-            testData = numpy.genfromtxt(fileName,dtype=dtype,delimiter=',')
 
-            j = 0
-            for i in range(len(self.baselineOutput)):
-                if not numpy.isnan(self.baselineOutput['n2'][i]):
-                    for (k,xx) in enumerate(self.baselineOutput[i]):
-                        if k<4:
-                            if not numpy.isnan(xx):
-                                self.assertAlmostEqual(xx, testData[j][k],3)
+            for catClass in availableCatalogs:
+                cat = catClass(dbobj)
+                fileName = 'cannotBeNullTestFile.txt'
+                cat.write_catalog(fileName)
+                dtype = numpy.dtype([('id',int),('n1',numpy.float64),('n2',numpy.float64),('n3',numpy.float64),
+                                     ('n4',(str,40)), ('n5',(unicode,40))])
+                testData = numpy.genfromtxt(fileName,dtype=dtype,delimiter=',')
+
+                j = 0
+                for i in range(len(self.baselineOutput)):
+                    validLine = True
+                    if isinstance(self.baselineOutput[cat.cannot_be_null[0]][i],str) or \
+                       isinstance(self.baselineOutput[cat.cannot_be_null[0]][i],unicode):
+
+                        if self.baselineOutput[cat.cannot_be_null[0]][i].strip().lower() == 'none':
+                            validLine = False
+                    else:
+                        if numpy.isnan(self.baselineOutput[cat.cannot_be_null[0]][i]):
+                            validLine = False
+
+                    if validLine:
+                        for (k,xx) in enumerate(self.baselineOutput[i]):
+                            if k<4:
+                                if not numpy.isnan(xx):
+                                    msg = 'k: %d -- %s %s -- %s' % (k,str(xx),str(testData[j][k]),cat.cannot_be_null)
+                                    self.assertAlmostEqual(xx, testData[j][k],3, msg=msg)
+                                else:
+                                    self.assertTrue(numpy.isnan(testData[j][k]))
                             else:
-                                self.assertTrue(numpy.isnan(testData[j][k]))
-                        else:
-                            msg = '%s (%s) is not %s (%s)' % (xx,type(xx),testData[j][k],type(testData[j][k]))
-                            self.assertEqual(xx.strip(),testData[j][k].strip(), msg=msg)
-                    j+=1
+                                msg = '%s (%s) is not %s (%s)' % (xx,type(xx),testData[j][k],type(testData[j][k]))
+                                self.assertEqual(xx.strip(),testData[j][k].strip(), msg=msg)
+                        j+=1
 
-            self.assertEqual(i,99)
-            self.assertEqual(j,len(testData))
+                self.assertEqual(i,99)
+                self.assertEqual(j,len(testData))
+                msg = '%d >= %d' % (j,i)
+                self.assertTrue(j<i, msg=msg)
 
             if os.path.exists(fileName):
                 os.unlink(fileName)
@@ -283,16 +313,15 @@ class InstanceCatalogCannotBeNullTest(unittest.TestCase):
             testData = numpy.genfromtxt(fileName,dtype=dtype,delimiter=',')
 
             for i in range(len(self.baselineOutput)):
-                if not numpy.isnan(self.baselineOutput['n2'][i]):
-                    for (k,xx) in enumerate(self.baselineOutput[i]):
-                        if k<4:
-                            if not numpy.isnan(xx):
-                                self.assertAlmostEqual(xx,testData[i][k], 3)
-                            else:
-                                self.assertTrue(numpy.isnan(testData[i][k]))
+                for (k,xx) in enumerate(self.baselineOutput[i]):
+                    if k<4:
+                        if not numpy.isnan(xx):
+                            self.assertAlmostEqual(xx,testData[i][k], 3)
                         else:
-                            msg = '%s is not %s' % (xx,testData[i][k])
-                            self.assertEqual(xx.strip(),testData[i][k].strip(),msg=msg)
+                            self.assertTrue(numpy.isnan(testData[i][k]))
+                    else:
+                        msg = '%s is not %s' % (xx,testData[i][k])
+                        self.assertEqual(xx.strip(),testData[i][k].strip(),msg=msg)
 
             self.assertEqual(i,99)
 
