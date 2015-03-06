@@ -22,11 +22,11 @@ def is_null(argument):
     if argument is None:
         return True
     elif isinstance(argument,str) or isinstance(argument,unicode):
-        if argument.lower() == 'null':
+        if argument.strip().lower() == 'null':
             return True
-        elif argument.lower() == 'nan':
+        elif argument.strip().lower() == 'nan':
             return True
-        elif argument.lower() == 'none':
+        elif argument.strip().lower() == 'none':
             return True
     elif numpy.isnan(argument):
         return True
