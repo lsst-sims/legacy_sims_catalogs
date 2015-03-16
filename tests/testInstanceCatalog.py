@@ -118,7 +118,7 @@ class CanBeNullCatalog(InstanceCatalog):
     column_outputs = ['id','n1','n2','n3', 'n4', 'n5']
     catalog_type = 'canBeNull'
 
-class myCatalogClass(InstanceCatalog):
+class testStellarCatalogClass(InstanceCatalog):
     column_outputs = ['raJ2000','decJ2000']
 
 class InstanceCatalogMetaDataTest(unittest.TestCase):
@@ -152,11 +152,11 @@ class InstanceCatalogMetaDataTest(unittest.TestCase):
         """
 
         xx=5.0
-        self.assertRaises(ValueError,myCatalogClass,self.myDB,obs_metadata=xx)
+        self.assertRaises(ValueError,testStellarCatalogClass,self.myDB,obs_metadata=xx)
 
     def testDefault(self):
 
-        testCat = myCatalogClass(self.myDB)
+        testCat = testStellarCatalogClass(self.myDB)
 
         self.assertEqual(testCat.unrefractedRA,None)
         self.assertEqual(testCat.unrefractedDec,None)
@@ -187,7 +187,7 @@ class InstanceCatalogMetaDataTest(unittest.TestCase):
             mjd=mjd, unrefractedRA=RA,
             unrefractedDec=Dec, rotSkyPos=rotSkyPos, bandpassName = 'z')
 
-        testCat = myCatalogClass(self.myDB,obs_metadata=testObsMD)
+        testCat = testStellarCatalogClass(self.myDB,obs_metadata=testObsMD)
 
         self.assertAlmostEqual(testCat.mjd,5120.0,10)
         self.assertAlmostEqual(numpy.degrees(testCat.unrefractedRA),1.5,10)
