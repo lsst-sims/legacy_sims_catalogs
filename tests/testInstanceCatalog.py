@@ -9,7 +9,7 @@ from lsst.sims.catalogs.generation.utils import myTestStars, makeStarTestDB
 from lsst.sims.catalogs.measures.instance import InstanceCatalog, is_null
 from lsst.sims.utils import Site
 
-def createCannotBeNullTestDB():
+def createCannotBeNullTestDB(filename=None, add_nans=True):
     """
     Create a database to test the 'cannot_be_null' functionality in InstanceCatalog
 
@@ -17,7 +17,11 @@ def createCannotBeNullTestDB():
     in the unit tests.
     """
 
-    dbName = 'cannotBeNullTest.db'
+    if filename is None:
+        dbName = 'cannotBeNullTest.db'
+    else:
+        dbName = filename
+
     numpy.random.seed(32)
     dtype = numpy.dtype([('id',int),('n1',numpy.float64),('n2',numpy.float64),('n3',numpy.float64),
                          ('n4',(str,40)), ('n5',(unicode,40))])
@@ -39,7 +43,7 @@ def createCannotBeNullTestDB():
         values = numpy.random.sample(3);
         for i in range(len(values)):
             draw = numpy.random.sample(1)
-            if draw[0]<0.5:
+            if draw[0]<0.5 and add_nans:
                 values[i] = None
 
         draw = numpy.random.sample(1)
@@ -61,17 +65,17 @@ def createCannotBeNullTestDB():
             output.resize(size+1)
             output[size] = (ii, values[0], values[1], values[2], w1, w2)
 
-        if numpy.isnan(values[0]):
+        if numpy.isnan(values[0]) and add_nans:
             v0 = 'NULL'
         else:
             v0 = str(values[0])
 
-        if numpy.isnan(values[1]):
+        if numpy.isnan(values[1]) and add_nans:
             v1 = 'NULL'
         else:
             v1 = str(values[1])
 
-        if numpy.isnan(values[2]):
+        if numpy.isnan(values[2]) and add_nans:
             v2 = 'NULL'
         else:
             v2 = str(values[2])
@@ -121,6 +125,15 @@ class CanBeNullCatalog(InstanceCatalog):
 class testStellarCatalogClass(InstanceCatalog):
     column_outputs = ['raJ2000','decJ2000']
     default_formats = {'f':'%le'}
+
+class cartoonValueCatalog(InstanceCatalog):
+    column_outputs = ['n1', 'n2']
+    default_formats = {'f': '%le'}
+
+    def get_difference(self):
+        x = self.column_by_name('n1')
+        y = self.column_by_name('n3')
+        return x-y
 
 class InstanceCatalogMetaDataTest(unittest.TestCase):
     """
@@ -314,6 +327,28 @@ class InstanceCatalogMetaDataTest(unittest.TestCase):
         self.assertTrue('properMotionDec' in header)
         if os.path.exists('testArgCatalog.txt'):
             os.unlink('testArgCatalog.txt')
+
+    def testArgValues(self):
+        """
+        Test that columns added using the contructor ags return the correct value
+        """
+        dbName = 'valueTestDB.db'
+        baselineData = createCannotBeNullTestDB(filename=dbName, add_nans=False)
+        db = myCannotBeNullDBObject(address='sqlite:///' + dbName)
+        cat = cartoonValueCatalog(db, column_outputs = ['n3','difference'])
+        cat.write_catalog('cartoonValCat.txt')
+        dtype = numpy.dtype([('n1',float), ('n2',float), ('n3',float), ('difference', float)])
+        testData = numpy.genfromtxt('cartoonValCat.txt', dtype=dtype, delimiter=',')
+        for testLine, controlLine in zip(testData, baselineData):
+            self.assertAlmostEqual(testLine[0], controlLine['n1'], 6)
+            self.assertAlmostEqual(testLine[1], controlLine['n2'], 6)
+            self.assertAlmostEqual(testLine[2], controlLine['n3'], 6)
+            self.assertAlmostEqual(testLine[3], controlLine['n1']-controlLine['n3'], 6)
+
+        if os.path.exists(dbName):
+            os.unlink(dbName)
+        if os.path.exists('cartoonValCat.txt'):
+            os.unlink('cartoonValCat.txt')
 
 
 class InstanceCatalogCannotBeNullTest(unittest.TestCase):
