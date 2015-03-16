@@ -196,6 +196,32 @@ class InstanceCatalog(object):
     def __init__(self, db_obj, obs_metadata=None, column_outputs=None,
                  constraint=None, specFileMap=defaultSpecMap):
 
+        """
+        @param [in] db_obj is an instantiation of the CatalogDBObject class,
+        which provide connection to a specific database table
+
+        see sims_catalogs_generation/python/lsst/sims/catalogs/generation/db/dbConnection.py
+
+        @param [in] obs_metadata is an instantiation of the ObservationMetaData class
+        characterizing a specific telescope observation
+
+        see sims_catalogs_generation/python/lsst/sims/catalogs/generation/db/ObservationMetaData.py
+
+        @param [in] column_outputs is a list of column names to be output
+        in the catalog.  This is optional and will be appended to the list
+        of column_outputs defined int he class definition.
+
+        @param [in] constraint is an optional SQL constraint to be applied to the
+        database query
+
+        @param [in] specFileMap is an instantiation of the SpecMap class
+
+        (defined in sims_catalogs_measures/python/sims/catalogs/measures/instance/fileMaps.py)
+
+        that maps database entries for SED names to actual file paths.  This is optional
+        it will do the right thing by default.
+        """
+
         self.verbose = db_obj.verbose
 
         self.db_obj = db_obj
