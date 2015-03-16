@@ -9,7 +9,7 @@ from lsst.sims.catalogs.generation.utils import myTestStars, makeStarTestDB
 from lsst.sims.catalogs.measures.instance import InstanceCatalog, is_null
 from lsst.sims.utils import Site
 
-def createCannotBeNullTestDB():
+def createCannotBeNullTestDB(filename=None, add_nans=True):
     """
     Create a database to test the 'cannot_be_null' functionality in InstanceCatalog
 
@@ -17,7 +17,11 @@ def createCannotBeNullTestDB():
     in the unit tests.
     """
 
-    dbName = 'cannotBeNullTest.db'
+    if filename is None:
+        dbName = 'cannotBeNullTest.db'
+    else:
+        dbName = filename
+
     numpy.random.seed(32)
     dtype = numpy.dtype([('id',int),('n1',numpy.float64),('n2',numpy.float64),('n3',numpy.float64),
                          ('n4',(str,40)), ('n5',(unicode,40))])
@@ -39,7 +43,7 @@ def createCannotBeNullTestDB():
         values = numpy.random.sample(3);
         for i in range(len(values)):
             draw = numpy.random.sample(1)
-            if draw[0]<0.5:
+            if draw[0]<0.5 and add_nans:
                 values[i] = None
 
         draw = numpy.random.sample(1)
@@ -61,17 +65,17 @@ def createCannotBeNullTestDB():
             output.resize(size+1)
             output[size] = (ii, values[0], values[1], values[2], w1, w2)
 
-        if numpy.isnan(values[0]):
+        if numpy.isnan(values[0]) and add_nans:
             v0 = 'NULL'
         else:
             v0 = str(values[0])
 
-        if numpy.isnan(values[1]):
+        if numpy.isnan(values[1]) and add_nans:
             v1 = 'NULL'
         else:
             v1 = str(values[1])
 
-        if numpy.isnan(values[2]):
+        if numpy.isnan(values[2]) and add_nans:
             v2 = 'NULL'
         else:
             v2 = str(values[2])
@@ -118,8 +122,18 @@ class CanBeNullCatalog(InstanceCatalog):
     column_outputs = ['id','n1','n2','n3', 'n4', 'n5']
     catalog_type = 'canBeNull'
 
-class myCatalogClass(InstanceCatalog):
+class testStellarCatalogClass(InstanceCatalog):
     column_outputs = ['raJ2000','decJ2000']
+    default_formats = {'f':'%le'}
+
+class cartoonValueCatalog(InstanceCatalog):
+    column_outputs = ['n1', 'n2']
+    default_formats = {'f': '%le'}
+
+    def get_difference(self):
+        x = self.column_by_name('n1')
+        y = self.column_by_name('n3')
+        return x-y
 
 class InstanceCatalogMetaDataTest(unittest.TestCase):
     """
@@ -152,11 +166,11 @@ class InstanceCatalogMetaDataTest(unittest.TestCase):
         """
 
         xx=5.0
-        self.assertRaises(ValueError,myCatalogClass,self.myDB,obs_metadata=xx)
+        self.assertRaises(ValueError,testStellarCatalogClass,self.myDB,obs_metadata=xx)
 
     def testDefault(self):
 
-        testCat = myCatalogClass(self.myDB)
+        testCat = testStellarCatalogClass(self.myDB)
 
         self.assertEqual(testCat.unrefractedRA,None)
         self.assertEqual(testCat.unrefractedDec,None)
@@ -187,7 +201,7 @@ class InstanceCatalogMetaDataTest(unittest.TestCase):
             mjd=mjd, unrefractedRA=RA,
             unrefractedDec=Dec, rotSkyPos=rotSkyPos, bandpassName = 'z')
 
-        testCat = myCatalogClass(self.myDB,obs_metadata=testObsMD)
+        testCat = testStellarCatalogClass(self.myDB,obs_metadata=testObsMD)
 
         self.assertAlmostEqual(testCat.mjd,5120.0,10)
         self.assertAlmostEqual(numpy.degrees(testCat.unrefractedRA),1.5,10)
@@ -238,6 +252,104 @@ class InstanceCatalogMetaDataTest(unittest.TestCase):
         self.assertAlmostEqual(testCat.site.meanPressure,500.0,10)
         self.assertAlmostEqual(testCat.site.meanHumidity,0.1,10)
         self.assertAlmostEqual(testCat.site.lapseRate,0.1,10)
+
+    def testColumnArg(self):
+        """
+        A unit test to make sure that the code allowing you to add
+        new column_outputs to an InstanceCatalog using its constructor
+        works properly.
+        """
+
+        mjd = 5120.0
+        RA = 1.5
+        Dec = -1.1
+        rotSkyPos = -10.0
+
+        testSite = Site(longitude = 2.0, latitude = -1.0, height = 4.0,
+            xPolar = 0.5, yPolar = -0.5, meanTemperature = 100.0,
+            meanPressure = 500.0, meanHumidity = 0.1, lapseRate = 0.1)
+
+        testObsMD = ObservationMetaData(site=testSite,
+            mjd=mjd, unrefractedRA=RA,
+            unrefractedDec=Dec, rotSkyPos=rotSkyPos, bandpassName = 'z')
+
+        #make sure the correct column names are returned
+        #according to class definition
+        testCat = testStellarCatalogClass(self.myDB,obs_metadata=testObsMD)
+        columnsShouldBe = ['raJ2000', 'decJ2000']
+        for col in testCat.iter_column_names():
+            if col in columnsShouldBe:
+                columnsShouldBe.remove(col)
+            else:
+                raise(RuntimeError,'column %s returned; should not be there' % col)
+
+        self.assertEqual(len(columnsShouldBe),0)
+
+        #make sure that new column names can be added
+        newColumns = ['properMotionRa', 'properMotionDec']
+        testCat = testStellarCatalogClass(self.myDB, obs_metadata=testObsMD, column_outputs=newColumns)
+        columnsShouldBe = ['raJ2000', 'decJ2000', 'properMotionRa', 'properMotionDec']
+        for col in testCat.iter_column_names():
+            if col in columnsShouldBe:
+                columnsShouldBe.remove(col)
+            else:
+                raise(RuntimeError, 'column %s returned; should not be there' % col)
+
+        self.assertEqual(len(columnsShouldBe),0)
+
+        #make sure that, if we include a duplicate column in newColumns,
+        #the column is not duplicated
+        newColumns = ['properMotionRa', 'properMotionDec', 'raJ2000']
+        testCat = testStellarCatalogClass(self.myDB, obs_metadata=testObsMD, column_outputs=newColumns)
+        columnsShouldBe = ['raJ2000', 'decJ2000', 'properMotionRa', 'properMotionDec']
+        generatedColumns = []
+        for col in testCat.iter_column_names():
+            generatedColumns.append(col)
+            if col in columnsShouldBe:
+                columnsShouldBe.remove(col)
+            else:
+                raise(RuntimeError, 'column %s returned; should not be there' % col)
+
+        self.assertEqual(len(columnsShouldBe),0)
+        self.assertEqual(len(generatedColumns),4)
+
+        testCat.write_catalog('testArgCatalog.txt')
+        inCat = open('testArgCatalog.txt','r')
+        lines = inCat.readlines()
+        inCat.close()
+        header = lines[0]
+        header = header.strip('#')
+        header = header.strip('\n')
+        header = header.split(', ')
+        self.assertTrue('raJ2000' in header)
+        self.assertTrue('decJ2000' in header)
+        self.assertTrue('properMotionRa' in header)
+        self.assertTrue('properMotionDec' in header)
+        if os.path.exists('testArgCatalog.txt'):
+            os.unlink('testArgCatalog.txt')
+
+    def testArgValues(self):
+        """
+        Test that columns added using the contructor ags return the correct value
+        """
+        dbName = 'valueTestDB.db'
+        baselineData = createCannotBeNullTestDB(filename=dbName, add_nans=False)
+        db = myCannotBeNullDBObject(address='sqlite:///' + dbName)
+        cat = cartoonValueCatalog(db, column_outputs = ['n3','difference'])
+        cat.write_catalog('cartoonValCat.txt')
+        dtype = numpy.dtype([('n1',float), ('n2',float), ('n3',float), ('difference', float)])
+        testData = numpy.genfromtxt('cartoonValCat.txt', dtype=dtype, delimiter=',')
+        for testLine, controlLine in zip(testData, baselineData):
+            self.assertAlmostEqual(testLine[0], controlLine['n1'], 6)
+            self.assertAlmostEqual(testLine[1], controlLine['n2'], 6)
+            self.assertAlmostEqual(testLine[2], controlLine['n3'], 6)
+            self.assertAlmostEqual(testLine[3], controlLine['n1']-controlLine['n3'], 6)
+
+        if os.path.exists(dbName):
+            os.unlink(dbName)
+        if os.path.exists('cartoonValCat.txt'):
+            os.unlink('cartoonValCat.txt')
+
 
 class InstanceCatalogCannotBeNullTest(unittest.TestCase):
 

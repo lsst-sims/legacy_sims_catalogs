@@ -153,7 +153,7 @@ class InstanceCatalog(object):
 
     # These are the class attributes to be specified in any derived class:
     catalog_type = 'instance_catalog'
-    column_outputs = 'all'
+    column_outputs = None
     default_columns = []
     cannot_be_null = [] #a list of columns which, if null, cause a row not to be printed by write_catalog()
     default_formats = {'S':'%s', 'f':'%.4f', 'i':'%i'}
@@ -193,7 +193,35 @@ class InstanceCatalog(object):
             else:
                 yield column
 
-    def __init__(self, db_obj, obs_metadata=None, constraint=None, specFileMap=defaultSpecMap):
+    def __init__(self, db_obj, obs_metadata=None, column_outputs=None,
+                 constraint=None, specFileMap=defaultSpecMap):
+
+        """
+        @param [in] db_obj is an instantiation of the CatalogDBObject class,
+        which provide connection to a specific database table
+
+        see sims_catalogs_generation/python/lsst/sims/catalogs/generation/db/dbConnection.py
+
+        @param [in] obs_metadata is an instantiation of the ObservationMetaData class
+        characterizing a specific telescope observation
+
+        see sims_catalogs_generation/python/lsst/sims/catalogs/generation/db/ObservationMetaData.py
+
+        @param [in] column_outputs is a list of column names to be output
+        in the catalog.  This is optional and will be appended to the list
+        of column_outputs defined int he class definition.
+
+        @param [in] constraint is an optional SQL constraint to be applied to the
+        database query
+
+        @param [in] specFileMap is an instantiation of the SpecMap class
+
+        (defined in sims_catalogs_measures/python/sims/catalogs/measures/instance/fileMaps.py)
+
+        that maps database entries for SED names to actual file paths.  This is optional
+        it will do the right thing by default.
+        """
+
         self.verbose = db_obj.verbose
 
         self.db_obj = db_obj
@@ -211,6 +239,14 @@ class InstanceCatalog(object):
         else:
             self.obs_metadata = ObservationMetaData()
 
+        if column_outputs is not None:
+            if self.column_outputs is None:
+                self.column_outputs = column_outputs
+            else:
+                for col in column_outputs:
+                    if col not in self.column_outputs:
+                        self.column_outputs.append(col)
+
         self.site = self.obs_metadata.site
         self.unrefractedRA = self.obs_metadata.unrefractedRA
         self.unrefractedDec = self.obs_metadata.unrefractedDec
@@ -223,7 +259,7 @@ class InstanceCatalog(object):
 
         self.refIdCol = self.db_obj.getIdColKey()
 
-        if self.column_outputs == 'all':
+        if self.column_outputs is None:
             self.column_outputs = self._all_columns()
 
         self._column_cache = {}
