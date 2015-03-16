@@ -193,7 +193,9 @@ class InstanceCatalog(object):
             else:
                 yield column
 
-    def __init__(self, db_obj, obs_metadata=None, constraint=None, specFileMap=defaultSpecMap):
+    def __init__(self, db_obj, obs_metadata=None, column_outputs=None,
+                 constraint=None, specFileMap=defaultSpecMap):
+
         self.verbose = db_obj.verbose
 
         self.db_obj = db_obj
@@ -210,6 +212,14 @@ class InstanceCatalog(object):
             self.obs_metadata = copy.deepcopy(obs_metadata)
         else:
             self.obs_metadata = ObservationMetaData()
+
+        if column_outputs is not None:
+            if self.column_outputs is None:
+                self.column_outputs = column_outputs
+            else:
+                for col in column_outputs:
+                    if col not in self.column_outputs:
+                        self.column_output.append(col)
 
         self.site = self.obs_metadata.site
         self.unrefractedRA = self.obs_metadata.unrefractedRA
