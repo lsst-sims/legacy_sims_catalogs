@@ -245,7 +245,7 @@ class InstanceCatalog(object):
             else:
                 for col in column_outputs:
                     if col not in self.column_outputs:
-                        self.column_output.append(col)
+                        self.column_outputs.append(col)
 
         self.site = self.obs_metadata.site
         self.unrefractedRA = self.obs_metadata.unrefractedRA
