@@ -153,7 +153,7 @@ class InstanceCatalog(object):
 
     # These are the class attributes to be specified in any derived class:
     catalog_type = 'instance_catalog'
-    column_outputs = 'all'
+    column_outputs = None
     default_columns = []
     cannot_be_null = [] #a list of columns which, if null, cause a row not to be printed by write_catalog()
     default_formats = {'S':'%s', 'f':'%.4f', 'i':'%i'}
@@ -223,7 +223,7 @@ class InstanceCatalog(object):
 
         self.refIdCol = self.db_obj.getIdColKey()
 
-        if self.column_outputs == 'all':
+        if self.column_outputs is None:
             self.column_outputs = self._all_columns()
 
         self._column_cache = {}
