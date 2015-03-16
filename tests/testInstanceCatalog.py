@@ -120,6 +120,7 @@ class CanBeNullCatalog(InstanceCatalog):
 
 class testStellarCatalogClass(InstanceCatalog):
     column_outputs = ['raJ2000','decJ2000']
+    default_formats = {'f':'%le'}
 
 class InstanceCatalogMetaDataTest(unittest.TestCase):
     """
@@ -238,6 +239,82 @@ class InstanceCatalogMetaDataTest(unittest.TestCase):
         self.assertAlmostEqual(testCat.site.meanPressure,500.0,10)
         self.assertAlmostEqual(testCat.site.meanHumidity,0.1,10)
         self.assertAlmostEqual(testCat.site.lapseRate,0.1,10)
+
+    def testColumnArg(self):
+        """
+        A unit test to make sure that the code allowing you to add
+        new column_outputs to an InstanceCatalog using its constructor
+        works properly.
+        """
+
+        mjd = 5120.0
+        RA = 1.5
+        Dec = -1.1
+        rotSkyPos = -10.0
+
+        testSite = Site(longitude = 2.0, latitude = -1.0, height = 4.0,
+            xPolar = 0.5, yPolar = -0.5, meanTemperature = 100.0,
+            meanPressure = 500.0, meanHumidity = 0.1, lapseRate = 0.1)
+
+        testObsMD = ObservationMetaData(site=testSite,
+            mjd=mjd, unrefractedRA=RA,
+            unrefractedDec=Dec, rotSkyPos=rotSkyPos, bandpassName = 'z')
+
+        #make sure the correct column names are returned
+        #according to class definition
+        testCat = testStellarCatalogClass(self.myDB,obs_metadata=testObsMD)
+        columnsShouldBe = ['raJ2000', 'decJ2000']
+        for col in testCat.iter_column_names():
+            if col in columnsShouldBe:
+                columnsShouldBe.remove(col)
+            else:
+                raise(RuntimeError,'column %s returned; should not be there' % col)
+
+        self.assertEqual(len(columnsShouldBe),0)
+
+        #make sure that new column names can be added
+        newColumns = ['properMotionRa', 'properMotionDec']
+        testCat = testStellarCatalogClass(self.myDB, obs_metadata=testObsMD, column_outputs=newColumns)
+        columnsShouldBe = ['raJ2000', 'decJ2000', 'properMotionRa', 'properMotionDec']
+        for col in testCat.iter_column_names():
+            if col in columnsShouldBe:
+                columnsShouldBe.remove(col)
+            else:
+                raise(RuntimeError, 'column %s returned; should not be there' % col)
+
+        self.assertEqual(len(columnsShouldBe),0)
+
+        #make sure that, if we include a duplicate column in newColumns,
+        #the column is not duplicated
+        newColumns = ['properMotionRa', 'properMotionDec', 'raJ2000']
+        testCat = testStellarCatalogClass(self.myDB, obs_metadata=testObsMD, column_outputs=newColumns)
+        columnsShouldBe = ['raJ2000', 'decJ2000', 'properMotionRa', 'properMotionDec']
+        generatedColumns = []
+        for col in testCat.iter_column_names():
+            generatedColumns.append(col)
+            if col in columnsShouldBe:
+                columnsShouldBe.remove(col)
+            else:
+                raise(RuntimeError, 'column %s returned; should not be there' % col)
+
+        self.assertEqual(len(columnsShouldBe),0)
+        self.assertEqual(len(generatedColumns),4)
+
+        testCat.write_catalog('testArgCatalog.txt')
+        inCat = open('testArgCatalog.txt','r')
+        lines = inCat.readlines()
+        inCat.close()
+        header = lines[0]
+        header = header.strip('#')
+        header = header.strip('\n')
+        header = header.split(', ')
+        self.assertTrue('raJ2000' in header)
+        self.assertTrue('decJ2000' in header)
+        self.assertTrue('properMotionRa' in header)
+        self.assertTrue('properMotionDec' in header)
+        if os.path.exists('testArgCatalog.txt'):
+            os.unlink('testArgCatalog.txt')
+
 
 class InstanceCatalogCannotBeNullTest(unittest.TestCase):
 
