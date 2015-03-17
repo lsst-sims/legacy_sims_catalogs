@@ -302,6 +302,10 @@ class InstanceCatalogMetaDataTest(unittest.TestCase):
         newColumns = ['properMotionRa', 'properMotionDec', 'raJ2000']
         testCat = testStellarCatalogClass(self.myDB, obs_metadata=testObsMD, column_outputs=newColumns)
         columnsShouldBe = ['raJ2000', 'decJ2000', 'properMotionRa', 'properMotionDec']
+
+        for col in columnsShouldBe:
+            self.assertTrue(col in testCat.all_calculated_columns)
+
         generatedColumns = []
         for col in testCat.iter_column_names():
             generatedColumns.append(col)
@@ -335,9 +339,14 @@ class InstanceCatalogMetaDataTest(unittest.TestCase):
         dbName = 'valueTestDB.db'
         baselineData = createCannotBeNullTestDB(filename=dbName, add_nans=False)
         db = myCannotBeNullDBObject(address='sqlite:///' + dbName)
-        cat = cartoonValueCatalog(db, column_outputs = ['n3','difference'])
-        cat.write_catalog('cartoonValCat.txt')
         dtype = numpy.dtype([('n1',float), ('n2',float), ('n3',float), ('difference', float)])
+        cat = cartoonValueCatalog(db, column_outputs = ['n3','difference'])
+
+        columns = ['n1', 'n2', 'n3', 'difference']
+        for col in columns:
+            self.assertTrue(col in cat.all_calculated_columns)
+
+        cat.write_catalog('cartoonValCat.txt')
         testData = numpy.genfromtxt('cartoonValCat.txt', dtype=dtype, delimiter=',')
         for testLine, controlLine in zip(testData, baselineData):
             self.assertAlmostEqual(testLine[0], controlLine['n1'], 6)
@@ -350,6 +359,27 @@ class InstanceCatalogMetaDataTest(unittest.TestCase):
         if os.path.exists('cartoonValCat.txt'):
             os.unlink('cartoonValCat.txt')
 
+    def testAllCalculatedColumns(self):
+        """
+        Unit test to make sure that all_calculated_columns contains all of the dependent columns
+        """
+        class otherCartoonValueCatalog(InstanceCatalog):
+            column_outputs = ['n1', 'n2', 'difference']
+            def get_difference(self):
+                n1 = self.column_by_name('n1')
+                n3 = self.column_by_name('n3')
+                return n1-n3
+
+        dbName = 'valueTestDB.db'
+        baselineData = createCannotBeNullTestDB(filename=dbName, add_nans=False)
+        db = myCannotBeNullDBObject(address='sqlite:///' + dbName)
+        cat = otherCartoonValueCatalog(db)
+        columns = ['n1', 'n2', 'n3', 'difference']
+        for col in columns:
+            self.assertTrue(col in cat.all_calculated_columns)
+
+        if os.path.exists('valueTestDB.db'):
+            os.unlink('valueTestDB.db')
 
 class InstanceCatalogCannotBeNullTest(unittest.TestCase):
 

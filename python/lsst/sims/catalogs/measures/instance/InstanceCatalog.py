@@ -247,6 +247,7 @@ class InstanceCatalog(object):
                     if col not in self.column_outputs:
                         self.column_outputs.append(col)
 
+        self.all_calculated_columns =[] #a list of all the columns referenced by self.column_by_name
         self.site = self.obs_metadata.site
         self.unrefractedRA = self.obs_metadata.unrefractedRA
         self.unrefractedDec = self.obs_metadata.unrefractedDec
@@ -312,6 +313,10 @@ class InstanceCatalog(object):
 
     def column_by_name(self, column_name, *args, **kwargs):
         """Given a column name, return the column data"""
+
+        if isinstance(self._current_chunk, _MimicRecordArray) and column_name not in self.all_calculated_columns:
+            self.all_calculated_columns.append(column_name)
+
         getfunc = "get_%s" % column_name
         if hasattr(self, getfunc):
             function = getattr(self,getfunc)
