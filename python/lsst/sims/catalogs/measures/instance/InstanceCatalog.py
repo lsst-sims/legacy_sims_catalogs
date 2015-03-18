@@ -246,11 +246,11 @@ class InstanceCatalog(object):
             self.obs_metadata = ObservationMetaData()
 
         if self.column_outputs is not None:
-            self._column_outputs = self.column_outputs
+            self._column_outputs = copy.deepcopy(self.column_outputs)
 
         if column_outputs is not None:
             if self.column_outputs is None:
-                self._column_outputs = column_outputs
+                self._column_outputs = copy.deepcopy(column_outputs)
             else:
                 for col in column_outputs:
                     if col not in self._column_outputs:
