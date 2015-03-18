@@ -183,12 +183,18 @@ class InstanceCatalog(object):
                 return True
         return False
 
-    @classmethod
-    def iter_column_names(cls):
+
+    def iter_column_names(self):
         """Iterate the column names, expanding any compound columns"""
-        for column in cls.column_outputs:
-            if cls.is_compound_column(column):
-                for col in getattr(getattr(cls, "get_" + column), '_colnames'):
+
+        if hasattr(self, '_column_outputs'):
+            list_of_columns = self._column_outputs
+        else:
+            list_of_columns = self.column_outputs
+
+        for column in list_of_columns:
+            if self.is_compound_column(column):
+                for col in getattr(getattr(self, "get_" + column), '_colnames'):
                     yield col
             else:
                 yield column
@@ -239,13 +245,16 @@ class InstanceCatalog(object):
         else:
             self.obs_metadata = ObservationMetaData()
 
+        if self.column_outputs is not None:
+            self._column_outputs = self.column_outputs
+
         if column_outputs is not None:
             if self.column_outputs is None:
-                self.column_outputs = column_outputs
+                self._column_outputs = column_outputs
             else:
                 for col in column_outputs:
-                    if col not in self.column_outputs:
-                        self.column_outputs.append(col)
+                    if col not in self._column_outputs:
+                        self._column_outputs.append(col)
 
         self.all_calculated_columns =[] #a list of all the columns referenced by self.column_by_name
         self.site = self.obs_metadata.site
@@ -260,8 +269,8 @@ class InstanceCatalog(object):
 
         self.refIdCol = self.db_obj.getIdColKey()
 
-        if self.column_outputs is None:
-            self.column_outputs = self._all_columns()
+        if not hasattr(self,'_column_outputs'):
+            self._column_outputs = self._all_columns()
 
         self._column_cache = {}
 
