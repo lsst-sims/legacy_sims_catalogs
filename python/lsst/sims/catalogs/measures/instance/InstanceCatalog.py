@@ -187,12 +187,7 @@ class InstanceCatalog(object):
     def iter_column_names(self):
         """Iterate the column names, expanding any compound columns"""
 
-        if hasattr(self, '_column_outputs'):
-            list_of_columns = self._column_outputs
-        else:
-            list_of_columns = self.column_outputs
-
-        for column in list_of_columns:
+        for column in self._column_outputs:
             if self.is_compound_column(column):
                 for col in getattr(getattr(self, "get_" + column), '_colnames'):
                     yield col
