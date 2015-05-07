@@ -37,7 +37,8 @@ class testDBobject(CatalogDBObject):
     idColKey = 'id'
     #Make this implausibly large?
     appendint = 1023
-    dbAddress = 'sqlite:///colOriginsTestDatabase.db'
+    database = 'colOriginsTestDatabase.db'
+    driver = 'sqlite'
     raColName = 'ra'
     decColName = 'decl'
     columns = [('objid', 'id', int),
