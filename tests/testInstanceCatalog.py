@@ -220,6 +220,8 @@ class InstanceCatalogMetaDataTest(unittest.TestCase):
         self.assertAlmostEqual(testCat.site.meanHumidity,0.1,10)
         self.assertAlmostEqual(testCat.site.lapseRate,0.1,10)
 
+
+        testObsMD = ObservationMetaData(site=testSite)
         phosimMD = OrderedDict([('Unrefracted_RA', (-2.0,float)),
                                 ('Unrefracted_Dec', (0.9,float)),
                                 ('Opsim_rotskypos', (1.1,float)),
