@@ -205,9 +205,9 @@ class InstanceCatalogMetaDataTest(unittest.TestCase):
         testCat = testStellarCatalogClass(self.myDB,obs_metadata=testObsMD)
 
         self.assertAlmostEqual(testCat.mjd,5120.0,10)
-        self.assertAlmostEqual(numpy.degrees(testCat.unrefractedRA),1.5,10)
-        self.assertAlmostEqual(numpy.degrees(testCat.unrefractedDec),-1.1,10)
-        self.assertAlmostEqual(numpy.degrees(testCat.rotSkyPos),-10.0,10)
+        self.assertAlmostEqual(testCat.unrefractedRA,1.5,10)
+        self.assertAlmostEqual(testCat.unrefractedDec,-1.1,10)
+        self.assertAlmostEqual(testCat.rotSkyPos,-10.0,10)
         self.assertEqual(testCat.bandpass,'z')
 
         self.assertAlmostEqual(testCat.site.longitude,2.0,10)
@@ -228,12 +228,12 @@ class InstanceCatalogMetaDataTest(unittest.TestCase):
                                 ('Opsim_expmjd',(4000.0,float)),
                                 ('Opsim_filter',(1,int))])
 
-        testObsMD.assignPhoSimMetaData(phosimMD)
+        testObsMD.phoSimMetaData = phosimMD
 
         self.assertAlmostEqual(testCat.mjd,5120.0,10)
-        self.assertAlmostEqual(numpy.degrees(testCat.unrefractedRA),1.5,10)
-        self.assertAlmostEqual(numpy.degrees(testCat.unrefractedDec),-1.1,10)
-        self.assertAlmostEqual(numpy.degrees(testCat.rotSkyPos),-10.0,10)
+        self.assertAlmostEqual(testCat.unrefractedRA,1.5,10)
+        self.assertAlmostEqual(testCat.unrefractedDec,-1.1,10)
+        self.assertAlmostEqual(testCat.rotSkyPos,-10.0,10)
         self.assertEqual(testCat.bandpass,'z')
 
         testObsMD.site.longitude=-2.0
