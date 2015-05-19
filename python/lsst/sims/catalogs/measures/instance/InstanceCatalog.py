@@ -252,13 +252,6 @@ class InstanceCatalog(object):
                         self._column_outputs.append(col)
 
         self._actually_calculated_columns =[] # a list of all the columns referenced by self.column_by_name
-        self.site = self.obs_metadata.site
-        self.unrefractedRA = self.obs_metadata.unrefractedRA
-        self.unrefractedDec = self.obs_metadata.unrefractedDec
-        self.rotSkyPos = self.obs_metadata.rotSkyPos
-        self.bandpass = self.obs_metadata.bandpass
-        self.mjd = self.obs_metadata.mjd
-
         self.constraint = constraint
         self.specFileMap = specFileMap
 
