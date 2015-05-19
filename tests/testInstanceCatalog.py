@@ -175,7 +175,7 @@ class InstanceCatalogMetaDataTest(unittest.TestCase):
 
         self.assertEqual(testCat.unrefractedRA,None)
         self.assertEqual(testCat.unrefractedDec,None)
-        self.assertAlmostEqual(testCat.rotSkyPos,0.0,10)
+        self.assertEqual(testCat.rotSkyPos,None)
         self.assertEqual(testCat.bandpass,'r')
 
         self.assertAlmostEqual(testCat.site.longitude,-1.2320792,10)
