@@ -274,7 +274,12 @@ class InstanceCatalog(object):
         self._column_origins_switch = True
 
         #now we will create and populate a list containing the names of
-        #all of the columns which this InstanceCatalog can return
+        #all of the columns which this InstanceCatalog can return.
+        #Note: this needs to happen before self._check_requirements()
+        #is called in case any getters depend on the contents of
+        #_all_available_columns.  That way, self._check_requirements()
+        #can verify that the getter will run the way it is actually
+        #being called.
         self._all_available_columns = []
 
         for name in self.db_obj.columnMap.keys():
