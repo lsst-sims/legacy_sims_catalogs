@@ -226,11 +226,41 @@ class myDummyCatalogClass(InstanceCatalog):
 
     @compound('dd','ee','ff')
     def get_compound(self):
+
         return numpy.array([
                            self.column_by_name('aa')+2.0,
                            self.column_by_name('aa')+3.0,
                            self.column_by_name('aa')+4.0
                            ])
+
+
+class myDependentColumnsClass_shouldPass(InstanceCatalog):
+
+    def get_dd(self):
+
+        if 'ee' in self._all_getters:
+            delta = self.column_by_name('ee')
+        else:
+            delta = self.column_by_name('bb')
+
+        return self.column_by_name('aa') + delta
+
+class myDependentColumnsClass_shouldFail(InstanceCatalog):
+
+    def get_cc(self):
+       return self.column_by_name('aa')+1.0
+
+    def get_dd(self):
+
+        if 'ee' in self._all_getters:
+            delta = self.column_by_name('ee')
+        else:
+            delta = self.column_by_name('bb')
+
+        return self.column_by_name('aa') + delta
+
+    def get_ee(self):
+        return self.column_by_name('aa')+self.column_by_name('doesNotExist')
 
 class testColumnRegistries(unittest.TestCase):
     """
@@ -267,6 +297,30 @@ class testColumnRegistries(unittest.TestCase):
         self.assertTrue('ee' in cat._all_getters)
         self.assertTrue('ff' in cat._all_getters)
         self.assertTrue('compound' in cat._all_getters)
+
+    def testDependentColumns(self):
+        """
+        We want to be able to use self._all_getters to change the calculation
+        of columns on the fly (i.e. if a column exists, then use it to calculate
+        another column; if it does not, ignore it).  This method tests whether
+        or not that scheme will work.
+
+        I have written two classes of catalogs.  The getter for the column 'dd'
+        depends on the column 'doesNotExist', but only if the column 'ee' is defined.
+        The class myDependentColumnsClass_shouldPass does not define a getter for
+        'ee', so it does not require 'doesNotExist', so the constructor should pass.
+        The class myDependentColumnsClass_shouldFail does have a getter for 'ee',
+        so any catalog that requests the column 'dd' should fail to construct.
+        """
+
+        cat = myDependentColumnsClass_shouldPass(self.db, column_outputs=['dd'])
+
+        #as long as we do not request the column 'dd', this should work
+        cat = myDependentColumnsClass_shouldFail(self.db, column_outputs=['cc'])
+
+        #because we are requesting the column 'dd', which depends on the fictitious column
+        #'doesNotExist', this should raise an exception
+        self.assertRaises(ValueError, myDependentColumnsClass_shouldFail, self.db, column_outputs=['dd'])
 
 
 def suite():
