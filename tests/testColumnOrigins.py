@@ -238,7 +238,7 @@ class myDependentColumnsClass_shouldPass(InstanceCatalog):
 
     def get_dd(self):
 
-        if 'ee' in self._all_getters:
+        if 'ee' in self._all_available_columns:
             delta = self.column_by_name('ee')
         else:
             delta = self.column_by_name('bb')
@@ -252,7 +252,7 @@ class myDependentColumnsClass_shouldFail(InstanceCatalog):
 
     def get_dd(self):
 
-        if 'ee' in self._all_getters:
+        if 'ee' in self._all_available_columns:
             delta = self.column_by_name('ee')
         else:
             delta = self.column_by_name('bb')
@@ -265,7 +265,7 @@ class myDependentColumnsClass_shouldFail(InstanceCatalog):
 class testColumnRegistries(unittest.TestCase):
     """
     This will contain a unit test to verify that the InstanceCatalog class
-    self._all_getters contains all of the information it should
+    self._all_available_columns contains all of the information it should
     """
 
     @classmethod
@@ -287,20 +287,28 @@ class testColumnRegistries(unittest.TestCase):
 
     def testAllGetters(self):
         """
-        test that the self._all_getters list contains all of the columns
-        for which there are getter methods
+        test that the self._all_available_columns list contains all of the columns
+        definedin an InstanceCatalog and its CatalogDBObject
         """
-
         cat = myDummyCatalogClass(self.db, column_outputs=['aa'])
-        self.assertTrue('cc' in cat._all_getters)
-        self.assertTrue('dd' in cat._all_getters)
-        self.assertTrue('ee' in cat._all_getters)
-        self.assertTrue('ff' in cat._all_getters)
-        self.assertTrue('compound' in cat._all_getters)
+        self.assertTrue('cc' in cat._all_available_columns)
+        self.assertTrue('dd' in cat._all_available_columns)
+        self.assertTrue('ee' in cat._all_available_columns)
+        self.assertTrue('ff' in cat._all_available_columns)
+        self.assertTrue('compound' in cat._all_available_columns)
+        self.assertTrue('id' in cat._all_available_columns)
+        self.assertTrue('aa' in cat._all_available_columns)
+        self.assertTrue('bb' in cat._all_available_columns)
+        self.assertTrue('ra' in cat._all_available_columns)
+        self.assertTrue('decl' in cat._all_available_columns)
+        self.assertTrue('decJ2000' in cat._all_available_columns)
+        self.assertTrue('raJ2000' in cat._all_available_columns)
+        self.assertTrue('objid' in cat._all_available_columns)
+
 
     def testDependentColumns(self):
         """
-        We want to be able to use self._all_getters to change the calculation
+        We want to be able to use self._all_available_columns to change the calculation
         of columns on the fly (i.e. if a column exists, then use it to calculate
         another column; if it does not, ignore it).  This method tests whether
         or not that scheme will work.
