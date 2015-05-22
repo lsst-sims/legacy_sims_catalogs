@@ -291,6 +291,11 @@ class InstanceCatalog(object):
                 columnName = name[4:]
                 if columnName not in self._all_available_columns:
                     self._all_available_columns.append(columnName)
+            elif name[:8]=='default_':
+                columnName = name[8:]
+                if columnName not in self._all_available_columns:
+                    self._all_available_columns.append(columnName)
+
 
         self._check_requirements()
 

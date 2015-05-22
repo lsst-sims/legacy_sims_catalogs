@@ -221,6 +221,8 @@ class testColumnOrigins(unittest.TestCase):
 
 class myDummyCatalogClass(InstanceCatalog):
 
+    default_columns = [('sillyDefault', 2.0, float)]
+
     def get_cc(self):
         return self.column_by_name('aa')+1.0
 
@@ -304,6 +306,7 @@ class testColumnRegistries(unittest.TestCase):
         self.assertTrue('decJ2000' in cat._all_available_columns)
         self.assertTrue('raJ2000' in cat._all_available_columns)
         self.assertTrue('objid' in cat._all_available_columns)
+        self.assertTrue('sillyDefault' in cat._all_available_columns)
 
 
     def testDependentColumns(self):
