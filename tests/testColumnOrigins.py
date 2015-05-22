@@ -6,11 +6,11 @@ import lsst.utils.tests as utilsTests
 from lsst.sims.catalogs.measures.instance import InstanceCatalog, cached, compound
 from lsst.sims.catalogs.generation.db import CatalogDBObject
 
-def makeTestDB(size=10, **kwargs):
+def makeTestDB(size=10, name=None, **kwargs):
     """
     Make a test database
     """
-    conn = sqlite3.connect('colOriginsTestDatabase.db')
+    conn = sqlite3.connect(name)
     c = conn.cursor()
 #    try:
     c.execute('''CREATE TABLE testTable
@@ -31,8 +31,8 @@ def makeTestDB(size=10, **kwargs):
     conn.commit()
     conn.close()
 
-class testDBobject(CatalogDBObject):
-    objid = 'testDBobject'
+class testDBObject(CatalogDBObject):
+    objid = 'testDBObject'
     tableid = 'testTable'
     idColKey = 'id'
     #Make this implausibly large?
@@ -111,18 +111,19 @@ class testColumnOrigins(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        if os.path.exists('colOriginsTestDatabase.db'):
-            os.unlink('colOriginsTestDatabase.db')
+        cls.dbName = 'colOriginsTestDatabase.db'
+        if os.path.exists(cls.dbName):
+            os.unlink(cls.dbName)
 
-        makeTestDB()
+        makeTestDB(name=cls.dbName)
 
     @classmethod
     def tearDownClass(cls):
-        if os.path.exists('colOriginsTestDatabase.db'):
-            os.unlink('colOriginsTestDatabase.db')
+        if os.path.exists(cls.dbName):
+            os.unlink(cls.dbName)
 
     def setUp(self):
-        self.myDBobject = testDBobject()
+        self.myDBobject = testDBObject(address='sqlite:///'+self.dbName)
         self.mixin1Name = '<class \'__main__.mixin1\'>'
         self.mixin2Name = '<class \'__main__.mixin2\'>'
         self.mixin3Name = '<class \'__main__.mixin3\'>'
