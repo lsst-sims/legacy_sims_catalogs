@@ -273,6 +273,21 @@ class InstanceCatalog(object):
         #the columns in self._column_origins (we only want to do that once)
         self._column_origins_switch = True
 
+        #now we will create and populate a list containing the names of
+        #all of the columns for which getter methods exist
+        self._all_getters = []
+        for name in self._compound_column_names:
+            self._all_getters.append(name)
+
+        for name in self._compound_columns:
+            self._all_getters.append(name)
+
+        for name in dir(self):
+            if name[:4]=='get_':
+                columnName = name[4:]
+                if columnName not in self._all_getters:
+                    self._all_getters.append(columnName)
+
         self._check_requirements()
 
     def _all_columns(self):
