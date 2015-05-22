@@ -264,7 +264,7 @@ class myDependentColumnsClass_shouldFail(InstanceCatalog):
     def get_ee(self):
         return self.column_by_name('aa')+self.column_by_name('doesNotExist')
 
-class testColumnRegistries(unittest.TestCase):
+class AllAvailableColumns(unittest.TestCase):
     """
     This will contain a unit test to verify that the InstanceCatalog class
     self._all_available_columns contains all of the information it should
@@ -338,7 +338,7 @@ def suite():
     utilsTests.init()
     suites = []
     suites += unittest.makeSuite(testColumnOrigins)
-    suites += unittest.makeSuite(testColumnRegistries)
+    suites += unittest.makeSuite(AllAvailableColumns)
     return unittest.TestSuite(suites)
 
 def run(shouldExit = False):
