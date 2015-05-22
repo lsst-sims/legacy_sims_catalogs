@@ -218,10 +218,62 @@ class testColumnOrigins(unittest.TestCase):
         self.assertEqual(str(myCatalog._column_origins['cc']),self.mixin3Name)
         self.assertEqual(str(myCatalog._column_origins['dd']),self.mixin1Name)
 
+
+class myDummyCatalogClass(InstanceCatalog):
+
+    def get_cc(self):
+        return self.column_by_name('aa')+1.0
+
+    @compound('dd','ee','ff')
+    def get_compound(self):
+        return numpy.array([
+                           self.column_by_name('aa')+2.0,
+                           self.column_by_name('aa')+3.0,
+                           self.column_by_name('aa')+4.0
+                           ])
+
+class testColumnRegistries(unittest.TestCase):
+    """
+    This will contain a unit test to verify that the InstanceCatalog class
+    self._all_getters contains all of the information it should
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        cls.dbName = 'allGettersTestDatabase.db'
+        if os.path.exists(cls.dbName):
+            os.unlink(cls.dbName)
+
+        makeTestDB(name=cls.dbName)
+
+    @classmethod
+    def tearDownClass(cls):
+        if os.path.exists(cls.dbName):
+            os.unlink(cls.dbName)
+
+    def setUp(self):
+        self.db = testDBObject(address='sqlite:///'+self.dbName)
+
+
+    def testAllGetters(self):
+        """
+        test that the self._all_getters list contains all of the columns
+        for which there are getter methods
+        """
+
+        cat = myDummyCatalogClass(self.db, column_outputs=['aa'])
+        self.assertTrue('cc' in cat._all_getters)
+        self.assertTrue('dd' in cat._all_getters)
+        self.assertTrue('ee' in cat._all_getters)
+        self.assertTrue('ff' in cat._all_getters)
+        self.assertTrue('compound' in cat._all_getters)
+
+
 def suite():
     utilsTests.init()
     suites = []
     suites += unittest.makeSuite(testColumnOrigins)
+    suites += unittest.makeSuite(testColumnRegistries)
     return unittest.TestSuite(suites)
 
 def run(shouldExit = False):
