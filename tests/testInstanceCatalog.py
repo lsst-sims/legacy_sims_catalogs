@@ -305,7 +305,7 @@ class InstanceCatalogMetaDataTest(unittest.TestCase):
         columnsShouldBe = ['raJ2000', 'decJ2000', 'properMotionRa', 'properMotionDec']
 
         for col in columnsShouldBe:
-            self.assertTrue(col in testCat.all_calculated_columns)
+            self.assertTrue(col in testCat._actually_calculated_columns)
 
         generatedColumns = []
         for col in testCat.iter_column_names():
@@ -345,7 +345,7 @@ class InstanceCatalogMetaDataTest(unittest.TestCase):
 
         columns = ['n1', 'n2', 'n3', 'difference']
         for col in columns:
-            self.assertTrue(col in cat.all_calculated_columns)
+            self.assertTrue(col in cat._actually_calculated_columns)
 
         cat.write_catalog('cartoonValCat.txt')
         testData = numpy.genfromtxt('cartoonValCat.txt', dtype=dtype, delimiter=',')
@@ -362,7 +362,7 @@ class InstanceCatalogMetaDataTest(unittest.TestCase):
 
     def testAllCalculatedColumns(self):
         """
-        Unit test to make sure that all_calculated_columns contains all of the dependent columns
+        Unit test to make sure that _actually_calculated_columns contains all of the dependent columns
         """
         class otherCartoonValueCatalog(InstanceCatalog):
             column_outputs = ['n1', 'n2', 'difference']
@@ -377,7 +377,7 @@ class InstanceCatalogMetaDataTest(unittest.TestCase):
         cat = otherCartoonValueCatalog(db)
         columns = ['n1', 'n2', 'n3', 'difference']
         for col in columns:
-            self.assertTrue(col in cat.all_calculated_columns)
+            self.assertTrue(col in cat._actually_calculated_columns)
 
         if os.path.exists('valueTestDB.db'):
             os.unlink('valueTestDB.db')
