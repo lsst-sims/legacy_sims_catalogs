@@ -88,7 +88,8 @@ def createCannotBeNullTestDB(filename=None, add_nans=True):
     return output
 
 class myCannotBeNullDBObject(CatalogDBObject):
-    dbAddress = 'sqlite:///cannotBeNullTest.db'
+    driver = 'sqlite'
+    database = 'cannotBeNullTest.db'
     tableid = 'testTable'
     objid = 'cannotBeNull'
     idColKey = 'id'
@@ -154,7 +155,7 @@ class InstanceCatalogMetaDataTest(unittest.TestCase):
             os.unlink('testInstanceCatalogDatabase.db')
 
     def setUp(self):
-        self.myDB = myTestStars(address = 'sqlite:///testInstanceCatalogDatabase.db')
+        self.myDB = myTestStars(driver='sqlite', database='testInstanceCatalogDatabase.db')
 
     def tearDown(self):
         del self.myDB
@@ -338,7 +339,7 @@ class InstanceCatalogMetaDataTest(unittest.TestCase):
         """
         dbName = 'valueTestDB.db'
         baselineData = createCannotBeNullTestDB(filename=dbName, add_nans=False)
-        db = myCannotBeNullDBObject(address='sqlite:///' + dbName)
+        db = myCannotBeNullDBObject(driver='sqlite', database=dbName)
         dtype = numpy.dtype([('n1',float), ('n2',float), ('n3',float), ('difference', float)])
         cat = cartoonValueCatalog(db, column_outputs = ['n3','difference'])
 
@@ -372,7 +373,7 @@ class InstanceCatalogMetaDataTest(unittest.TestCase):
 
         dbName = 'valueTestDB.db'
         baselineData = createCannotBeNullTestDB(filename=dbName, add_nans=False)
-        db = myCannotBeNullDBObject(address='sqlite:///' + dbName)
+        db = myCannotBeNullDBObject(driver='sqlite', database=dbName)
         cat = otherCartoonValueCatalog(db)
         columns = ['n1', 'n2', 'n3', 'difference']
         for col in columns:

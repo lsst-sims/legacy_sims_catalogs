@@ -75,9 +75,9 @@ class InstanceCatalogTestCase(unittest.TestCase):
         self.obsMd = ObservationMetaData(boundType = 'circle', unrefractedRA = 210.0, unrefractedDec = -60.0,
                      boundLength=1.75, mjd=52000.,bandpassName='r')
 
-        self.mystars = CatalogDBObject.from_objid('teststars', address='sqlite:///icStarTestDatabase.db')
+        self.mystars = CatalogDBObject.from_objid('teststars', driver='sqlite', database='icStarTestDatabase.db')
 
-        self.mygals = CatalogDBObject.from_objid('testgals', address='sqlite:///icGalTestDatabase.db')
+        self.mygals = CatalogDBObject.from_objid('testgals', driver='sqlite', database='icGalTestDatabase.db')
 
         self.basedir = eups.productDir('sims_catalogs_measures')+"/tests/"
 
@@ -155,7 +155,7 @@ class boundingBoxTest(unittest.TestCase):
                         boundLength=numpy.array([0.5*(self.RAmax-self.RAmin),0.5*(self.DECmax-self.DECmin)]),
                         mjd=52000., bandpassName='r')
 
-        self.mystars = CatalogDBObject.from_objid('teststars', address='sqlite:///bboxStarTestDatabase.db')
+        self.mystars = CatalogDBObject.from_objid('teststars', driver='sqlite', database='bboxStarTestDatabase.db')
 
     def tearDown(self):
         del self.obsMdCirc
