@@ -292,7 +292,7 @@ class InstanceCatalog(object):
                 self._all_available_columns.append(name)
 
         for name in dir(self):
-            if name[:4]==('get_'):
+            if name[:4] == 'get_':
                 columnName = name[4:]
                 if columnName not in self._all_available_columns:
                     self._all_available_columns.append(columnName)
@@ -302,7 +302,14 @@ class InstanceCatalog(object):
                     self._all_available_columns.append(columnName)
 
         if not hasattr(self,'_column_outputs'):
-            self._column_outputs = self._all_available_columns
+            self._column_outputs = []
+
+            #because asking for a compound_column means asking for
+            #its individual sub-columns, which means those columns
+            #will get listed twice in the catalog
+            for name in self._all_available_columns:
+                if name not in self._compound_columns:
+                    self._column_outputs.append(name)
 
         self._check_requirements()
 
