@@ -264,9 +264,6 @@ class InstanceCatalog(object):
 
         self.refIdCol = self.db_obj.getIdColKey()
 
-        if not hasattr(self,'_column_outputs'):
-            self._column_outputs = self._all_columns()
-
         self._column_cache = {}
 
         #self._column_origins_switch tells column_by_name to log where it is getting
@@ -283,38 +280,32 @@ class InstanceCatalog(object):
         self._all_available_columns = []
 
         for name in self.db_obj.columnMap.keys():
-            self._all_available_columns.append(name)
+            if name not in self._all_available_columns:
+                self._all_available_columns.append(name)
 
         for name in self._compound_column_names:
-            self._all_available_columns.append(name)
+            if name not in self._all_available_columns:
+                self._all_available_columns.append(name)
 
         for name in self._compound_columns:
-            self._all_available_columns.append(name)
+            if name not in self._all_available_columns:
+                self._all_available_columns.append(name)
 
         for name in dir(self):
-            if name[:4]=='get_':
+            if name[:4]==('get_'):
                 columnName = name[4:]
                 if columnName not in self._all_available_columns:
                     self._all_available_columns.append(columnName)
-            elif name[:8]=='default_':
+            elif name[:8] == 'default_':
                 columnName = name[8:]
                 if columnName not in self._all_available_columns:
                     self._all_available_columns.append(columnName)
 
+        if not hasattr(self,'_column_outputs'):
+            self._column_outputs = self._all_available_columns
 
         self._check_requirements()
 
-    def _all_columns(self):
-        """
-        Return a list of all available column names, from those provided
-        by the instance catalog and those provided by the database
-        """
-        columns = set(self.db_obj.columnMap.keys())
-        getfuncs = [func for func in dir(self) if func.startswith('get_')]
-        defaultfuncs = [func for func in dir(self) if func.startswith('default')]
-        columns.update([func.strip('get_') for func in getfuncs])
-        columns.update([func.strip('default_') for func in defaultfuncs])
-        return list(columns)
 
     def _set_current_chunk(self, chunk, column_cache=None):
         """Set the current chunk and clear the column cache"""
