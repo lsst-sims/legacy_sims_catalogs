@@ -155,7 +155,7 @@ class InstanceCatalog(object):
     catalog_type = 'instance_catalog'
     column_outputs = None
     default_columns = []
-    cannot_be_null = [] #a list of columns which, if null, cause a row not to be printed by write_catalog()
+    cannot_be_null = [] # a list of columns which, if null, cause a row not to be printed by write_catalog()
     default_formats = {'S':'%s', 'f':'%.4f', 'i':'%i'}
     override_formats = {}
     transformations = {}
@@ -228,8 +228,8 @@ class InstanceCatalog(object):
         self.db_obj = db_obj
         self._current_chunk = None
 
-        #this dict will contain information telling the user where the columns in
-        #the catalog come from
+        # this dict will contain information telling the user where the columns in
+        # the catalog come from
         self._column_origins = {}
 
         if obs_metadata is not None:
@@ -251,7 +251,7 @@ class InstanceCatalog(object):
                     if col not in self._column_outputs:
                         self._column_outputs.append(col)
 
-        self._actually_calculated_columns =[] #a list of all the columns referenced by self.column_by_name
+        self._actually_calculated_columns =[] # a list of all the columns referenced by self.column_by_name
         self.site = self.obs_metadata.site
         self.unrefractedRA = self.obs_metadata.unrefractedRA
         self.unrefractedDec = self.obs_metadata.unrefractedDec
@@ -266,17 +266,17 @@ class InstanceCatalog(object):
 
         self._column_cache = {}
 
-        #self._column_origins_switch tells column_by_name to log where it is getting
-        #the columns in self._column_origins (we only want to do that once)
+        # self._column_origins_switch tells column_by_name to log where it is getting
+        # the columns in self._column_origins (we only want to do that once)
         self._column_origins_switch = True
 
-        #now we will create and populate a list containing the names of
-        #all of the columns which this InstanceCatalog can return.
-        #Note: this needs to happen before self._check_requirements()
-        #is called in case any getters depend on the contents of
-        #_all_available_columns.  That way, self._check_requirements()
-        #can verify that the getter will run the way it is actually
-        #being called.
+        # now we will create and populate a list containing the names of
+        # all of the columns which this InstanceCatalog can return.
+        # Note: this needs to happen before self._check_requirements()
+        # is called in case any getters depend on the contents of
+        # _all_available_columns.  That way, self._check_requirements()
+        # can verify that the getter will run the way it is actually
+        # being called.
         self._all_available_columns = []
 
         for name in self.db_obj.columnMap.keys():
@@ -304,9 +304,9 @@ class InstanceCatalog(object):
         if not hasattr(self,'_column_outputs'):
             self._column_outputs = []
 
-            #because asking for a compound_column means asking for
-            #its individual sub-columns, which means those columns
-            #will get listed twice in the catalog
+            # because asking for a compound_column means asking for
+            # its individual sub-columns, which means those columns
+            # will get listed twice in the catalog
             for name in self._all_available_columns:
                 if name not in self._compound_columns:
                     self._column_outputs.append(name)
@@ -391,7 +391,7 @@ class InstanceCatalog(object):
             else:
                 self._active_columns.append(col)
 
-        self._column_origins_switch = False #do not want to log column origins any more
+        self._column_origins_switch = False # do not want to log column origins any more
 
         if len(missing_cols) > 0:
             nodefault = []
@@ -399,10 +399,10 @@ class InstanceCatalog(object):
                 if col not in defaults:
                     nodefault.append(col)
                 else:
-                    #Because some earlier part of the code copies default columns
-                    #into the same place as columns that exist natively in the
-                    #database, this is where we have to mark columns that are
-                    #set by default
+                    # Because some earlier part of the code copies default columns
+                    # into the same place as columns that exist natively in the
+                    # database, this is where we have to mark columns that are
+                    # set by default
                     self._column_origins[col] = 'default column'
 
             if len(nodefault) > 0:
@@ -452,7 +452,7 @@ class InstanceCatalog(object):
                                                  constraint=self.constraint,
                                                  chunk_size=chunk_size)
 
-        #find the indices of columns that cannot be null
+        # find the indices of columns that cannot be null
         cannotBeNullDexes = []
         for (i,col) in enumerate(self.iter_column_names()):
             if col in self.cannot_be_null:
@@ -474,9 +474,9 @@ class InstanceCatalog(object):
             file_handle.writelines(template % line
                                    for line in zip(*chunk_cols)
                                    if numpy.array([not is_null(line[i]) for i in cannotBeNullDexes]).all())
-                                   #the last boolean in this line causes a row not to be printed if it has
-                                   #a null value in one of the columns that cannot be null; it is ignored
-                                   #if no olumns are specified by cannot_be_null
+                                   # the last boolean in this line causes a row not to be printed if it has
+                                   # a null value in one of the columns that cannot be null; it is ignored
+                                   # if no olumns are specified by cannot_be_null
 
         file_handle.close()
 
