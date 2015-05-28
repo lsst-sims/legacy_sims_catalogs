@@ -129,7 +129,7 @@ class testColumnOrigins(unittest.TestCase):
             os.unlink(cls.dbName)
 
     def setUp(self):
-        self.myDBobject = testDBObject(address='sqlite:///'+self.dbName)
+        self.myDBobject = testDBObject(database=self.dbName)
         self.mixin1Name = '<class \'__main__.mixin1\'>'
         self.mixin2Name = '<class \'__main__.mixin2\'>'
         self.mixin3Name = '<class \'__main__.mixin3\'>'
@@ -290,7 +290,7 @@ class AllAvailableColumns(unittest.TestCase):
             os.unlink(cls.dbName)
 
     def setUp(self):
-        self.db = testDBObject(address='sqlite:///'+self.dbName)
+        self.db = testDBObject(database=self.dbName)
 
 
     def testAllGetters(self):
