@@ -6,9 +6,15 @@ import lsst.utils.tests as utilsTests
 from lsst.sims.catalogs.measures.instance import InstanceCatalog, cached, compound
 from lsst.sims.catalogs.generation.db import CatalogDBObject
 
-def makeTestDB(size=10, name=None, **kwargs):
+def makeTestDB(name, size=10, **kwargs):
     """
     Make a test database
+
+    @param [in] name is a string indicating the name of the database file
+    to be created
+
+    @param [in] size is an int indicating the number of objects to include
+    in the database (default=10)
     """
     conn = sqlite3.connect(name)
     c = conn.cursor()
@@ -115,7 +121,7 @@ class testColumnOrigins(unittest.TestCase):
         if os.path.exists(cls.dbName):
             os.unlink(cls.dbName)
 
-        makeTestDB(name=cls.dbName)
+        makeTestDB(cls.dbName)
 
     @classmethod
     def tearDownClass(cls):
@@ -276,7 +282,7 @@ class AllAvailableColumns(unittest.TestCase):
         if os.path.exists(cls.dbName):
             os.unlink(cls.dbName)
 
-        makeTestDB(name=cls.dbName)
+        makeTestDB(cls.dbName)
 
     @classmethod
     def tearDownClass(cls):
