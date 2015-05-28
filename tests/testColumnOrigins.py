@@ -6,11 +6,17 @@ import lsst.utils.tests as utilsTests
 from lsst.sims.catalogs.measures.instance import InstanceCatalog, cached, compound
 from lsst.sims.catalogs.generation.db import CatalogDBObject
 
-def makeTestDB(size=10, **kwargs):
+def makeTestDB(name, size=10, **kwargs):
     """
     Make a test database
+
+    @param [in] name is a string indicating the name of the database file
+    to be created
+
+    @param [in] size is an int indicating the number of objects to include
+    in the database (default=10)
     """
-    conn = sqlite3.connect('colOriginsTestDatabase.db')
+    conn = sqlite3.connect(name)
     c = conn.cursor()
 #    try:
     c.execute('''CREATE TABLE testTable
@@ -31,8 +37,8 @@ def makeTestDB(size=10, **kwargs):
     conn.commit()
     conn.close()
 
-class testDBobject(CatalogDBObject):
-    objid = 'testDBobject'
+class testDBObject(CatalogDBObject):
+    objid = 'testDBObject'
     tableid = 'testTable'
     idColKey = 'id'
     #Make this implausibly large?
@@ -111,18 +117,19 @@ class testColumnOrigins(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        if os.path.exists('colOriginsTestDatabase.db'):
-            os.unlink('colOriginsTestDatabase.db')
+        cls.dbName = 'colOriginsTestDatabase.db'
+        if os.path.exists(cls.dbName):
+            os.unlink(cls.dbName)
 
-        makeTestDB()
+        makeTestDB(cls.dbName)
 
     @classmethod
     def tearDownClass(cls):
-        if os.path.exists('colOriginsTestDatabase.db'):
-            os.unlink('colOriginsTestDatabase.db')
+        if os.path.exists(cls.dbName):
+            os.unlink(cls.dbName)
 
     def setUp(self):
-        self.myDBobject = testDBobject()
+        self.myDBobject = testDBObject(database=self.dbName)
         self.mixin1Name = '<class \'__main__.mixin1\'>'
         self.mixin2Name = '<class \'__main__.mixin2\'>'
         self.mixin3Name = '<class \'__main__.mixin3\'>'
@@ -217,10 +224,127 @@ class testColumnOrigins(unittest.TestCase):
         self.assertEqual(str(myCatalog._column_origins['cc']),self.mixin3Name)
         self.assertEqual(str(myCatalog._column_origins['dd']),self.mixin1Name)
 
+
+class myDummyCatalogClass(InstanceCatalog):
+
+    default_columns = [('sillyDefault', 2.0, float)]
+
+    def get_cc(self):
+        return self.column_by_name('aa')+1.0
+
+    @compound('dd','ee','ff')
+    def get_compound(self):
+
+        return numpy.array([
+                           self.column_by_name('aa')+2.0,
+                           self.column_by_name('aa')+3.0,
+                           self.column_by_name('aa')+4.0
+                           ])
+
+
+class myDependentColumnsClass_shouldPass(InstanceCatalog):
+
+    def get_dd(self):
+
+        if 'ee' in self._all_available_columns:
+            delta = self.column_by_name('ee')
+        else:
+            delta = self.column_by_name('bb')
+
+        return self.column_by_name('aa') + delta
+
+class myDependentColumnsClass_shouldFail(InstanceCatalog):
+
+    def get_cc(self):
+       return self.column_by_name('aa')+1.0
+
+    def get_dd(self):
+
+        if 'ee' in self._all_available_columns:
+            delta = self.column_by_name('ee')
+        else:
+            delta = self.column_by_name('bb')
+
+        return self.column_by_name('aa') + delta
+
+    def get_ee(self):
+        return self.column_by_name('aa')+self.column_by_name('doesNotExist')
+
+class AllAvailableColumns(unittest.TestCase):
+    """
+    This will contain a unit test to verify that the InstanceCatalog class
+    self._all_available_columns contains all of the information it should
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        cls.dbName = 'allGettersTestDatabase.db'
+        if os.path.exists(cls.dbName):
+            os.unlink(cls.dbName)
+
+        makeTestDB(cls.dbName)
+
+    @classmethod
+    def tearDownClass(cls):
+        if os.path.exists(cls.dbName):
+            os.unlink(cls.dbName)
+
+    def setUp(self):
+        self.db = testDBObject(database=self.dbName)
+
+
+    def testAllGetters(self):
+        """
+        test that the self._all_available_columns list contains all of the columns
+        definedin an InstanceCatalog and its CatalogDBObject
+        """
+        cat = myDummyCatalogClass(self.db, column_outputs=['aa'])
+        self.assertTrue('cc' in cat._all_available_columns)
+        self.assertTrue('dd' in cat._all_available_columns)
+        self.assertTrue('ee' in cat._all_available_columns)
+        self.assertTrue('ff' in cat._all_available_columns)
+        self.assertTrue('compound' in cat._all_available_columns)
+        self.assertTrue('id' in cat._all_available_columns)
+        self.assertTrue('aa' in cat._all_available_columns)
+        self.assertTrue('bb' in cat._all_available_columns)
+        self.assertTrue('ra' in cat._all_available_columns)
+        self.assertTrue('decl' in cat._all_available_columns)
+        self.assertTrue('decJ2000' in cat._all_available_columns)
+        self.assertTrue('raJ2000' in cat._all_available_columns)
+        self.assertTrue('objid' in cat._all_available_columns)
+        self.assertTrue('sillyDefault' in cat._all_available_columns)
+
+
+    def testDependentColumns(self):
+        """
+        We want to be able to use self._all_available_columns to change the calculation
+        of columns on the fly (i.e. if a column exists, then use it to calculate
+        another column; if it does not, ignore it).  This method tests whether
+        or not that scheme will work.
+
+        I have written two classes of catalogs.  The getter for the column 'dd'
+        depends on the column 'doesNotExist', but only if the column 'ee' is defined.
+        The class myDependentColumnsClass_shouldPass does not define a getter for
+        'ee', so it does not require 'doesNotExist', so the constructor should pass.
+        The class myDependentColumnsClass_shouldFail does have a getter for 'ee',
+        so any catalog that requests the column 'dd' should fail to construct.
+        """
+
+        cat = myDependentColumnsClass_shouldPass(self.db, column_outputs=['dd'])
+
+        #as long as we do not request the column 'dd', this should work
+        cat = myDependentColumnsClass_shouldFail(self.db, column_outputs=['cc'])
+
+        #because we are requesting the column 'dd', which depends on the fictitious column
+        #'doesNotExist', this should raise an exception
+        self.assertRaises(ValueError, myDependentColumnsClass_shouldFail, self.db, column_outputs=['dd'])
+
+
 def suite():
     utilsTests.init()
     suites = []
     suites += unittest.makeSuite(testColumnOrigins)
+    suites += unittest.makeSuite(AllAvailableColumns)
     return unittest.TestSuite(suites)
 
 def run(shouldExit = False):
