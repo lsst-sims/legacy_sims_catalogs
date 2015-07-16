@@ -4,7 +4,8 @@ import sqlite3
 import unittest
 import lsst.utils.tests as utilsTests
 from collections import OrderedDict
-from lsst.sims.catalogs.generation.db import ObservationMetaData, CatalogDBObject
+from lsst.sims.utils import ObservationMetaData
+from lsst.sims.catalogs.generation.db import CatalogDBObject
 from lsst.sims.catalogs.generation.utils import myTestStars, makeStarTestDB
 from lsst.sims.catalogs.measures.instance import InstanceCatalog, is_null
 from lsst.sims.utils import Site
