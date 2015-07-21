@@ -4,8 +4,8 @@ import numpy
 import inspect
 import re
 import copy
-from .fileMaps import defaultSpecMap
-from lsst.sims.catalogs.generation.db import ObservationMetaData
+from lsst.sims.utils import defaultSpecMap
+from lsst.sims.utils import ObservationMetaData
 
 __all__ = ["InstanceCatalog", "is_null"]
 
