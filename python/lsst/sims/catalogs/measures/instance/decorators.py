@@ -54,8 +54,7 @@ def compound(*colnames):
     return wrapper
 
 def register_class(cls):
-    if not hasattr(cls, '_methodRegistry'):
-        cls._methodRegistry = {}
+    cls._methodRegistry = {}
     for methodname in dir(cls):
         method=getattr(cls, methodname)
         if hasattr(method, '_registryKey'):

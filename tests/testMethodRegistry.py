@@ -59,27 +59,27 @@ class MethodRegistryTestCase(unittest.TestCase):
 
         aa = ClassA()
         self.assertTrue(aa.call('a')=='a')
-        self.assertRaises(TypeError, aa.call, 'b')
-        self.assertRaises(TypeError, aa.call, 'c')
-        self.assertRaises(TypeError, aa.call, 'd')
+        self.assertRaises(KeyError, aa.call, 'b')
+        self.assertRaises(KeyError, aa.call, 'c')
+        self.assertRaises(KeyError, aa.call, 'd')
 
         bb = ClassB()
         self.assertTrue(bb.call('a')=='a')
         self.assertTrue(bb.call('b')=='b')
-        self.assertRaises(TypeError, bb.call, 'c')
-        self.assertRaises(TypeError, bb.call, 'd')
+        self.assertRaises(KeyError, bb.call, 'c')
+        self.assertRaises(KeyError, bb.call, 'd')
 
         cc = ClassC()
         self.assertTrue(cc.call('a')=='a')
         self.assertTrue(cc.call('b')=='b')
         self.assertTrue(cc.call('c')=='c')
-        self.assertRaises(TypeError, cc.call, 'd')
+        self.assertRaises(KeyError, cc.call, 'd')
 
         dd = ClassD()
         self.assertTrue(dd.call('a')=='a')
         self.assertTrue(dd.call('d')=='d')
-        self.assertRaises(TypeError, dd.call, 'b')
-        self.assertRaises(TypeError, dd.call, 'c')
+        self.assertRaises(KeyError, dd.call, 'b')
+        self.assertRaises(KeyError, dd.call, 'c')
 
 
 
