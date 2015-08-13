@@ -45,20 +45,14 @@ class MethodRegistryTestCase(unittest.TestCase):
         """
         Test that the register_class and register_method decorators
         behave appropriately and preserve inheritance.
-
-        Above, we have created a bunch of classes that inherit from
-        each other, each with its own method registry.  Because of the
-        way the decorators work, when you create a daughter class with
-        a method registry, it alters the parent class's registry (i.e.
-        after creating ClassB, ClassA's registry will contain _b_method,
-        even though ClassA does not contain _b_method.  The test below
-        verifies that, even though this is the case, you still cannot
-        call _b_method from Class A.  The test also verifies that methods
-        which are inherited can be called via the registry.
         """
 
         aa = ClassA()
         self.assertTrue(aa.call('a')=='a')
+
+        # below, we test to make sure that methods which
+        # should not be in ClassA's _methodRegistry are not
+        # spuriously added to the registry
         self.assertRaises(KeyError, aa.call, 'b')
         self.assertRaises(KeyError, aa.call, 'c')
         self.assertRaises(KeyError, aa.call, 'd')
