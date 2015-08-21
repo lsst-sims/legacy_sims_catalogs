@@ -2,7 +2,7 @@ from __future__ import with_statement
 import os
 import numpy
 import unittest
-import eups
+import lsst.utils
 import lsst.utils.tests as utilsTests
 from lsst.sims.utils import ObservationMetaData
 from lsst.sims.catalogs.generation.db import CatalogDBObject
@@ -80,7 +80,7 @@ class InstanceCatalogTestCase(unittest.TestCase):
 
         self.mygals = CatalogDBObject.from_objid('testgals', driver='sqlite', database='icGalTestDatabase.db')
 
-        self.basedir = eups.productDir('sims_catalogs_measures')+"/tests/"
+        self.basedir = lsst.utils.getPackageDir('sims_catalogs_measures')+"/tests/"
 
     def tearDown(self):
         del self.obsMd
