@@ -62,22 +62,22 @@ class CompoundInstanceCatalog(object):
             if len(row)>1:
                 dbObjList = [self._dbo_list[ix] for ix in row]
                 catList = [self._ic_list[ix] for ix in row]
-                dbObjNameList = [self._dbo_list[ix].objid for ix in row]
 
                 compound_dbo = CompoundCatalogDBObject(dbObjList)
-                self._write_compound(catList, compound_dbo, dbObjNameList, filename,
+                self._write_compound(catList, compound_dbo, filename,
                                      chunk_size=chunk_size, write_header=write_header,
                                      write_mode=write_mode)
                 write_mode = 'a'
                 write_header = False
 
 
-    def _write_compound(self, catList, compound_dbo, dbObjNameList, filename,
+    def _write_compound(self, catList, compound_dbo, filename,
                         chunk_size=None, write_header=False, write_mode='a'):
 
 
         colnames = []
         master_colnames = []
+        dbObjNameList = [db.objid for db in compound_dbo._dbObjectList]
         for name, cat in zip(dbObjNameList, catList):
             localNames = []
             for colName in cat._active_columns:
