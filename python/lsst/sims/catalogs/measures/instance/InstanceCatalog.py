@@ -512,7 +512,7 @@ class InstanceCatalog(object):
                                if numpy.array([not is_null(line[i]) for i in self._cannotBeNullDexes]).all())
                                # the last boolean in this line causes a row not to be printed if it has
                                # a null value in one of the columns that cannot be null; it is ignored
-                               # if no olumns are specified by cannot_be_null
+                               # if no columns are specified by cannot_be_null
 
 
 
