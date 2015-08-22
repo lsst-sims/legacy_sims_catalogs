@@ -180,6 +180,13 @@ class CompoundCatalogTest(unittest.TestCase):
 
         compoundCat.write_catalog(fileName)
 
+        self.assertTrue(len(compoundCat._dbObjectGroupList)==2)
+        self.assertTrue(len(compoundCat._dbObjectGroupList[0])==2)
+        self.assertTrue(len(compoundCat._dbObjectGroupList[1])==1)
+        self.assertTrue(0 in compoundCat._dbObjectGroupList[0])
+        self.assertTrue(1 in compoundCat._dbObjectGroupList[0])
+        self.assertTrue(2 in compoundCat._dbObjectGroupList[1])
+
 
 
 def suite():
