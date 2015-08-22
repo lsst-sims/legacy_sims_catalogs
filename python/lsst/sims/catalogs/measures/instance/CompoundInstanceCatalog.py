@@ -105,9 +105,8 @@ class CompoundInstanceCatalog(object):
                     if new_dtype_list[ix] is None:
                         new_dtype = numpy.dtype([
                                                 tuple([dd.replace(name+'_','')] + [local_recarray.dtype[dd]]) \
-                                                for dd in local_recarray.dtype.fields
+                                                for dd in master_colnames[ix]
                                                 ])
-
                         new_dtype_list[ix] = new_dtype
 
                     local_recarray.dtype = new_dtype_list[ix]
