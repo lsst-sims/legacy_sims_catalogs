@@ -15,7 +15,11 @@ class table1DB1(CatalogDBObject):
     idColKey = 'id'
 
     columns = [('raJ2000','ra'),
-               ('decJ2000','dec')]
+               ('decJ2000','dec'),
+               ('mag', None, numpy.float),
+               ('dmag', None, numpy.float),
+               ('dra', None, numpy.float),
+               ('ddec', None, numpy.float)]
 
 
 class table1DB2(CatalogDBObject):
@@ -24,7 +28,11 @@ class table1DB2(CatalogDBObject):
     idColKey = 'id'
 
     columns = [('raJ2000', '2.0*ra'),
-               ('decJ2000', '2.0*dec')]
+               ('decJ2000', '2.0*dec'),
+               ('mag', None, numpy.float),
+               ('dmag', None, numpy.float),
+               ('dra', None, numpy.float),
+               ('ddec', None, numpy.float)]
 
 
 class table2DB(CatalogDBObject):
@@ -33,11 +41,17 @@ class table2DB(CatalogDBObject):
     idColKey = 'id'
 
     columns = [('raJ2000', 'ra'),
-               ('decJ2000', 'dec')]
+               ('decJ2000', 'dec'),
+               ('mag', None, numpy.float)]
 
 
 class Cat1(InstanceCatalog):
-    column_outputs = ['raObs', 'decObs', 'final_mag']
+    delimiter = ' '
+    default_formats = {'f':'%.12f'}
+    column_outputs = ['testId', 'raObs', 'decObs', 'final_mag']
+
+    def get_testId(self):
+        return self.column_by_name('id')+1000
 
     def get_raObs(self):
         return self.column_by_name('raJ2000')
@@ -51,6 +65,9 @@ class Cat1(InstanceCatalog):
 
 class Cat2(Cat1):
 
+    def get_testId(self):
+        return self.column_by_name('id')+2000
+
     def get_raObs(self):
         return self.column_by_name('raJ2000') + self.column_by_name('dra')
 
@@ -59,6 +76,9 @@ class Cat2(Cat1):
 
 
 class Cat3(Cat1):
+
+    def get_testId(self):
+        return self.column_by_name('id')+3000
 
     def get_final_mag(self):
         return self.column_by_name('mag')
@@ -90,12 +110,12 @@ class CompoundCatalogTest(unittest.TestCase):
 
         dbDtype1 = numpy.dtype([
                            ('id', numpy.int),
-                           ('ra', numpy.float),
-                           ('dec', numpy.float),
-                           ('mag', numpy.float),
-                           ('dmag', numpy.float),
-                           ('dra', numpy.float),
-                           ('ddec', numpy.float)
+                           ('ra', str, 20),
+                           ('dec', str, 20),
+                           ('mag', str, 20),
+                           ('dmag', str, 20),
+                           ('dra', str, 20),
+                           ('ddec', str, 20)
                            ])
 
         nPts = 100
@@ -121,7 +141,7 @@ class CompoundCatalogTest(unittest.TestCase):
             for ix, (r, d, mm, dm, dr, dd) in \
             enumerate(zip(raList, decList, magList, dmagList, draList, ddecList)):
 
-                output.write('%d %e %e %e %e %e %e\n' \
+                output.write('%d %.12f %.12f %.12f %.12f %.12f %.12f\n' \
                              % (ix, r, d, mm, dm, dr, dd))
 
 
@@ -133,9 +153,9 @@ class CompoundCatalogTest(unittest.TestCase):
 
         dbDtype2 = numpy.dtype([
                             ('id', numpy.int),
-                            ('ra', numpy.float),
-                            ('dec', numpy.float),
-                            ('mag', numpy.float)
+                            ('ra', str, 20),
+                            ('dec', str, 20),
+                            ('mag', str, 20)
                             ])
 
         ra2List = numpy.random.random_sample(nPts)*360.0+360.0
@@ -151,7 +171,7 @@ class CompoundCatalogTest(unittest.TestCase):
         with open(cls.table2FileName, 'w') as output:
             output.write('# id ra dec mag\n')
             for ix, (r, d, m) in enumerate(zip(ra2List, dec2List, mag2List)):
-                output.write('%d %e %e %e\n' % (ix, r, d, m))
+                output.write('%d %.12f %.12f %.12f\n' % (ix, r, d, m))
 
         cls.dbName = os.path.join(cls.baseDir, 'compound_db.db')
         if os.path.exists(cls.dbName):
@@ -164,6 +184,15 @@ class CompoundCatalogTest(unittest.TestCase):
         fdbo = fileDBObject(cls.table2FileName, runtable='table2',
                             database=cls.dbName, dtype=dbDtype2,
                             idColKey='id')
+
+    @classmethod
+    def tearDownClass(cls):
+        if os.path.exists(cls.table1FileName):
+            os.unlink(cls.table1FileName)
+        if os.path.exists(cls.table2FileName):
+            os.unlink(cls.table2FileName)
+        if os.path.exists(cls.dbName):
+            os.unlink(cls.dbName)
 
 
     def testCompoundCatalog(self):
@@ -186,6 +215,35 @@ class CompoundCatalogTest(unittest.TestCase):
         self.assertTrue(0 in compoundCat._dbObjectGroupList[0])
         self.assertTrue(1 in compoundCat._dbObjectGroupList[0])
         self.assertTrue(2 in compoundCat._dbObjectGroupList[1])
+
+        dtype=numpy.dtype([
+                          ('id', numpy.int),
+                          ('raObs', numpy.float),
+                          ('decObs', numpy.float),
+                          ('final_mag', numpy.float)
+                          ])
+
+        testData = numpy.genfromtxt(fileName, dtype=dtype)
+
+        for line in testData:
+            if line[0]<2000:
+                ix = line[0]-1000
+                self.assertAlmostEqual(line[1], self.table1Control['ra'][ix], 10)
+                self.assertAlmostEqual(line[2], self.table1Control['dec'][ix], 10)
+                self.assertAlmostEqual(line[3], self.table1Control['mag'][ix]+self.table1Control['dmag'][ix], 10)
+            elif line[0]<3000:
+                ix = line[0]-2000
+                self.assertAlmostEqual(line[1], 2.0*self.table1Control['ra'][ix]+self.table1Control['dra'][ix], 10)
+                self.assertAlmostEqual(line[2], 2.0*self.table1Control['dec'][ix]+self.table1Control['ddec'][ix], 10)
+                self.assertAlmostEqual(line[3], self.table1Control['mag'][ix]+self.table1Control['dmag'][ix], 10)
+            else:
+                ix = line[0]-3000
+                self.assertAlmostEqual(line[1], self.table2Control['ra'][ix], 10)
+                self.assertAlmostEqual(line[2], self.table2Control['dec'][ix], 10)
+                self.assertAlmostEqual(line[3], self.table2Control['mag'][ix], 10)
+
+        if os.path.exists(fileName):
+            os.unlink(fileName)
 
 
 
