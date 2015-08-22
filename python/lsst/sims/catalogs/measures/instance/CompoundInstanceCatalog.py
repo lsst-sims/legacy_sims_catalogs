@@ -1,9 +1,10 @@
 from __future__ import with_statement
+import numpy
 from lsst.sims.catalogs.generation.db import CompoundCatalogDBObject
 
 class CompoundInstanceCatalog(object):
 
-    def __init__(self, instanceCatalogList, obs_metadata, constraint=None):
+    def __init__(self, instanceCatalogList, obs_metadata=None, constraint=None):
 
         self._obs_metadata = obs_metadata
         self._dbo_list = []
@@ -12,12 +13,12 @@ class CompoundInstanceCatalog(object):
         for ic in self._ic_list:
             self._dbo_list.append(ic.db_obj)
 
-        assigned = [False]*len(dbObjectList)
+        assigned = [False]*len(self._dbo_list)
         self._dbObjectGroupList = []
 
-        for ix in range(len(dbObjectList)):
+        for ix in range(len(self._dbo_list)):
             for row in self._dbObjectGroupList:
-                if areDBObjectsTheSame(self._dbo_list[ix], self._dbo_list[row[0]]):
+                if self.areDBObjectsTheSame(self._dbo_list[ix], self._dbo_list[row[0]]):
                     row.append(ix)
                     assigned[ix] = True
                     break
@@ -26,7 +27,7 @@ class CompoundInstanceCatalog(object):
                 new_row = [ix]
                 for iy in range(ix):
                     if not assigned[iy]:
-                        if areDBObjectsTheSame(self._dbo_list[ix], self._dbo_list[iy]):
+                        if self.areDBObjectsTheSame(self._dbo_list[ix], self._dbo_list[iy]):
                             new_row.append(iy)
 
                 self._dbObjectGroupList.append(new_row)
@@ -48,7 +49,7 @@ class CompoundInstanceCatalog(object):
 
     def write_catalog(self, filename, chunk_size=None, write_header=True, write_mode='w'):
 
-        for ic in self_ic_list:
+        for ic in self._ic_list:
             ic._write_pre_process()
 
         for row in self._dbObjectGroupList:
@@ -86,10 +87,10 @@ class CompoundInstanceCatalog(object):
             master_colnames.append(localNames)
 
 
-        master_results = compound_dbo(colnames=colnames,
-                                     obs_metadata=self._obs_metadata,
-                                     constraint=self._constraint,
-                                     chunk_size=chunk_size)
+        master_results = compound_dbo.query_columns(colnames=colnames,
+                                                    obs_metadata=self._obs_metadata,
+                                                    constraint=self._constraint,
+                                                    chunk_size=chunk_size)
 
         with open(filename, write_mode) as file_handle:
             if write_header:
@@ -99,12 +100,12 @@ class CompoundInstanceCatalog(object):
             new_dtype_list = [None]*len(catList)
 
             for chunk in master_results:
-                for ix, (name, cat) in enumerate(dbObjNameList, catList):
+                for ix, (name, cat) in enumerate(zip(dbObjNameList, catList)):
                     local_recarray = chunk[master_colnames[ix]].view(numpy.recarray)
                     if new_dtype_list[ix] is None:
                         new_dtype = numpy.dtype([
-                                                tuple([dd[0].strip(name)] + [ee for ee in dd[1:]]) \
-                                                for dd in localRecarray.dtype
+                                                tuple([dd.replace(name+'_','')] + [local_recarray.dtype[dd]]) \
+                                                for dd in local_recarray.dtype.fields
                                                 ])
 
                         new_dtype_list[ix] = new_dtype
