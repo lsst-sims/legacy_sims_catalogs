@@ -435,7 +435,19 @@ class InstanceCatalog(object):
     def write_catalog(self, filename, chunk_size=None,
                       write_header=True, write_mode='w'):
 
-        file_handle = self._write_pre_process(filename, write_header, write_mode)
+        self._write_pre_process()
+
+        self._query_and_write(filename, chunk_size=chunk_size,
+                              write_header=write_header,
+                              write_mode=write_mode)
+
+
+    def _query_and_write(self, filename, chunk_size=None, write_header=True,
+                         write_mode='w'):
+
+        file_handle = open(filename, write_mode)
+        if write_header:
+            self.write_header(file_handle)
 
         query_result = self.db_obj.query_columns(colnames=self._active_columns,
                                                  obs_metadata=self.obs_metadata,
@@ -448,22 +460,10 @@ class InstanceCatalog(object):
         file_handle.close()
 
 
-    def _write_pre_process(self, filename, write_header, write_mode):
+    def _write_pre_process(self):
         """
         This function verifies the catalog's required columns, initializes
-        some member variables that are required for the catalog-writing process,
-        and opens the file to which the catalog will be written.
-
-        @param [in] filename is the name of the file to which the catalog will
-        be written
-
-        @param [in] write_header is a boolean determining whether or not the header
-        should be written to the catalog
-
-        @param [in] write_mode is 'w' to overwrite the catalog file; 'a' to append to it
-
-        @param [out] file_handle is a file handle pointing to the file where the catalog
-        will be written.
+        some member variables that are required for the catalog-writing process.
         """
         db_required_columns, required_columns_with_defaults = self.db_required_columns()
         self._template = None
@@ -474,12 +474,6 @@ class InstanceCatalog(object):
             if col in self.cannot_be_null:
                 self._cannotBeNullDexes.append(i)
 
-
-        file_handle = open(filename, write_mode)
-        if write_header:
-            self.write_header(file_handle)
-
-        return file_handle
 
 
     def _write_recarray(self, chunk, file_handle):
