@@ -439,19 +439,21 @@ class InstanceCatalog(object):
 
         self._query_and_write(filename, chunk_size=chunk_size,
                               write_header=write_header,
-                              write_mode=write_mode)
+                              write_mode=write_mode,
+                              obs_metadata=self.obs_metadata,
+                              constraint=self.constraint)
 
 
     def _query_and_write(self, filename, chunk_size=None, write_header=True,
-                         write_mode='w'):
+                         write_mode='w', obs_metadata=None, constraint=None):
 
         file_handle = open(filename, write_mode)
         if write_header:
             self.write_header(file_handle)
 
         query_result = self.db_obj.query_columns(colnames=self._active_columns,
-                                                 obs_metadata=self.obs_metadata,
-                                                 constraint=self.constraint,
+                                                 obs_metadata=obs_metadata,
+                                                 constraint=constraint,
                                                  chunk_size=chunk_size)
 
         for chunk in query_result:

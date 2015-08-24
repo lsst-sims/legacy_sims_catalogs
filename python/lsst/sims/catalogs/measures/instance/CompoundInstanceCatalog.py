@@ -55,7 +55,9 @@ class CompoundInstanceCatalog(object):
         for row in self._dbObjectGroupList:
             if len(row)==1:
                 self._ic_list[row[0]]._query_and_write(filename, chunk_size=chunk_size,
-                                                       write_header=write_header, write_mode=write_mode)
+                                                       write_header=write_header, write_mode=write_mode,
+                                                       obs_metadata=self._obs_metadata,
+                                                       constraint=self._constraint)
                 write_mode = 'a'
                 write_header = False
 
