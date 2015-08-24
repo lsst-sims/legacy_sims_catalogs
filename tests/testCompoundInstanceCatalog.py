@@ -345,6 +345,9 @@ class CompoundCatalogTest(unittest.TestCase):
         self.assertEqual(len(table1_good_rows)+len(table1_bad_rows), self.table1Control.shape[0])
         self.assertEqual(len(table2_good_rows)+len(table2_bad_rows), self.table2Control.shape[0])
 
+        if os.path.exists(fileName):
+            os.unlink(fileName)
+
 
 def suite():
     """Returns a suite containing all the test cases in this module."""
