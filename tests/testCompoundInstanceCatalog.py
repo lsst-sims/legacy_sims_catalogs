@@ -166,7 +166,7 @@ class CompoundCatalogTest(unittest.TestCase):
 
         ra2List = numpy.random.random_sample(nPts)*360.0
         dec2List = numpy.random.random_sample(nPts)*180.0-90.0
-        mag2List = numpy.random.random_sample(nPts)*(-3.0)-7.0
+        mag2List = numpy.random.random_sample(nPts)*10+18.0
 
         cls.table2Control = numpy.rec.fromrecords([
                                                   (r, d, m) \
@@ -360,7 +360,7 @@ class CompoundCatalogTest(unittest.TestCase):
         cat3 = Cat3(db3)
 
         compoundCat = CompoundInstanceCatalog([cat1, cat2, cat3],
-                                              constraint='mag>20.0 or mag<-8.0')
+                                              constraint='mag>20.0')
 
         compoundCat.write_catalog(fileName)
         dtype=numpy.dtype([
@@ -382,7 +382,7 @@ class CompoundCatalogTest(unittest.TestCase):
                 self.assertAlmostEqual(line[1], self.table1Control['ra'][ix], 6)
                 self.assertAlmostEqual(line[2], self.table1Control['dec'][ix], 6)
                 self.assertAlmostEqual(line[3], self.table1Control['mag'][ix]+self.table1Control['dmag'][ix], 6)
-                self.assertTrue(self.table1Control['mag'][ix]>20.0 or self.table1Control['mag'][ix]<-8.0)
+                self.assertTrue(self.table1Control['mag'][ix]>20.0)
             elif line[0]<3000:
                 ix = line[0]-2000
                 if ix not in table1_good_rows:
@@ -390,7 +390,7 @@ class CompoundCatalogTest(unittest.TestCase):
                 self.assertAlmostEqual(line[1], 2.0*self.table1Control['ra'][ix]+self.table1Control['dra'][ix], 6)
                 self.assertAlmostEqual(line[2], 2.0*self.table1Control['dec'][ix]+self.table1Control['ddec'][ix], 6)
                 self.assertAlmostEqual(line[3], self.table1Control['mag'][ix]+self.table1Control['dmag'][ix], 6)
-                self.assertTrue(self.table1Control['mag'][ix]>20.0 or self.table1Control['mag'][ix]<-8.0)
+                self.assertTrue(self.table1Control['mag'][ix]>20.0)
             else:
                 ix = line[0]-3000
                 if ix not in table2_good_rows:
@@ -398,18 +398,18 @@ class CompoundCatalogTest(unittest.TestCase):
                 self.assertAlmostEqual(line[1], self.table2Control['ra'][ix], 6)
                 self.assertAlmostEqual(line[2], self.table2Control['dec'][ix], 6)
                 self.assertAlmostEqual(line[3], self.table2Control['mag'][ix], 6)
-                self.assertTrue(self.table2Control['mag'][ix]>20.0 or self.table2Control['mag'][ix]<-8.0)
+                self.assertTrue(self.table2Control['mag'][ix]>20.0)
 
 
         table1_bad_rows = [ix for ix in range(self.table1Control.shape[0]) if ix not in table1_good_rows]
         table2_bad_rows = [ix for ix in range(self.table2Control.shape[0]) if ix not in table2_good_rows]
 
 
-        in_bounds = [mm>20.0 or mm<-8.0 for mm in self.table1Control['mag'][table1_bad_rows]]
+        in_bounds = [mm>20.0 for mm in self.table1Control['mag'][table1_bad_rows]]
 
         self.assertFalse(True in in_bounds)
 
-        in_bounds = [mm>20.0 or mm<-8.0 for mm in self.table2Control['mag'][table2_bad_rows]]
+        in_bounds = [mm>20.0 for mm in self.table2Control['mag'][table2_bad_rows]]
 
 
         self.assertFalse(True in in_bounds)
@@ -512,7 +512,9 @@ class CompoundCatalogTest(unittest.TestCase):
         self.assertFalse(True in in_bounds)
 
         self.assertTrue(len(table1_good_rows)>0)
+        self.assertTrue(len(table2_good_rows)>0)
         self.assertTrue(len(table1_bad_rows)>0)
+        self.assertTrue(len(table2_bad_rows)>0)
         self.assertEqual(len(table1_good_rows)+len(table1_bad_rows), self.table1Control.shape[0])
         self.assertEqual(len(table2_good_rows)+len(table2_bad_rows), self.table2Control.shape[0])
 
