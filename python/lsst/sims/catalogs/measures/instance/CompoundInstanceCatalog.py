@@ -4,8 +4,10 @@ from lsst.sims.catalogs.generation.db import CompoundCatalogDBObject
 
 class CompoundInstanceCatalog(object):
 
-    def __init__(self, instanceCatalogList, obs_metadata=None, constraint=None):
+    def __init__(self, instanceCatalogList, obs_metadata=None, constraint=None,
+                 compoundDBclass = None):
 
+        self._compoundDBclass = compoundDBclass
         self._obs_metadata = obs_metadata
         self._dbo_list = []
         self._ic_list = instanceCatalogList
@@ -66,7 +68,11 @@ class CompoundInstanceCatalog(object):
                 dbObjList = [self._dbo_list[ix] for ix in row]
                 catList = [self._ic_list[ix] for ix in row]
 
-                compound_dbo = CompoundCatalogDBObject(dbObjList)
+                if self._compoundDBclass is None:
+                    compound_dbo = CompoundCatalogDBObject(dbObjList)
+                else:
+                    compound_dbo = self._compoundDBclass(dbObjList)
+
                 self._write_compound(catList, compound_dbo, filename,
                                      chunk_size=chunk_size, write_header=write_header,
                                      write_mode=write_mode)
