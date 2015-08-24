@@ -354,7 +354,7 @@ class CompoundCatalogTest(unittest.TestCase):
         Test that CompoundInstanceCatalog handles constraint
         properly
         """
-        fileName = os.path.join(self.baseDir, 'compound_constraint_metadata_test_cat.txt')
+        fileName = os.path.join(self.baseDir, 'compound_constraint_test_cat.txt')
 
         db1 = table1DB1(database=self.dbName, driver='sqlite')
         db2 = table1DB2(database=self.dbName, driver='sqlite')
@@ -410,10 +410,6 @@ class CompoundCatalogTest(unittest.TestCase):
 
 
         in_bounds = [mm>20.0 or mm<-8.0 for mm in self.table1Control['mag'][table1_bad_rows]]
-
-        for ix, switch in zip(table1_bad_rows, in_bounds):
-            if switch:
-                print self.table1Control['ra'][ix], self.table1Control['dec'][ix],ix,ix in table1_good_rows
 
         self.assertFalse(True in in_bounds)
 
