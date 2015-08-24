@@ -325,10 +325,6 @@ class CompoundCatalogTest(unittest.TestCase):
                      for rr, dd in zip(self.table1Control['ra'][table1_bad_rows],
                                        self.table1Control['dec'][table1_bad_rows])]
 
-        for ix, switch in zip(table1_bad_rows, in_bounds):
-            if switch:
-                print self.table1Control['ra'][ix], self.table1Control['dec'][ix],ix,ix in table1_good_rows
-
         self.assertFalse(True in in_bounds)
 
         in_bounds = [rr>100.0 and rr<260.0 and dd>-25.0 and dd<25.0 \
