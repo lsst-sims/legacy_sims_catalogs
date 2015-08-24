@@ -13,6 +13,8 @@ class table1DB1(CatalogDBObject):
     tableid = 'table1'
     objid = 'table1DB1'
     idColKey = 'id'
+    raColName = 'ra'
+    decColName = 'dec'
 
     columns = [('raJ2000','ra'),
                ('decJ2000','dec'),
@@ -26,6 +28,8 @@ class table1DB2(CatalogDBObject):
     tableid = 'table1'
     objid = 'table1DB2'
     idColKey = 'id'
+    raColName = 'ra'
+    decColName = 'dec'
 
     columns = [('raJ2000', '2.0*ra'),
                ('decJ2000', '2.0*dec'),
@@ -39,6 +43,8 @@ class table2DB(CatalogDBObject):
     tableid = 'table2'
     objid = 'table2DB'
     idColKey = 'id'
+    raColName = 'ra'
+    decColName = 'dec'
 
     columns = [('raJ2000', 'ra'),
                ('decJ2000', 'dec'),
@@ -110,12 +116,12 @@ class CompoundCatalogTest(unittest.TestCase):
 
         dbDtype1 = numpy.dtype([
                            ('id', numpy.int),
-                           ('ra', str, 20),
-                           ('dec', str, 20),
-                           ('mag', str, 20),
-                           ('dmag', str, 20),
-                           ('dra', str, 20),
-                           ('ddec', str, 20)
+                           ('ra', numpy.float),
+                           ('dec', numpy.float),
+                           ('mag', numpy.float),
+                           ('dmag', numpy.float),
+                           ('dra', numpy.float),
+                           ('ddec', numpy.float)
                            ])
 
         nPts = 100
@@ -153,14 +159,14 @@ class CompoundCatalogTest(unittest.TestCase):
 
         dbDtype2 = numpy.dtype([
                             ('id', numpy.int),
-                            ('ra', str, 20),
-                            ('dec', str, 20),
-                            ('mag', str, 20)
+                            ('ra', numpy.float),
+                            ('dec', numpy.float),
+                            ('mag', numpy.float)
                             ])
 
-        ra2List = numpy.random.random_sample(nPts)*360.0+360.0
-        dec2List = numpy.random.random_sample(nPts)*180.0+180.0
-        mag2List = numpy.random.random_sample(nPts)*3.0+7.0
+        ra2List = numpy.random.random_sample(nPts)*360.0
+        dec2List = numpy.random.random_sample(nPts)*180.0-90.0
+        mag2List = numpy.random.random_sample(nPts)*(-3.0)-7.0
 
         cls.table2Control = numpy.rec.fromrecords([
                                                   (r, d, m) \
@@ -184,6 +190,7 @@ class CompoundCatalogTest(unittest.TestCase):
         fdbo = fileDBObject(cls.table2FileName, runtable='table2',
                             database=cls.dbName, dtype=dbDtype2,
                             idColKey='id')
+
 
     @classmethod
     def tearDownClass(cls):
@@ -228,23 +235,115 @@ class CompoundCatalogTest(unittest.TestCase):
         for line in testData:
             if line[0]<2000:
                 ix = line[0]-1000
-                self.assertAlmostEqual(line[1], self.table1Control['ra'][ix], 10)
-                self.assertAlmostEqual(line[2], self.table1Control['dec'][ix], 10)
-                self.assertAlmostEqual(line[3], self.table1Control['mag'][ix]+self.table1Control['dmag'][ix], 10)
+                self.assertAlmostEqual(line[1], self.table1Control['ra'][ix], 6)
+                self.assertAlmostEqual(line[2], self.table1Control['dec'][ix], 6)
+                self.assertAlmostEqual(line[3], self.table1Control['mag'][ix]+self.table1Control['dmag'][ix], 6)
             elif line[0]<3000:
                 ix = line[0]-2000
-                self.assertAlmostEqual(line[1], 2.0*self.table1Control['ra'][ix]+self.table1Control['dra'][ix], 10)
-                self.assertAlmostEqual(line[2], 2.0*self.table1Control['dec'][ix]+self.table1Control['ddec'][ix], 10)
-                self.assertAlmostEqual(line[3], self.table1Control['mag'][ix]+self.table1Control['dmag'][ix], 10)
+                self.assertAlmostEqual(line[1], 2.0*self.table1Control['ra'][ix]+self.table1Control['dra'][ix], 6)
+                self.assertAlmostEqual(line[2], 2.0*self.table1Control['dec'][ix]+self.table1Control['ddec'][ix], 6)
+                self.assertAlmostEqual(line[3], self.table1Control['mag'][ix]+self.table1Control['dmag'][ix], 6)
             else:
                 ix = line[0]-3000
-                self.assertAlmostEqual(line[1], self.table2Control['ra'][ix], 10)
-                self.assertAlmostEqual(line[2], self.table2Control['dec'][ix], 10)
-                self.assertAlmostEqual(line[3], self.table2Control['mag'][ix], 10)
+                self.assertAlmostEqual(line[1], self.table2Control['ra'][ix], 6)
+                self.assertAlmostEqual(line[2], self.table2Control['dec'][ix], 6)
+                self.assertAlmostEqual(line[3], self.table2Control['mag'][ix], 6)
 
         if os.path.exists(fileName):
             os.unlink(fileName)
 
+
+
+    def testObservationMetaData(self):
+        """
+        Test that CompoundInstanceCatalog handles ObservationMetaData
+        properly
+        """
+        fileName = os.path.join(self.baseDir, 'compound_obs_metadata_test_cat.txt')
+        obs = ObservationMetaData(unrefractedRA = 180.0,
+                                  unrefractedDec = 0.0,
+                                  boundType = 'box',
+                                  boundLength = (80.0, 25.0))
+
+        db1 = table1DB1(database=self.dbName, driver='sqlite')
+        db2 = table1DB2(database=self.dbName, driver='sqlite')
+        db3 = table2DB(database=self.dbName, driver='sqlite')
+        cat1 = Cat1(db1)
+        cat2 = Cat2(db2)
+        cat3 = Cat3(db3)
+
+        compoundCat = CompoundInstanceCatalog([cat1, cat2, cat3],
+                                              obs_metadata=obs)
+
+        compoundCat.write_catalog(fileName)
+        dtype=numpy.dtype([
+                          ('id', numpy.int),
+                          ('raObs', numpy.float),
+                          ('decObs', numpy.float),
+                          ('final_mag', numpy.float)
+                          ])
+
+        testData = numpy.genfromtxt(fileName, dtype=dtype)
+
+        table1_good_rows = []
+        table2_good_rows = []
+        for line in testData:
+            if line[0]<2000:
+                ix = line[0]-1000
+                if ix not in table1_good_rows:
+                    table1_good_rows.append(ix)
+                self.assertAlmostEqual(line[1], self.table1Control['ra'][ix], 6)
+                self.assertAlmostEqual(line[2], self.table1Control['dec'][ix], 6)
+                self.assertAlmostEqual(line[3], self.table1Control['mag'][ix]+self.table1Control['dmag'][ix], 6)
+                self.assertTrue(self.table1Control['ra'][ix]>100.0 and self.table1Control['ra'][ix]<260.0)
+                self.assertTrue(self.table1Control['dec'][ix]>-25.0 and self.table1Control['dec'][ix]<25.0)
+            elif line[0]<3000:
+                ix = line[0]-2000
+                if ix not in table1_good_rows:
+                    table1_good_rows.append(ix)
+                self.assertAlmostEqual(line[1], 2.0*self.table1Control['ra'][ix]+self.table1Control['dra'][ix], 6)
+                self.assertAlmostEqual(line[2], 2.0*self.table1Control['dec'][ix]+self.table1Control['ddec'][ix], 6)
+                self.assertAlmostEqual(line[3], self.table1Control['mag'][ix]+self.table1Control['dmag'][ix], 6)
+                self.assertTrue(self.table1Control['ra'][ix]>100.0 and self.table1Control['ra'][ix]<260.0)
+                self.assertTrue(self.table1Control['dec'][ix]>-25.0 and self.table1Control['dec'][ix]<25.0)
+            else:
+                ix = line[0]-3000
+                if ix not in table2_good_rows:
+                    table2_good_rows.append(ix)
+                self.assertAlmostEqual(line[1], self.table2Control['ra'][ix], 6)
+                self.assertAlmostEqual(line[2], self.table2Control['dec'][ix], 6)
+                self.assertAlmostEqual(line[3], self.table2Control['mag'][ix], 6)
+                self.assertTrue(self.table2Control['ra'][ix]>100.0 and self.table2Control['ra'][ix]<260.0)
+                self.assertTrue(self.table2Control['dec'][ix]>-25.0 and self.table2Control['dec'][ix]<25.0)
+
+
+        table1_bad_rows = [ix for ix in range(self.table1Control.shape[0]) if ix not in table1_good_rows]
+        table2_bad_rows = [ix for ix in range(self.table2Control.shape[0]) if ix not in table2_good_rows]
+
+
+        in_bounds = [rr>100.0 and rr<260.0 and dd>-25.0 and dd<25.0 \
+                     for rr, dd in zip(self.table1Control['ra'][table1_bad_rows],
+                                       self.table1Control['dec'][table1_bad_rows])]
+
+        for ix, switch in zip(table1_bad_rows, in_bounds):
+            if switch:
+                print self.table1Control['ra'][ix], self.table1Control['dec'][ix],ix,ix in table1_good_rows
+
+        self.assertFalse(True in in_bounds)
+
+        in_bounds = [rr>100.0 and rr<260.0 and dd>-25.0 and dd<25.0 \
+                     for rr, dd in zip(self.table2Control['ra'][table2_bad_rows],
+                                           self.table2Control['dec'][table2_bad_rows])]
+
+
+        self.assertFalse(True in in_bounds)
+
+        self.assertTrue(len(table1_good_rows)>0)
+        self.assertTrue(len(table2_good_rows)>0)
+        self.assertTrue(len(table1_bad_rows)>0)
+        self.assertTrue(len(table2_bad_rows)>0)
+        self.assertEqual(len(table1_good_rows)+len(table1_bad_rows), self.table1Control.shape[0])
+        self.assertEqual(len(table2_good_rows)+len(table2_bad_rows), self.table2Control.shape[0])
 
 
 def suite():
