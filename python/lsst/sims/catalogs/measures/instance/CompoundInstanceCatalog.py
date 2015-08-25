@@ -70,7 +70,7 @@ class CompoundInstanceCatalog(object):
             else:
                 for dbo in self._compoundDBclass:
                     if dbo._table_restriction is None:
-                        default_compound_dbo = CompoundCatalogDBObject
+                        default_compound_dbo = dbo
                         break
 
                 if default_compound_dbo is None:
