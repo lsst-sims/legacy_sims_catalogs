@@ -18,6 +18,18 @@ class negativeRaCompound(CompoundCatalogDBObject):
 
         return results
 
+class negativeDecCompound_table2(CompoundCatalogDBObject):
+
+    _table_restriction = ['table2']
+
+    def _final_pass(self, results):
+        for name in results.dtype.fields:
+            if 'decJ2000' in name:
+                results[name] *= -1.0
+
+        return results
+
+
 
 class table1DB1(CatalogDBObject):
     tableid = 'table1'
@@ -544,6 +556,58 @@ class CompoundCatalogTest(unittest.TestCase):
 
         compoundCat = CompoundInstanceCatalog([cat1, cat2, cat3], \
                                               compoundDBclass=negativeRaCompound)
+
+        compoundCat.write_catalog(fileName)
+
+        self.assertTrue(len(compoundCat._dbObjectGroupList)==2)
+        self.assertTrue(len(compoundCat._dbObjectGroupList[0])==2)
+        self.assertTrue(len(compoundCat._dbObjectGroupList[1])==1)
+        self.assertTrue(0 in compoundCat._dbObjectGroupList[0])
+        self.assertTrue(1 in compoundCat._dbObjectGroupList[0])
+        self.assertTrue(2 in compoundCat._dbObjectGroupList[1])
+
+        dtype=numpy.dtype([
+                          ('id', numpy.int),
+                          ('raObs', numpy.float),
+                          ('decObs', numpy.float),
+                          ('final_mag', numpy.float)
+                          ])
+
+        testData = numpy.genfromtxt(fileName, dtype=dtype)
+
+        for line in testData:
+            if line[0]<2000:
+                ix = line[0]-1000
+                self.assertAlmostEqual(line[1], -1.0*self.table1Control['ra'][ix], 6)
+                self.assertAlmostEqual(line[2], self.table1Control['dec'][ix], 6)
+                self.assertAlmostEqual(line[3], self.table1Control['mag'][ix]+self.table1Control['dmag'][ix], 6)
+            elif line[0]<3000:
+                ix = line[0]-2000
+                self.assertAlmostEqual(line[1], -2.0*self.table1Control['ra'][ix]+self.table1Control['dra'][ix], 6)
+                self.assertAlmostEqual(line[2], 2.0*self.table1Control['dec'][ix]+self.table1Control['ddec'][ix], 6)
+                self.assertAlmostEqual(line[3], self.table1Control['mag'][ix]+self.table1Control['dmag'][ix], 6)
+            else:
+                ix = line[0]-3000
+                self.assertAlmostEqual(line[1], self.table2Control['ra'][ix], 6)
+                self.assertAlmostEqual(line[2], self.table2Control['dec'][ix], 6)
+                self.assertAlmostEqual(line[3], self.table2Control['mag'][ix], 6)
+
+        if os.path.exists(fileName):
+            os.unlink(fileName)
+
+
+    def testDefaultCustomCompoundCatalogDBObject(self):
+        fileName = os.path.join(self.baseDir, 'simplest_compound_catalog.txt')
+        db1 = table1DB1(database=self.dbName, driver='sqlite')
+        db2 = table1DB2(database=self.dbName, driver='sqlite')
+        db3 = table2DB(database=self.dbName, driver='sqlite')
+
+        cat1 = Cat1(db1)
+        cat2 = Cat2(db2)
+        cat3 = Cat3(db3)
+
+        compoundCat = CompoundInstanceCatalog([cat1, cat2, cat3], \
+                                              compoundDBclass=[negativeRaCompound])
 
         compoundCat.write_catalog(fileName)
 
