@@ -86,13 +86,17 @@ class CompoundInstanceCatalog(object):
 
         colnames = []
         master_colnames = []
+        name_map = []
         dbObjNameList = [db.objid for db in compound_dbo._dbObjectList]
         for name, cat in zip(dbObjNameList, catList):
             localNames = []
+            local_map = {}
             for colName in cat._active_columns:
                 colnames.append('%s_%s' % (name, colName))
                 localNames.append('%s_%s' % (name, colName))
+                local_map['%s_%s' % (name, colName)] = colName
             master_colnames.append(localNames)
+            name_map.append(local_map)
 
 
         master_results = compound_dbo.query_columns(colnames=colnames,
@@ -107,16 +111,24 @@ class CompoundInstanceCatalog(object):
 
             new_dtype_list = [None]*len(catList)
 
+            first_chunk = True
             for chunk in master_results:
-                for ix, (name, cat) in enumerate(zip(dbObjNameList, catList)):
+                for ix, (catName, cat) in enumerate(zip(dbObjNameList, catList)):
+
+                    if first_chunk:
+                        for iy, name in enumerate(master_colnames[ix]):
+                            if name not in chunk.dtype.fields:
+                                master_colnames[ix][iy] = name_map[ix][name]
+
                     local_recarray = chunk[master_colnames[ix]].view(numpy.recarray)
                     if new_dtype_list[ix] is None:
                         new_dtype = numpy.dtype([
-                                                tuple([dd.replace(name+'_','')] + [local_recarray.dtype[dd]]) \
+                                                tuple([dd.replace(catName+'_','')] + [local_recarray.dtype[dd]]) \
                                                 for dd in master_colnames[ix]
                                                 ])
                         new_dtype_list[ix] = new_dtype
 
                     local_recarray.dtype = new_dtype_list[ix]
-
                     cat._write_recarray(local_recarray, file_handle)
+
+                first_chunk = False
