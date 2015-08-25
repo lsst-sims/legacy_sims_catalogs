@@ -63,6 +63,19 @@ class CompoundInstanceCatalog(object):
                 write_mode = 'a'
                 write_header = False
 
+        default_compound_dbo = None
+        if self._compoundDBclass is not None:
+            if not hasattr(self._compoundDBclass, '__getitem__'):
+                default_compound_dbo = CompoundCatalogDBObject
+            else:
+                for dbo in self._compoundDBclass:
+                    if dbo._table_restriction is None:
+                        default_compound_dbo = CompoundCatalogDBObject
+                        break
+
+                if default_compound_dbo is None:
+                    default_compound_dbo is CompoundCatalogDBObject
+
         for row in self._dbObjectGroupList:
             if len(row)>1:
                 dbObjList = [self._dbo_list[ix] for ix in row]
@@ -70,8 +83,28 @@ class CompoundInstanceCatalog(object):
 
                 if self._compoundDBclass is None:
                     compound_dbo = CompoundCatalogDBObject(dbObjList)
+                elif not hasattr(self._compoundDBclass, '__getitem__'):
+                    # if self._compoundDBclass is not a list
+                    try:
+                        compound_dbo = self._compoundDBclass(dbObjList)
+                    except:
+                        compound_dbo = default_compound_dbo(dbObjList)
                 else:
-                    compound_dbo = self._compoundDBclass(dbObjList)
+                    compound_dbo = None
+                    for candidate in self._compoundDBclass:
+                        use_it = True
+                        if False in [candidate._table_restriction is not None and dbo.tableid in candidate._table_restriction \
+                                     for dbo in dbObjList]:
+
+                            use_it = False
+
+                        if use_it:
+                            compound_dbo = candidate(dbObjList)
+                            break
+
+                    if compound_dbo is None:
+                        compound_dbo = default_compound_dbo(dbObjList)
+
 
                 self._write_compound(catList, compound_dbo, filename,
                                      chunk_size=chunk_size, write_header=write_header,
