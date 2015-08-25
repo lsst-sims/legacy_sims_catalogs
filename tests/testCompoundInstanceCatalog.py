@@ -244,6 +244,9 @@ class CompoundCatalogTest(unittest.TestCase):
 
 
     def testCompoundCatalog(self):
+        """
+        Test that a CompoundInstanceCatalog produces the expected output
+        """
         fileName = os.path.join(self.baseDir, 'simplest_compound_catalog.txt')
         db1 = table1DB1(database=self.dbName, driver='sqlite')
         db2 = table1DB2(database=self.dbName, driver='sqlite')
@@ -564,6 +567,10 @@ class CompoundCatalogTest(unittest.TestCase):
 
 
     def testCustomCompoundCatalogDBObject(self):
+        """
+        Test that CompoundInstanceCatalog behaves properly when passed a
+        custom CompoundCatalogDBObject
+        """
         fileName = os.path.join(self.baseDir, 'simplest_compound_catalog.txt')
         db1 = table1DB1(database=self.dbName, driver='sqlite')
         db2 = table1DB2(database=self.dbName, driver='sqlite')
@@ -616,6 +623,9 @@ class CompoundCatalogTest(unittest.TestCase):
 
 
     def testDefaultCustomCompoundCatalogDBObject(self):
+        """
+        Test that CompoundInstanceCatalog can properly parse multiple CompoundCatalogDBobjects
+        """
         fileName = os.path.join(self.baseDir, 'simplest_compound_catalog.txt')
         db1 = table1DB1(database=self.dbName, driver='sqlite')
         db2 = table1DB2(database=self.dbName, driver='sqlite')
@@ -625,6 +635,8 @@ class CompoundCatalogTest(unittest.TestCase):
         cat2 = Cat2(db2)
         cat3 = Cat3(db3)
 
+        # negativeDecComopound_table2 should not come into play, since the
+        # multiple queries are directed at table1
         compoundCat = CompoundInstanceCatalog([cat1, cat2, cat3], \
                                               compoundDBclass=[negativeDecCompound_table2, negativeRaCompound])
 
@@ -668,6 +680,10 @@ class CompoundCatalogTest(unittest.TestCase):
 
 
     def testCustomCompoundCatalogDBObjectList(self):
+        """
+        Test that CompoundInstanceCatalog behaves properly when there are
+        two sets of multiple queries, one to table1, one to table2
+        """
         fileName = os.path.join(self.baseDir, 'simplest_compound_catalog.txt')
         db1 = table1DB1(database=self.dbName, driver='sqlite')
         db2 = table1DB2(database=self.dbName, driver='sqlite')
