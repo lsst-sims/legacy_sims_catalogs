@@ -3,9 +3,44 @@ import numpy
 from lsst.sims.catalogs.generation.db import CompoundCatalogDBObject
 
 class CompoundInstanceCatalog(object):
+    """
+    This is essentially and InstanceCatalog class meant to wrap together
+    several disparate InstanceCatalog instantiations that will ultimately
+    be written to the same output catalog.
+
+    You pass the constructor a list of InstanceCatalog instantiations,
+    and ObservationMetaData, and an optional SQL constraint.
+
+    The write_catalog method then writes all of the InstanceCatalogs to one
+    ASCII file using the same API as InstanceCatalog.write_catalog.
+    """
 
     def __init__(self, instanceCatalogList, obs_metadata=None, constraint=None,
                  compoundDBclass = None):
+        """
+        @param [in] instnaceCatalogList is a list of the InstanceCatalog
+        instantiations to be combined into one output catalog.  Note, these
+        catalogs could come with their own CatalogDBObjects.  This method
+        will do the work of combining them into CompoundCatalogDBObjects.
+
+        @param [in] obs_metadata is the ObservationMetaData describing
+        the telescope pointing
+
+        @param [in] constraint is an optional SQL constraint to be applied
+        to the database query
+
+        @param [in] compoundDBclass is an optional argument specifying what
+        CompoundCatalogDBobject class(es) to use to combine InstanceCatalogs
+        that query the same table.  This can be either a single
+        ComboundCatalogDBObject class, or a list of classes.  The
+        CompoundInstanceCatalog will figure out which InstanceCatalog(s) go with
+        which CompoundCatalogDBObject class.  If no CompoundCatalogDBObject class
+        corresponds to a given group of InstanceCatalogs, then the base
+        CompoundCatalogDBObject class will be used.
+
+        Note: compoundDBclass should be a CompoundCatalogDBObject class.
+        Not an instantiation of a CompoundCatalogDBObject class.
+        """
 
         self._compoundDBclass = compoundDBclass
         self._obs_metadata = obs_metadata
@@ -36,6 +71,14 @@ class CompoundInstanceCatalog(object):
 
 
     def areDBObjectsTheSame(self, db1, db2):
+        """
+        @param [in] db1 is a CatalogDBObject instantiation
+
+        @param [in] db2 is a CatalogDBObject instantiation
+
+        @param [out] a boolean stating whether or not db1 and db2
+        query the same table of the same database
+        """
         if db1.tableid != db2.tableid:
             return False
         if db1.host != db2.host:
@@ -50,6 +93,22 @@ class CompoundInstanceCatalog(object):
 
 
     def write_catalog(self, filename, chunk_size=None, write_header=True, write_mode='w'):
+        """
+        Write the stored list of InstanceCatalogs to a single ASCII output catalog.
+
+        @param [in] filename is the name of the file to be written
+
+        @param [in] chunk_size is an optional parameter telling the CompoundInstanceCatalog
+        to query the database in manageable chunks (in case returning the whole catalog
+        takes too much memory)
+
+        @param [in] write_header a boolean specifying whether or not to add a header
+        to the output catalog (Note: only one header will be written; there will not be
+        a header for each InstanceCatalog in the CompoundInstanceCatalog; default True)
+
+        @param [in] write_mode is 'w' if you want to overwrite the output file or
+        'a' if you want to append to an existing output file (default: 'w')
+        """
 
         for ic in self._ic_list:
             ic._write_pre_process()
@@ -115,7 +174,28 @@ class CompoundInstanceCatalog(object):
 
     def _write_compound(self, catList, compound_dbo, filename,
                         chunk_size=None, write_header=False, write_mode='a'):
+        """
+        Write out a set of InstanceCatalog instantiations that have been
+        determined to query the same database table.
 
+        @param [in] catList is the list of InstanceCatalog instantiations
+
+        @param [in] compound_db is the CompoundCatalogDBObject instantiation
+        associated with catList
+
+        @param [in] filename is the name of the file to be written
+
+        @param [in] chunk_size is an optional parameter telling the CompoundInstanceCatalog
+        to query the database in manageable chunks (in case returning the whole catalog
+        takes too much memory)
+
+        @param [in] write_header a boolean specifying whether or not to add a header
+        to the output catalog (Note: only one header will be written; there will not be
+        a header for each InstanceCatalog in the CompoundInstanceCatalog; default True)
+
+        @param [in] write_mode is 'w' if you want to overwrite the output file or
+        'a' if you want to append to an existing output file (default: 'w')
+        """
 
         colnames = []
         master_colnames = []
