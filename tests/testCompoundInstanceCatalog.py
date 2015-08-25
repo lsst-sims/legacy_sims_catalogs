@@ -18,6 +18,7 @@ class negativeRaCompound(CompoundCatalogDBObject):
 
         return results
 
+
 class negativeDecCompound_table2(CompoundCatalogDBObject):
 
     _table_restriction = ['table2']
@@ -61,15 +62,27 @@ class table1DB2(CatalogDBObject):
                ('ddec', None, numpy.float)]
 
 
-class table2DB(CatalogDBObject):
+class table2DB1(CatalogDBObject):
     tableid = 'table2'
-    objid = 'table2DB'
+    objid = 'table2DB1'
     idColKey = 'id'
     raColName = 'ra'
     decColName = 'dec'
 
     columns = [('raJ2000', 'ra'),
                ('decJ2000', 'dec'),
+               ('mag', None, numpy.float)]
+
+
+class table2DB2(CatalogDBObject):
+    tableid = 'table2'
+    objid = 'table2DB2'
+    idColKey = 'id'
+    raColName = 'ra'
+    decColName = 'dec'
+
+    columns = [('raJ2000', '2.0*ra'),
+               ('decJ2000', '2.0*dec'),
                ('mag', None, numpy.float)]
 
 
@@ -110,6 +123,12 @@ class Cat3(Cat1):
 
     def get_final_mag(self):
         return self.column_by_name('mag')
+
+
+class Cat4(Cat3):
+
+    def get_testId(self):
+        return self.column_by_name('id')+4000
 
 
 class CompoundCatalogTest(unittest.TestCase):
@@ -228,7 +247,7 @@ class CompoundCatalogTest(unittest.TestCase):
         fileName = os.path.join(self.baseDir, 'simplest_compound_catalog.txt')
         db1 = table1DB1(database=self.dbName, driver='sqlite')
         db2 = table1DB2(database=self.dbName, driver='sqlite')
-        db3 = table2DB(database=self.dbName, driver='sqlite')
+        db3 = table2DB1(database=self.dbName, driver='sqlite')
 
         cat1 = Cat1(db1)
         cat2 = Cat2(db2)
@@ -289,7 +308,7 @@ class CompoundCatalogTest(unittest.TestCase):
 
         db1 = table1DB1(database=self.dbName, driver='sqlite')
         db2 = table1DB2(database=self.dbName, driver='sqlite')
-        db3 = table2DB(database=self.dbName, driver='sqlite')
+        db3 = table2DB1(database=self.dbName, driver='sqlite')
         cat1 = Cat1(db1)
         cat2 = Cat2(db2)
         cat3 = Cat3(db3)
@@ -376,7 +395,7 @@ class CompoundCatalogTest(unittest.TestCase):
 
         db1 = table1DB1(database=self.dbName, driver='sqlite')
         db2 = table1DB2(database=self.dbName, driver='sqlite')
-        db3 = table2DB(database=self.dbName, driver='sqlite')
+        db3 = table2DB1(database=self.dbName, driver='sqlite')
         cat1 = Cat1(db1)
         cat2 = Cat2(db2)
         cat3 = Cat3(db3)
@@ -460,7 +479,7 @@ class CompoundCatalogTest(unittest.TestCase):
 
         db1 = table1DB1(database=self.dbName, driver='sqlite')
         db2 = table1DB2(database=self.dbName, driver='sqlite')
-        db3 = table2DB(database=self.dbName, driver='sqlite')
+        db3 = table2DB1(database=self.dbName, driver='sqlite')
         cat1 = Cat1(db1)
         cat2 = Cat2(db2)
         cat3 = Cat3(db3)
@@ -548,7 +567,7 @@ class CompoundCatalogTest(unittest.TestCase):
         fileName = os.path.join(self.baseDir, 'simplest_compound_catalog.txt')
         db1 = table1DB1(database=self.dbName, driver='sqlite')
         db2 = table1DB2(database=self.dbName, driver='sqlite')
-        db3 = table2DB(database=self.dbName, driver='sqlite')
+        db3 = table2DB1(database=self.dbName, driver='sqlite')
 
         cat1 = Cat1(db1)
         cat2 = Cat2(db2)
@@ -600,14 +619,14 @@ class CompoundCatalogTest(unittest.TestCase):
         fileName = os.path.join(self.baseDir, 'simplest_compound_catalog.txt')
         db1 = table1DB1(database=self.dbName, driver='sqlite')
         db2 = table1DB2(database=self.dbName, driver='sqlite')
-        db3 = table2DB(database=self.dbName, driver='sqlite')
+        db3 = table2DB1(database=self.dbName, driver='sqlite')
 
         cat1 = Cat1(db1)
         cat2 = Cat2(db2)
         cat3 = Cat3(db3)
 
         compoundCat = CompoundInstanceCatalog([cat1, cat2, cat3], \
-                                              compoundDBclass=[negativeRaCompound])
+                                              compoundDBclass=[negativeDecCompound_table2, negativeRaCompound])
 
         compoundCat.write_catalog(fileName)
 
@@ -647,6 +666,66 @@ class CompoundCatalogTest(unittest.TestCase):
         if os.path.exists(fileName):
             os.unlink(fileName)
 
+
+    def testCustomCompoundCatalogDBObjectList(self):
+        fileName = os.path.join(self.baseDir, 'simplest_compound_catalog.txt')
+        db1 = table1DB1(database=self.dbName, driver='sqlite')
+        db2 = table1DB2(database=self.dbName, driver='sqlite')
+        db3 = table2DB1(database=self.dbName, driver='sqlite')
+        db4 = table2DB2(database=self.dbName, driver='sqlite')
+
+        cat1 = Cat1(db1)
+        cat2 = Cat2(db2)
+        cat3 = Cat3(db3)
+        cat4 = Cat4(db4)
+
+        compoundCat = CompoundInstanceCatalog([cat1, cat2, cat3, cat4], \
+                                              compoundDBclass=[negativeRaCompound, negativeDecCompound_table2])
+
+        compoundCat.write_catalog(fileName)
+
+        self.assertTrue(len(compoundCat._dbObjectGroupList)==2)
+        self.assertTrue(len(compoundCat._dbObjectGroupList[0])==2)
+        self.assertTrue(len(compoundCat._dbObjectGroupList[1])==2)
+        self.assertTrue(0 in compoundCat._dbObjectGroupList[0])
+        self.assertTrue(1 in compoundCat._dbObjectGroupList[0])
+        self.assertTrue(2 in compoundCat._dbObjectGroupList[1])
+        self.assertTrue(3 in compoundCat._dbObjectGroupList[1])
+
+        dtype=numpy.dtype([
+                          ('id', numpy.int),
+                          ('raObs', numpy.float),
+                          ('decObs', numpy.float),
+                          ('final_mag', numpy.float)
+                          ])
+
+        testData = numpy.genfromtxt(fileName, dtype=dtype)
+
+        for line in testData:
+            if line[0]<2000:
+                ix = line[0]-1000
+                self.assertAlmostEqual(line[1], -1.0*self.table1Control['ra'][ix], 6)
+                self.assertAlmostEqual(line[2], self.table1Control['dec'][ix], 6)
+                self.assertAlmostEqual(line[3], self.table1Control['mag'][ix]+self.table1Control['dmag'][ix], 6)
+            elif line[0]<3000:
+                ix = line[0]-2000
+                self.assertAlmostEqual(line[1], -2.0*self.table1Control['ra'][ix]+self.table1Control['dra'][ix], 6)
+                self.assertAlmostEqual(line[2], 2.0*self.table1Control['dec'][ix]+self.table1Control['ddec'][ix], 6)
+                self.assertAlmostEqual(line[3], self.table1Control['mag'][ix]+self.table1Control['dmag'][ix], 6)
+            elif line[0]<4000:
+                ix = line[0]-3000
+                self.assertAlmostEqual(line[1], self.table2Control['ra'][ix], 6)
+                self.assertAlmostEqual(line[2], -1.0*self.table2Control['dec'][ix], 6)
+                self.assertAlmostEqual(line[3], self.table2Control['mag'][ix], 6)
+            else:
+                ix = line[0]-4000
+                self.assertAlmostEqual(line[1], 2.0*self.table2Control['ra'][ix], 6)
+                self.assertAlmostEqual(line[2], -2.0*self.table2Control['dec'][ix], 6)
+                self.assertAlmostEqual(line[3], self.table2Control['mag'][ix], 6)
+
+
+        if os.path.exists(fileName):
+            os.unlink(fileName)
 
 
 def suite():
