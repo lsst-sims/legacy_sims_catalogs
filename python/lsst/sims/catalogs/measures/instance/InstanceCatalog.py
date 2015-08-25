@@ -434,6 +434,22 @@ class InstanceCatalog(object):
 
     def write_catalog(self, filename, chunk_size=None,
                       write_header=True, write_mode='w'):
+        """
+        Write query self.db_obj and write the resulting InstanceCatalog to
+        an ASCII output file
+
+        @param [in] filename is the name of the ASCII file to be written
+
+        @param [in] chunk_size is an optional parameter telling the CompoundInstanceCatalog
+        to query the database in manageable chunks (in case returning the whole catalog
+        takes too much memory)
+
+        @param [in] write_header a boolean specifying whether or not to add a header
+        to the output catalog (default True)
+
+        @param [in] write_mode is 'w' if you want to overwrite the output file or
+        'a' if you want to append to an existing output file (default: 'w')
+        """
 
         self._write_pre_process()
 
@@ -446,6 +462,28 @@ class InstanceCatalog(object):
 
     def _query_and_write(self, filename, chunk_size=None, write_header=True,
                          write_mode='w', obs_metadata=None, constraint=None):
+        """
+        This method queries db_obj, and then writes the resulting recarray
+        to the specified ASCII output file.
+
+        @param [in] filename is the name of the ASCII file to be written
+
+        @param [in] obs_metadata is an ObservationMetaData instantiation
+        characterizing the telescope pointing (optional)
+
+        @param [in] constraint is an optional SQL constraint applied to the database query.
+
+        @param [in] chunk_size is an optional parameter telling the CompoundInstanceCatalog
+        to query the database in manageable chunks (in case returning the whole catalog
+        takes too much memory)
+
+        @param [in] write_header a boolean specifying whether or not to add a header
+        to the output catalog (default True)
+
+        @param [in] write_mode is 'w' if you want to overwrite the output file or
+        'a' if you want to append to an existing output file (default: 'w')
+        """
+
 
         file_handle = open(filename, write_mode)
         if write_header:
