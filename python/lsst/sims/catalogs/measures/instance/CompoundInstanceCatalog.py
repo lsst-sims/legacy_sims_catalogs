@@ -152,7 +152,8 @@ class CompoundInstanceCatalog(object):
                     compound_dbo = None
                     for candidate in self._compoundDBclass:
                         use_it = True
-                        if False in [candidate._table_restriction is not None and dbo.tableid in candidate._table_restriction \
+                        if False in [candidate._table_restriction is not None \
+                                     and dbo.tableid in candidate._table_restriction \
                                      for dbo in dbObjList]:
 
                             use_it = False
