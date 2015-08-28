@@ -4,7 +4,7 @@ from lsst.sims.catalogs.generation.db import CompoundCatalogDBObject
 
 class CompoundInstanceCatalog(object):
     """
-    This is essentially and InstanceCatalog class meant to wrap together
+    This is essentially an InstanceCatalog class meant to wrap together
     several disparate InstanceCatalog instantiations that will ultimately
     be written to the same output catalog.
 
@@ -18,7 +18,7 @@ class CompoundInstanceCatalog(object):
     def __init__(self, instanceCatalogList, obs_metadata=None, constraint=None,
                  compoundDBclass = None):
         """
-        @param [in] instnaceCatalogList is a list of the InstanceCatalog
+        @param [in] instanceCatalogList is a list of the InstanceCatalog
         instantiations to be combined into one output catalog.  Note, these
         catalogs could come with their own CatalogDBObjects.  This method
         will do the work of combining them into CompoundCatalogDBObjects.
