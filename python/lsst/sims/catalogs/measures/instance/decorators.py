@@ -54,12 +54,12 @@ def compound(*colnames):
     return wrapper
 
 def register_class(cls):
-    if not hasattr(cls, '_methodRegistry'):
-        cls._methodRegistry = {}
+    cls._methodRegistry = {}
     for methodname in dir(cls):
         method=getattr(cls, methodname)
         if hasattr(method, '_registryKey'):
-            cls._methodRegistry.update({method._registryKey:method})
+            if method._registryKey not in cls._methodRegistry:
+                cls._methodRegistry.update({method._registryKey:method})
     return cls
 
 def register_method(key):
