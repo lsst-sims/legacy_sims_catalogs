@@ -431,47 +431,124 @@ class InstanceCatalog(object):
                 self.comment_char + self.delimiter.join(column_names))
                           + self.endline)
 
+
     def write_catalog(self, filename, chunk_size=None,
                       write_header=True, write_mode='w'):
-        db_required_columns, required_columns_with_defaults = self.db_required_columns()
-        template = None
+        """
+        Write query self.db_obj and write the resulting InstanceCatalog to
+        an ASCII output file
+
+        @param [in] filename is the name of the ASCII file to be written
+
+        @param [in] chunk_size is an optional parameter telling the CompoundInstanceCatalog
+        to query the database in manageable chunks (in case returning the whole catalog
+        takes too much memory)
+
+        @param [in] write_header a boolean specifying whether or not to add a header
+        to the output catalog (default True)
+
+        @param [in] write_mode is 'w' if you want to overwrite the output file or
+        'a' if you want to append to an existing output file (default: 'w')
+        """
+
+        self._write_pre_process()
+
+        self._query_and_write(filename, chunk_size=chunk_size,
+                              write_header=write_header,
+                              write_mode=write_mode,
+                              obs_metadata=self.obs_metadata,
+                              constraint=self.constraint)
+
+
+    def _query_and_write(self, filename, chunk_size=None, write_header=True,
+                         write_mode='w', obs_metadata=None, constraint=None):
+        """
+        This method queries db_obj, and then writes the resulting recarray
+        to the specified ASCII output file.
+
+        @param [in] filename is the name of the ASCII file to be written
+
+        @param [in] obs_metadata is an ObservationMetaData instantiation
+        characterizing the telescope pointing (optional)
+
+        @param [in] constraint is an optional SQL constraint applied to the database query.
+
+        @param [in] chunk_size is an optional parameter telling the CompoundInstanceCatalog
+        to query the database in manageable chunks (in case returning the whole catalog
+        takes too much memory)
+
+        @param [in] write_header a boolean specifying whether or not to add a header
+        to the output catalog (default True)
+
+        @param [in] write_mode is 'w' if you want to overwrite the output file or
+        'a' if you want to append to an existing output file (default: 'w')
+        """
+
 
         file_handle = open(filename, write_mode)
         if write_header:
             self.write_header(file_handle)
 
         query_result = self.db_obj.query_columns(colnames=self._active_columns,
-                                                 obs_metadata=self.obs_metadata,
-                                                 constraint=self.constraint,
+                                                 obs_metadata=obs_metadata,
+                                                 constraint=constraint,
                                                  chunk_size=chunk_size)
 
-        # find the indices of columns that cannot be null
-        cannotBeNullDexes = []
-        for (i,col) in enumerate(self.iter_column_names()):
-            if col in self.cannot_be_null:
-                cannotBeNullDexes.append(i)
-
         for chunk in query_result:
-            self._set_current_chunk(chunk)
-            chunk_cols = [self.transformations[col](self.column_by_name(col))
-                          if col in self.transformations.keys() else
-                          self.column_by_name(col)
-                          for col in self.iter_column_names()]
-
-            # Create the template with the first chunk
-            if template is None:
-                template = self._make_line_template(chunk_cols)
-
-            # use a generator expression for lines rather than a list
-            # for memory efficiency
-            file_handle.writelines(template % line
-                                   for line in zip(*chunk_cols)
-                                   if numpy.array([not is_null(line[i]) for i in cannotBeNullDexes]).all())
-                                   # the last boolean in this line causes a row not to be printed if it has
-                                   # a null value in one of the columns that cannot be null; it is ignored
-                                   # if no olumns are specified by cannot_be_null
+            self._write_recarray(chunk, file_handle)
 
         file_handle.close()
+
+
+    def _write_pre_process(self):
+        """
+        This function verifies the catalog's required columns, initializes
+        some member variables that are required for the catalog-writing process.
+        """
+        db_required_columns, required_columns_with_defaults = self.db_required_columns()
+        self._template = None
+
+        # find the indices of columns that cannot be null
+        self._cannotBeNullDexes = []
+        for (i,col) in enumerate(self.iter_column_names()):
+            if col in self.cannot_be_null:
+                self._cannotBeNullDexes.append(i)
+
+
+
+    def _write_recarray(self, chunk, file_handle):
+        """
+        This method takes a recarray (usually returned by querying db_obj),
+        and writes it to the catalog.  This method also handles any transformation
+        of columns that needs to happen before they are written to the catalog.
+
+        @param [in] chunk is the recarray of queried columns to be formatted
+        and written to the catalog.
+
+        @param [in] file_handle is a file handle pointing to the file where
+        the catalog is being written.
+        """
+
+        self._set_current_chunk(chunk)
+        chunk_cols = [self.transformations[col](self.column_by_name(col))
+                      if col in self.transformations.keys() else
+                      self.column_by_name(col)
+                      for col in self.iter_column_names()]
+
+        # Create the template with the first chunk
+        if self._template is None:
+            self._template = self._make_line_template(chunk_cols)
+
+        # use a generator expression for lines rather than a list
+        # for memory efficiency
+        file_handle.writelines(self._template % line
+                               for line in zip(*chunk_cols)
+                               if numpy.array([not is_null(line[i]) for i in self._cannotBeNullDexes]).all())
+                               # the last boolean in this line causes a row not to be printed if it has
+                               # a null value in one of the columns that cannot be null; it is ignored
+                               # if no columns are specified by cannot_be_null
+
+
 
     def iter_catalog(self, chunk_size=None):
         db_required_columns = self.db_required_columns()
