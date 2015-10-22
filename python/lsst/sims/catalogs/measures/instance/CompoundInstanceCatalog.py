@@ -235,6 +235,10 @@ class CompoundInstanceCatalog(object):
                                 master_colnames[ix][iy] = name_map[ix][name]
 
                     local_recarray = chunk[master_colnames[ix]].view(numpy.recarray)
+
+                    local_recarray.flags['WRITEABLE'] = False # so numpy does not raise a warning
+                                                              # because it thinks we may accidentally
+                                                              # write to this array
                     if new_dtype_list[ix] is None:
                         new_dtype = numpy.dtype([
                                                 tuple([dd.replace(catName+'_','')] + [local_recarray.dtype[dd]]) \
