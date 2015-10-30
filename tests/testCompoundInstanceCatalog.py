@@ -31,8 +31,14 @@ class negativeDecCompound_table2(CompoundCatalogDBObject):
         return results
 
 
+class cartoonDBbase(object):
 
-class table1DB1(CatalogDBObject):
+    driver = 'sqlite'
+    database = os.path.join(getPackageDir('sims_catalogs_measures'),
+                            'tests', 'scratchSpace', 'compound_db.db')
+
+
+class table1DB1(CatalogDBObject, cartoonDBbase):
     tableid = 'table1'
     objid = 'table1DB1'
     idColKey = 'id'
@@ -47,7 +53,7 @@ class table1DB1(CatalogDBObject):
                ('ddec', None, numpy.float)]
 
 
-class table1DB2(CatalogDBObject):
+class table1DB2(CatalogDBObject, cartoonDBbase):
     tableid = 'table1'
     objid = 'table1DB2'
     idColKey = 'id'
@@ -62,7 +68,7 @@ class table1DB2(CatalogDBObject):
                ('ddec', None, numpy.float)]
 
 
-class table2DB1(CatalogDBObject):
+class table2DB1(CatalogDBObject, cartoonDBbase):
     tableid = 'table2'
     objid = 'table2DB1'
     idColKey = 'id'
@@ -74,7 +80,7 @@ class table2DB1(CatalogDBObject):
                ('mag', None, numpy.float)]
 
 
-class table2DB2(CatalogDBObject):
+class table2DB2(CatalogDBObject, cartoonDBbase):
     tableid = 'table2'
     objid = 'table2DB2'
     idColKey = 'id'
@@ -220,7 +226,7 @@ class CompoundCatalogTest(unittest.TestCase):
             for ix, (r, d, m) in enumerate(zip(ra2List, dec2List, mag2List)):
                 output.write('%d %.12f %.12f %.12f\n' % (ix, r, d, m))
 
-        cls.dbName = os.path.join(cls.baseDir, 'compound_db.db')
+        cls.dbName = cartoonDBbase().database
         if os.path.exists(cls.dbName):
             os.unlink(cls.dbName)
 
@@ -248,15 +254,9 @@ class CompoundCatalogTest(unittest.TestCase):
         Test that a CompoundInstanceCatalog produces the expected output
         """
         fileName = os.path.join(self.baseDir, 'simplest_compound_catalog.txt')
-        db1 = table1DB1(database=self.dbName, driver='sqlite')
-        db2 = table1DB2(database=self.dbName, driver='sqlite')
-        db3 = table2DB1(database=self.dbName, driver='sqlite')
 
-        cat1 = Cat1(db1)
-        cat2 = Cat2(db2)
-        cat3 = Cat3(db3)
+        compoundCat = CompoundInstanceCatalog([Cat1, Cat2, Cat3], [table1DB1, table1DB2, table2DB1])
 
-        compoundCat = CompoundInstanceCatalog([cat1, cat2, cat3])
 
         compoundCat.write_catalog(fileName)
 
@@ -310,14 +310,7 @@ class CompoundCatalogTest(unittest.TestCase):
                                   boundLength = (80.0, 25.0),
                                   mjd=53850.0)
 
-        db1 = table1DB1(database=self.dbName, driver='sqlite')
-        db2 = table1DB2(database=self.dbName, driver='sqlite')
-        db3 = table2DB1(database=self.dbName, driver='sqlite')
-        cat1 = Cat1(db1)
-        cat2 = Cat2(db2)
-        cat3 = Cat3(db3)
-
-        compoundCat = CompoundInstanceCatalog([cat1, cat2, cat3],
+        compoundCat = CompoundInstanceCatalog([Cat1, Cat2, Cat3], [table1DB1, table1DB2, table2DB1],
                                               obs_metadata=obs)
 
         compoundCat.write_catalog(fileName)
@@ -397,14 +390,7 @@ class CompoundCatalogTest(unittest.TestCase):
         """
         fileName = os.path.join(self.baseDir, 'compound_constraint_test_cat.txt')
 
-        db1 = table1DB1(database=self.dbName, driver='sqlite')
-        db2 = table1DB2(database=self.dbName, driver='sqlite')
-        db3 = table2DB1(database=self.dbName, driver='sqlite')
-        cat1 = Cat1(db1)
-        cat2 = Cat2(db2)
-        cat3 = Cat3(db3)
-
-        compoundCat = CompoundInstanceCatalog([cat1, cat2, cat3],
+        compoundCat = CompoundInstanceCatalog([Cat1, Cat2, Cat3], [table1DB1, table1DB2, table2DB1],
                                               constraint='mag>20.0')
 
         compoundCat.write_catalog(fileName)
@@ -482,14 +468,7 @@ class CompoundCatalogTest(unittest.TestCase):
                                   boundLength = (80.0, 25.0),
                                   mjd=53850.0)
 
-        db1 = table1DB1(database=self.dbName, driver='sqlite')
-        db2 = table1DB2(database=self.dbName, driver='sqlite')
-        db3 = table2DB1(database=self.dbName, driver='sqlite')
-        cat1 = Cat1(db1)
-        cat2 = Cat2(db2)
-        cat3 = Cat3(db3)
-
-        compoundCat = CompoundInstanceCatalog([cat1, cat2, cat3],
+        compoundCat = CompoundInstanceCatalog([Cat1, Cat2, Cat3], [table1DB1, table1DB2, table2DB1],
                                               obs_metadata=obs,
                                               constraint='mag>20.0')
 
@@ -574,15 +553,8 @@ class CompoundCatalogTest(unittest.TestCase):
         custom CompoundCatalogDBObject
         """
         fileName = os.path.join(self.baseDir, 'simplest_compound_catalog.txt')
-        db1 = table1DB1(database=self.dbName, driver='sqlite')
-        db2 = table1DB2(database=self.dbName, driver='sqlite')
-        db3 = table2DB1(database=self.dbName, driver='sqlite')
 
-        cat1 = Cat1(db1)
-        cat2 = Cat2(db2)
-        cat3 = Cat3(db3)
-
-        compoundCat = CompoundInstanceCatalog([cat1, cat2, cat3], \
+        compoundCat = CompoundInstanceCatalog([Cat1, Cat2, Cat3], [table1DB1, table1DB2, table2DB1],
                                               compoundDBclass=negativeRaCompound)
 
         compoundCat.write_catalog(fileName)
@@ -629,17 +601,11 @@ class CompoundCatalogTest(unittest.TestCase):
         Test that CompoundInstanceCatalog can properly parse multiple CompoundCatalogDBobjects
         """
         fileName = os.path.join(self.baseDir, 'simplest_compound_catalog.txt')
-        db1 = table1DB1(database=self.dbName, driver='sqlite')
-        db2 = table1DB2(database=self.dbName, driver='sqlite')
-        db3 = table2DB1(database=self.dbName, driver='sqlite')
-
-        cat1 = Cat1(db1)
-        cat2 = Cat2(db2)
-        cat3 = Cat3(db3)
 
         # negativeDecComopound_table2 should not come into play, since the
         # multiple queries are directed at table1
-        compoundCat = CompoundInstanceCatalog([cat1, cat2, cat3], \
+        compoundCat = CompoundInstanceCatalog([Cat1, Cat2, Cat3],
+                                              [table1DB1, table1DB2, table2DB1],
                                               compoundDBclass=[negativeDecCompound_table2, negativeRaCompound])
 
         compoundCat.write_catalog(fileName)
@@ -687,17 +653,9 @@ class CompoundCatalogTest(unittest.TestCase):
         two sets of multiple queries, one to table1, one to table2
         """
         fileName = os.path.join(self.baseDir, 'simplest_compound_catalog.txt')
-        db1 = table1DB1(database=self.dbName, driver='sqlite')
-        db2 = table1DB2(database=self.dbName, driver='sqlite')
-        db3 = table2DB1(database=self.dbName, driver='sqlite')
-        db4 = table2DB2(database=self.dbName, driver='sqlite')
 
-        cat1 = Cat1(db1)
-        cat2 = Cat2(db2)
-        cat3 = Cat3(db3)
-        cat4 = Cat4(db4)
-
-        compoundCat = CompoundInstanceCatalog([cat1, cat2, cat3, cat4], \
+        compoundCat = CompoundInstanceCatalog([Cat1, Cat2, Cat3, Cat4],
+                                              [table1DB1, table1DB2, table2DB1, table2DB2],
                                               compoundDBclass=[negativeRaCompound, negativeDecCompound_table2])
 
         compoundCat.write_catalog(fileName)
