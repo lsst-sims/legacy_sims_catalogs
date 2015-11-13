@@ -132,16 +132,6 @@ class InstanceCatalogTestCase(unittest.TestCase):
         self.obsMd = ObservationMetaData(boundType = 'circle', pointingRA = 210.0, pointingDec = -60.0,
                      boundLength=20.0, mjd=52000.,bandpassName='r')
 
-        raObs, decObs = observedFromICRS(np.array([210.0]), np.array([-60.0]), obs_metadata=self.obsMd, epoch=2000.0)
-        dl = haversine(np.radians(210.0), np.radians(-60.0), np.radians(raObs[0]), np.radians(decObs[0]))
-
-        self.offset = 2.0*np.degrees(dl)
-        # offset is the increase in radius due to the fact
-        # that ObservationMetaData._buildBounds increases its
-        # boundLength to account for the difference between
-        # observed and ICRS positions
-
-
     def testStarLike(self):
         """
         Write a couple of catalogs.  Verify that the objects that end up in the catalog fall within the pointing
@@ -194,7 +184,7 @@ class InstanceCatalogTestCase(unittest.TestCase):
             dl = haversine(np.radians(line['raJ2000']), np.radians(line['decJ2000']),
                            self.obsMd._pointingRA, self.obsMd._pointingDec)
 
-            self.assertLess(np.degrees(dl), self.obsMd.boundLength+2.0*self.offset)
+            self.assertLess(np.degrees(dl), self.obsMd.boundLength)
 
         # examine the lines that did not fall in the catalog
         lines_not_in_catalog = np.where(self.starControlData['id'] not in testData['id'])[0]
@@ -207,7 +197,7 @@ class InstanceCatalogTestCase(unittest.TestCase):
                            np.radians(self.starControlData['raJ2000'][ic]),
                            np.radians(self.starControlData['decJ2000'][ic]))
 
-            self.assertGreater(np.degrees(dl), self.obsMd.boundLength+2.0*self.offset)
+            self.assertGreater(np.degrees(dl), self.obsMd.boundLength)
 
 
         if os.path.exists(catName):
@@ -251,7 +241,7 @@ class InstanceCatalogTestCase(unittest.TestCase):
             dl = haversine(np.radians(line['raJ2000']), np.radians(line['decJ2000']),
                            self.obsMd._pointingRA, self.obsMd._pointingDec)
 
-            self.assertLess(np.degrees(dl), self.obsMd.boundLength+2.0*self.offset)
+            self.assertLess(np.degrees(dl), self.obsMd.boundLength)
 
         # examine the lines that did not fall in the catalog
         lines_not_in_catalog = np.where(self.starControlData['id'] not in testData['id'])[0]
@@ -264,7 +254,7 @@ class InstanceCatalogTestCase(unittest.TestCase):
                            np.radians(self.starControlData['raJ2000'][ic]),
                            np.radians(self.starControlData['decJ2000'][ic]))
 
-            self.assertGreater(np.degrees(dl), self.obsMd.boundLength+2.0*self.offset)
+            self.assertGreater(np.degrees(dl), self.obsMd.boundLength)
 
         if os.path.exists(catName):
             os.unlink(catName)
@@ -328,18 +318,6 @@ class boundingBoxTest(unittest.TestCase):
 
         self.obsMdCirc = ObservationMetaData(boundType='circle',pointingRA=self.RAcenter,pointingDec=self.DECcenter,
                          boundLength=self.radius,mjd=52000., bandpassName='r')
-
-        raObs, decObs = observedFromICRS(np.array([self.RAcenter]), np.array([self.DECcenter]), obs_metadata=self.obsMdCirc,
-                                         epoch=2000.0)
-
-        dl = haversine(np.radians(self.RAcenter), np.radians(self.DECcenter), np.radians(raObs[0]), np.radians(decObs[0]))
-
-        self.offset = 2.0*np.degrees(dl)
-        # offset is the increase in radius due to the fact
-        # that ObservationMetaData._buildBounds increases its
-        # boundLength to account for the difference between
-        # observed and ICRS positions
-
 
         self.obsMdBox = ObservationMetaData(boundType='box', pointingRA=0.5*(self.RAmax+self.RAmin),
                         pointingDec=0.5*(self.DECmin+self.DECmax),
@@ -423,7 +401,7 @@ class boundingBoxTest(unittest.TestCase):
             rtest = np.degrees(haversine(np.radians(self.RAcenter), np.radians(self.DECcenter),
                                          np.radians(line[1]), np.radians(line[2])))
 
-            self.assertLess(rtest, self.radius+self.offset)
+            self.assertLess(rtest, self.radius)
 
         myCatalog.write_catalog(catName)
 
@@ -441,7 +419,7 @@ class boundingBoxTest(unittest.TestCase):
             dl = np.degrees(haversine(np.radians(line['raJ2000']), np.radians(line['decJ2000']),
                                       np.radians(self.RAcenter), np.radians(self.DECcenter)))
 
-            self.assertLess(dl, self.radius+self.offset)
+            self.assertLess(dl, self.radius)
 
         ct = 0
         for line in self.starControlData:
@@ -450,7 +428,7 @@ class boundingBoxTest(unittest.TestCase):
                 dl = np.degrees(haversine(np.radians(line['raJ2000']), np.radians(line['decJ2000']),
                                           np.radians(self.RAcenter), np.radians(self.DECcenter)))
 
-                self.assertGreater(dl, self.radius+self.offset)
+                self.assertGreater(dl, self.radius)
 
         self.assertGreater(ct, 0)
 
