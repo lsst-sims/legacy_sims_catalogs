@@ -21,6 +21,17 @@ class BoundsCatalog(InstanceCatalog):
     default_formats = {'f':'%.20f'}
 
 
+def twice_fn(x):
+    return 2.0*x
+
+class TransformationCatalog(InstanceCatalog):
+    catalog_type = 'transformation_catalog'
+    refIdCol = 'id'
+    column_outputs = ['id', 'raJ2000', 'decJ2000']
+    default_formats = {'f':'%.12f'}
+    transformations = {'raJ2000':twice_fn}
+
+
 class BasicCatalog(InstanceCatalog):
     catalog_type = 'basic_catalog'
     refIdCol = 'id'
@@ -71,7 +82,7 @@ def write_star_file_db(file_name):
         for ix, (rr, dd, um, gm, rm, im, zm, ym) in \
             enumerate(zip(ra, dec, umag, gmag, rmag, imag, zmag, ymag)):
 
-            output_file.write('%d %.12e %.12e %.12e %.12e %.12e %.12e %.12e %.12e\n' %
+            output_file.write('%d %.12f %.12f %.12f %.12f %.12f %.12f %.12f %.12f\n' %
                               (ix, rr, dd, um, gm, rm, im, zm, ym))
 
     starDtype = np.dtype([
@@ -254,6 +265,36 @@ class InstanceCatalogTestCase(unittest.TestCase):
                            np.radians(self.starControlData['decJ2000'][ic]))
 
             self.assertGreater(np.degrees(dl), self.obsMd.boundLength+2.0*self.offset)
+
+        if os.path.exists(catName):
+            os.unlink(catName)
+
+
+    def test_transformation(self):
+        """
+        Test that transformations are applied to columns in an InstanceCatalog
+        """
+        catName = os.path.join(getPackageDir('sims_catalogs_measures'), 'tests', 'scratchSpace',
+                               'transformation_catalog.txt')
+
+        if os.path.exists(catName):
+            os.unlink(catName)
+
+        t = self.starDB.getCatalog('transformation_catalog', obs_metadata=self.obsMd)
+        t.write_catalog(catName)
+
+        dtype = np.dtype([
+                         ('id', np.int),
+                         ('raJ2000', np.float),
+                         ('decJ2000', np.float)
+                        ])
+
+        testData = np.genfromtxt(catName, delimiter=', ', dtype=dtype)
+        self.assertGreater(len(testData), 0)
+        for line in testData:
+            ic = np.where(self.starControlData['id']==line['id'])[0][0]
+            self.assertAlmostEqual(line['decJ2000'], self.starControlData['decJ2000'][ic], 5)
+            self.assertAlmostEqual(line['raJ2000'], 2.0*self.starControlData['raJ2000'][ic], 5)
 
         if os.path.exists(catName):
             os.unlink(catName)
