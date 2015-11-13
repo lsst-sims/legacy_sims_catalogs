@@ -346,10 +346,10 @@ class boundingBoxTest(unittest.TestCase):
         myIterator = myCatalog.iter_catalog(chunk_size=10)
 
         for line in myIterator:
-            self.assertTrue(line[1]>self.RAmin)
-            self.assertTrue(line[1]<self.RAmax)
-            self.assertTrue(line[2]>self.DECmin)
-            self.assertTrue(line[2]<self.DECmax)
+            self.assertGreater(line[1], self.RAmin)
+            self.assertLess(line[1], self.RAmax)
+            self.assertGreater(line[2], self.DECmin)
+            self.assertLess(line[2], self.DECmax)
 
         myCatalog.write_catalog(catName)
 
