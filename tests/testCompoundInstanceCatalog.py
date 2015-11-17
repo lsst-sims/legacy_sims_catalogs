@@ -304,10 +304,11 @@ class CompoundCatalogTest(unittest.TestCase):
         properly
         """
         fileName = os.path.join(self.baseDir, 'compound_obs_metadata_test_cat.txt')
-        obs = ObservationMetaData(unrefractedRA = 180.0,
-                                  unrefractedDec = 0.0,
+        obs = ObservationMetaData(pointingRA = 180.0,
+                                  pointingDec = 0.0,
                                   boundType = 'box',
-                                  boundLength = (80.0, 25.0))
+                                  boundLength = (80.0, 25.0),
+                                  mjd=53850.0)
 
         db1 = table1DB1(database=self.dbName, driver='sqlite')
         db2 = table1DB2(database=self.dbName, driver='sqlite')
@@ -475,10 +476,11 @@ class CompoundCatalogTest(unittest.TestCase):
         and a constraint properly
         """
         fileName = os.path.join(self.baseDir, 'compound_obs_metadata_test_cat.txt')
-        obs = ObservationMetaData(unrefractedRA = 180.0,
-                                  unrefractedDec = 0.0,
+        obs = ObservationMetaData(pointingRA = 180.0,
+                                  pointingDec = 0.0,
                                   boundType = 'box',
-                                  boundLength = (80.0, 25.0))
+                                  boundLength = (80.0, 25.0),
+                                  mjd=53850.0)
 
         db1 = table1DB1(database=self.dbName, driver='sqlite')
         db2 = table1DB2(database=self.dbName, driver='sqlite')

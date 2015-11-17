@@ -140,7 +140,7 @@ class cartoonValueCatalog(InstanceCatalog):
 class InstanceCatalogMetaDataTest(unittest.TestCase):
     """
     This class will test how Instance catalog handles the metadata
-    class variables (unrefractedRA, unrefractedDec, etc.)
+    class variables (pointingRA, pointingDec, etc.)
     """
 
     @classmethod
@@ -188,8 +188,8 @@ class InstanceCatalogMetaDataTest(unittest.TestCase):
             meanPressure = 500.0, meanHumidity = 0.1, lapseRate = 0.1)
 
         testObsMD = ObservationMetaData(site=testSite,
-            mjd=mjd, unrefractedRA=RA,
-            unrefractedDec=Dec, rotSkyPos=rotSkyPos, bandpassName = 'z')
+            mjd=mjd, pointingRA=RA,
+            pointingDec=Dec, rotSkyPos=rotSkyPos, bandpassName = 'z')
 
         #make sure the correct column names are returned
         #according to class definition

@@ -1,14 +1,13 @@
 from __future__ import with_statement
 import os
-import numpy
+import numpy as np
 import unittest
-import lsst.utils
+from lsst.utils import getPackageDir
 import lsst.utils.tests as utilsTests
 from lsst.sims.utils import ObservationMetaData
-from lsst.sims.catalogs.generation.db import CatalogDBObject
+from lsst.sims.catalogs.generation.db import CatalogDBObject, fileDBObject
 from lsst.sims.catalogs.measures.instance import InstanceCatalog, compound
-import lsst.sims.catalogs.generation.utils.testUtils as tu
-from lsst.sims.utils import haversine
+from lsst.sims.utils import haversine, observedFromICRS
 
 #a class of catalog that outputs all the significant figures in
 #ra and dec so that it can be read back in to make sure that our
@@ -18,18 +17,29 @@ class BoundsCatalog(InstanceCatalog):
     catalog_type = 'bounds_catalog'
     refIdCol = 'id'
     column_outputs = ['id', 'raJ2000', 'decJ2000']
-    transformations = {'raJ2000':numpy.degrees,
-                       'decJ2000':numpy.degrees}
 
     default_formats = {'f':'%.20f'}
+
+
+def twice_fn(x):
+    return 2.0*x
+
+class TransformationCatalog(InstanceCatalog):
+    catalog_type = 'transformation_catalog'
+    refIdCol = 'id'
+    column_outputs = ['id', 'raJ2000', 'decJ2000']
+    default_formats = {'f':'%.12f'}
+    transformations = {'raJ2000':twice_fn}
+
 
 class BasicCatalog(InstanceCatalog):
     catalog_type = 'basic_catalog'
     refIdCol = 'id'
     column_outputs = ['id', 'raJ2000', 'decJ2000', 'umag', 'gmag', 'rmag', 'imag',
                        'zmag', 'ymag']
-    transformations = {'raJ2000':numpy.degrees,
-                       'decJ2000':numpy.degrees}
+
+    default_formats = {'f':'%.12f'}
+
 
 class TestAstMixin(object):
     @compound('ra_corr', 'dec_corr')
@@ -39,13 +49,13 @@ class TestAstMixin(object):
         dec_corr = self.column_by_name('decJ2000')+0.001
         return ra_corr, dec_corr
 
+
 class CustomCatalog(BasicCatalog, TestAstMixin):
     catalog_type = 'custom_catalog'
     refIdCol = 'id'
-    column_outputs = BasicCatalog.column_outputs+['points_corrected']
-    transformations = BasicCatalog.transformations
-    transformations['ra_corr'] = numpy.degrees
-    transformations['dec_corr'] = numpy.degrees
+    column_outputs = ['id', 'raJ2000', 'decJ2000', 'umag', 'gmag', 'rmag', 'imag',
+                       'zmag', 'ymag', 'ra_corr', 'dec_corr']
+
 
 def compareFiles(file1, file2):
     with open(file1) as fh:
@@ -54,87 +64,252 @@ def compareFiles(file1, file2):
         str2 = "".join(fh.readlines())
     return str1 == str2
 
+
+def write_star_file_db(file_name):
+
+    np.random.seed(88)
+    nstars = 10000
+    ra = np.random.random_sample(nstars)*360.0
+    dec = (np.random.random_sample(nstars)-0.5)*180.0
+    umag = np.random.random_sample(nstars)*10.0 + 15.0
+    gmag = np.random.random_sample(nstars)*10.0 + 15.0
+    rmag = np.random.random_sample(nstars)*10.0 + 15.0
+    imag = np.random.random_sample(nstars)*10.0 + 15.0
+    zmag = np.random.random_sample(nstars)*10.0 + 15.0
+    ymag = np.random.random_sample(nstars)*10.0 + 15.0
+
+    with open(file_name, 'w') as output_file:
+        for ix, (rr, dd, um, gm, rm, im, zm, ym) in \
+            enumerate(zip(ra, dec, umag, gmag, rmag, imag, zmag, ymag)):
+
+            output_file.write('%d %.12f %.12f %.12f %.12f %.12f %.12f %.12f %.12f\n' %
+                              (ix, rr, dd, um, gm, rm, im, zm, ym))
+
+    starDtype = np.dtype([
+                          ('id', np.int),
+                          ('raJ2000', np.float),
+                          ('decJ2000', np.float),
+                          ('umag', np.float),
+                          ('gmag', np.float),
+                          ('rmag', np.float),
+                          ('imag', np.float),
+                          ('zmag', np.float),
+                          ('ymag', np.float)
+                        ])
+
+
+    starDB = fileDBObject(file_name, runtable='stars', dtype=starDtype, idColKey='id')
+    starDB.raColName = 'raJ2000'
+    starDB.decColName = 'decJ2000'
+
+    controlData = np.genfromtxt(file_name, dtype=starDtype)
+
+    return starDB, controlData
+
+
 class InstanceCatalogTestCase(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        if os.path.exists('icStarTestDatabase.db'):
-            os.unlink('icStarTestDatabase.db')
-        if os.path.exists('icGalTestDatabase.db'):
-            os.unlink('icGalTestDatabase.db')
-        tu.makeStarTestDB(filename='icStarTestDatabase.db', size=100000, seedVal=1)
-        tu.makeGalTestDB(filename='icGalTestDatabase.db', size=100000, seedVal=1)
+
+        cls.starTextName = os.path.join(getPackageDir('sims_catalogs_measures'), 'tests',
+                                        'scratchSpace', 'icStarTestCatalog.txt')
+
+        if os.path.exists(cls.starTextName):
+            os.unlink(cls.starTextName)
+
+        cls.starDB, cls.starControlData = write_star_file_db(cls.starTextName)
+
 
     @classmethod
     def tearDownClass(cls):
-        if os.path.exists('icStarTestDatabase.db'):
-            os.unlink('icStarTestDatabase.db')
-        if os.path.exists('icGalTestDatabase.db'):
-            os.unlink('icGalTestDatabase.db')
+
+        if os.path.exists(cls.starTextName):
+            os.unlink(cls.starTextName)
+
 
     def setUp(self):
-        self.obsMd = ObservationMetaData(boundType = 'circle', unrefractedRA = 210.0, unrefractedDec = -60.0,
-                     boundLength=1.75, mjd=52000.,bandpassName='r')
-
-        self.mystars = CatalogDBObject.from_objid('teststars', driver='sqlite', database='icStarTestDatabase.db')
-
-        self.mygals = CatalogDBObject.from_objid('testgals', driver='sqlite', database='icGalTestDatabase.db')
-
-        self.basedir = lsst.utils.getPackageDir('sims_catalogs_measures')+"/tests/"
-
-    def tearDown(self):
-        del self.obsMd
-        del self.mystars
-        del self.mygals
-        del self.basedir
+        self.obsMd = ObservationMetaData(boundType = 'circle', pointingRA = 210.0, pointingDec = -60.0,
+                     boundLength=20.0, mjd=52000.,bandpassName='r')
 
     def testStarLike(self):
+        """
+        Write a couple of catalogs.  Verify that the objects that end up in the catalog fall within the pointing
+        and that the objects that do not end up in the catalog fall outside of the pointing
+        """
 
-        t = self.mystars.getCatalog('custom_catalog', obs_metadata=self.obsMd)
-        t.write_catalog('test_CUSTOM.out')
+        catName = os.path.join(getPackageDir('sims_catalogs_measures'), 'tests', 'scratchSpace', '_starLikeCat.txt')
 
-        self.assertTrue(compareFiles('test_CUSTOM.out', self.basedir+'testdata/CUSTOM_STAR.out'))
-        os.unlink('test_CUSTOM.out')
+        if os.path.exists(catName):
+            os.unlink(catName)
 
-        t = self.mystars.getCatalog('basic_catalog', obs_metadata=self.obsMd)
-        t.write_catalog('test_BASIC.out')
+        # this dtype corresponds to the outputs of the catalog
+        dtype = np.dtype([
+                          ('id', np.int),
+                          ('raJ2000', np.float),
+                          ('decJ2000', np.float),
+                          ('umag', np.float),
+                          ('gmag', np.float),
+                          ('rmag', np.float),
+                          ('imag', np.float),
+                          ('zmag', np.float),
+                          ('ymag', np.float),
+                          ('ra_corr', np.float),
+                          ('dec_corr', np.float)
+                        ])
 
-        self.assertTrue(compareFiles('test_BASIC.out', self.basedir+'testdata/BASIC_STAR.out'))
-        os.unlink('test_BASIC.out')
+        t = self.starDB.getCatalog('custom_catalog', obs_metadata=self.obsMd)
+        t.write_catalog(catName)
 
-    def testGalLike(self):
+        testData = np.genfromtxt(catName, delimiter = ', ', dtype=dtype)
 
-        t = self.mygals.getCatalog('custom_catalog', obs_metadata=self.obsMd)
-        t.write_catalog('test_CUSTOM.out')
+        # make sure that something ended up in the catalog
+        self.assertGreater(len(testData), 0)
 
-        self.assertTrue(compareFiles('test_CUSTOM.out', self.basedir+'testdata/CUSTOM_GAL.out'))
-        os.unlink('test_CUSTOM.out')
+        # iterate over the lines in the catalog
+        # verify that those line exist in the control data
+        # also verify that those lines fall within the requested field of view
+        for line in testData:
+            ic = np.where(self.starControlData['id']==line['id'])[0][0]
+            self.assertAlmostEqual(line['umag'], self.starControlData['umag'][ic], 6)
+            self.assertAlmostEqual(line['gmag'], self.starControlData['gmag'][ic], 6)
+            self.assertAlmostEqual(line['rmag'], self.starControlData['rmag'][ic], 6)
+            self.assertAlmostEqual(line['imag'], self.starControlData['imag'][ic], 6)
+            self.assertAlmostEqual(line['zmag'], self.starControlData['zmag'][ic], 6)
+            self.assertAlmostEqual(line['ymag'], self.starControlData['ymag'][ic], 6)
+            self.assertAlmostEqual(line['raJ2000'], self.starControlData['raJ2000'][ic], 6)
+            self.assertAlmostEqual(line['decJ2000'], self.starControlData['decJ2000'][ic], 6)
+            self.assertAlmostEqual(line['ra_corr'], line['raJ2000']+0.001, 6)
+            self.assertAlmostEqual(line['dec_corr'], line['decJ2000']+0.001, 6)
+            dl = haversine(np.radians(line['raJ2000']), np.radians(line['decJ2000']),
+                           self.obsMd._pointingRA, self.obsMd._pointingDec)
 
-        t = self.mygals.getCatalog('basic_catalog', obs_metadata=self.obsMd)
-        t.write_catalog('test_BASIC.out')
+            # the 0.1 degree offset is because ObservationMetaData
+            # may have had to adjust the boundLength to accommodate
+            # the transformation from observed to ICRS coordinates
+            self.assertLess(np.degrees(dl), self.obsMd.boundLength+0.1)
 
-        self.assertTrue(compareFiles('test_BASIC.out', self.basedir+'testdata/BASIC_GAL.out'))
-        os.unlink('test_BASIC.out')
+        # examine the lines that did not fall in the catalog
+        lines_not_in_catalog = np.where(self.starControlData['id'] not in testData['id'])[0]
 
-def controlHaversine(ra1deg,dec1deg,ra2deg,dec2deg):
-    #for use testing circular bounds
-    raw = haversine(numpy.radians(ra1deg), numpy.radians(dec1deg),
-                    numpy.radians(ra2deg), numpy.radians(dec2deg))
+        self.assertGreater(len(lines_not_in_catalog), 0)
 
-    return numpy.degrees(raw)
+        # make sure that those lines are, indeed, outside of the field of view
+        for ic in lines_not_in_catalog:
+            dl = haversine(self.obsMd._pointingRA, self.obsMd._pointingDec,
+                           np.radians(self.starControlData['raJ2000'][ic]),
+                           np.radians(self.starControlData['decJ2000'][ic]))
+
+            self.assertGreater(np.degrees(dl), self.obsMd.boundLength)
+
+
+        if os.path.exists(catName):
+            os.unlink(catName)
+
+        # now do the same thing for the basic catalog class
+
+        dtype = np.dtype([
+                          ('id', np.int),
+                          ('raJ2000', np.float),
+                          ('decJ2000', np.float),
+                          ('umag', np.float),
+                          ('gmag', np.float),
+                          ('rmag', np.float),
+                          ('imag', np.float),
+                          ('zmag', np.float),
+                          ('ymag', np.float)
+                        ])
+
+        t = self.starDB.getCatalog('basic_catalog', obs_metadata=self.obsMd)
+        t.write_catalog(catName)
+
+        testData = np.genfromtxt(catName, delimiter = ', ', dtype=dtype)
+
+        # make sure that something ended up in the catalog
+        self.assertGreater(len(testData), 0)
+
+        # iterate over the lines in the catalog
+        # verify that those line exist in the control data
+        # also verify that those lines fall within the requested field of view
+        for line in testData:
+            ic = np.where(self.starControlData['id']==line['id'])[0][0]
+            self.assertAlmostEqual(line['umag'], self.starControlData['umag'][ic], 6)
+            self.assertAlmostEqual(line['gmag'], self.starControlData['gmag'][ic], 6)
+            self.assertAlmostEqual(line['rmag'], self.starControlData['rmag'][ic], 6)
+            self.assertAlmostEqual(line['imag'], self.starControlData['imag'][ic], 6)
+            self.assertAlmostEqual(line['zmag'], self.starControlData['zmag'][ic], 6)
+            self.assertAlmostEqual(line['ymag'], self.starControlData['ymag'][ic], 6)
+            self.assertAlmostEqual(line['raJ2000'], self.starControlData['raJ2000'][ic], 6)
+            self.assertAlmostEqual(line['decJ2000'], self.starControlData['decJ2000'][ic], 6)
+            dl = haversine(np.radians(line['raJ2000']), np.radians(line['decJ2000']),
+                           self.obsMd._pointingRA, self.obsMd._pointingDec)
+
+            # the 0.1 degree offset is because ObservationMetaData
+            # may have had to adjust the boundLength to accommodate
+            # the transformation from observed to ICRS coordinates
+            self.assertLess(np.degrees(dl), self.obsMd.boundLength+0.1)
+
+        # examine the lines that did not fall in the catalog
+        lines_not_in_catalog = np.where(self.starControlData['id'] not in testData['id'])[0]
+
+        self.assertGreater(len(lines_not_in_catalog), 0)
+
+        # make sure that those lines are, indeed, outside of the field of view
+        for ic in lines_not_in_catalog:
+            dl = haversine(self.obsMd._pointingRA, self.obsMd._pointingDec,
+                           np.radians(self.starControlData['raJ2000'][ic]),
+                           np.radians(self.starControlData['decJ2000'][ic]))
+
+            self.assertGreater(np.degrees(dl), self.obsMd.boundLength)
+
+        if os.path.exists(catName):
+            os.unlink(catName)
+
+
+    def test_transformation(self):
+        """
+        Test that transformations are applied to columns in an InstanceCatalog
+        """
+        catName = os.path.join(getPackageDir('sims_catalogs_measures'), 'tests', 'scratchSpace',
+                               'transformation_catalog.txt')
+
+        if os.path.exists(catName):
+            os.unlink(catName)
+
+        t = self.starDB.getCatalog('transformation_catalog', obs_metadata=self.obsMd)
+        t.write_catalog(catName)
+
+        dtype = np.dtype([
+                         ('id', np.int),
+                         ('raJ2000', np.float),
+                         ('decJ2000', np.float)
+                        ])
+
+        testData = np.genfromtxt(catName, delimiter=', ', dtype=dtype)
+        self.assertGreater(len(testData), 0)
+        for line in testData:
+            ic = np.where(self.starControlData['id']==line['id'])[0][0]
+            self.assertAlmostEqual(line['decJ2000'], self.starControlData['decJ2000'][ic], 5)
+            self.assertAlmostEqual(line['raJ2000'], 2.0*self.starControlData['raJ2000'][ic], 5)
+
+        if os.path.exists(catName):
+            os.unlink(catName)
+
 
 class boundingBoxTest(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        if os.path.exists('bboxStarTestDatabase.db'):
-            os.unlink('bboxStarTestDatabase.db')
-        tu.makeStarTestDB(filename='bboxStarTestDatabase.db', size=100000, seedVal=1)
+        cls.starTextName = os.path.join(getPackageDir('sims_catalogs_measures'), 'tests', 'scratchSpace',
+                                        'bbStarTestCatalog.txt')
+
+        cls.starDB, cls.starControlData = write_star_file_db(cls.starTextName)
 
     @classmethod
     def tearDownClass(cls):
-        if os.path.exists('bboxStarTestDatabase.db'):
-            os.unlink('bboxStarTestDatabase.db')
+        if os.path.exists(cls.starTextName):
+            os.unlink(cls.starTextName)
+
 
     def setUp(self):
 
@@ -145,30 +320,16 @@ class boundingBoxTest(unittest.TestCase):
 
         self.RAcenter = 200.
         self.DECcenter = -60.
-        self.radius = 40.0
+        self.radius = 10.0
 
-
-        self.obsMdCirc = ObservationMetaData(boundType='circle',unrefractedRA=self.RAcenter,unrefractedDec=self.DECcenter,
+        self.obsMdCirc = ObservationMetaData(boundType='circle',pointingRA=self.RAcenter,pointingDec=self.DECcenter,
                          boundLength=self.radius,mjd=52000., bandpassName='r')
 
-        self.obsMdBox = ObservationMetaData(boundType='box', unrefractedRA=0.5*(self.RAmax+self.RAmin),
-                        unrefractedDec=0.5*(self.DECmin+self.DECmax),
-                        boundLength=numpy.array([0.5*(self.RAmax-self.RAmin),0.5*(self.DECmax-self.DECmin)]),
+        self.obsMdBox = ObservationMetaData(boundType='box', pointingRA=0.5*(self.RAmax+self.RAmin),
+                        pointingDec=0.5*(self.DECmin+self.DECmax),
+                        boundLength=np.array([0.5*(self.RAmax-self.RAmin),0.5*(self.DECmax-self.DECmin)]),
                         mjd=52000., bandpassName='r')
 
-        self.mystars = CatalogDBObject.from_objid('teststars', driver='sqlite', database='bboxStarTestDatabase.db')
-
-    def tearDown(self):
-        del self.obsMdCirc
-        del self.obsMdBox
-        del self.mystars
-        del self.RAmin
-        del self.DECmin
-        del self.RAmax
-        del self.DECmax
-        del self.RAcenter
-        del self.DECcenter
-        del self.radius
 
 
     def testBoxBounds(self):
@@ -176,52 +337,54 @@ class boundingBoxTest(unittest.TestCase):
         Make sure that box_bound_constraint in sims.catalogs.generation.db.dbConnection.py
         does not admit any objects outside of the bounding box
         """
-        myCatalog = self.mystars.getCatalog('bounds_catalog',obs_metadata = self.obsMdBox)
+
+        catName = os.path.join(getPackageDir('sims_catalogs_measures'), 'tests',
+                               'scratchSpace', 'box_test_catalog.txt')
+
+        myCatalog = self.starDB.getCatalog('bounds_catalog',obs_metadata = self.obsMdBox)
 
         myIterator = myCatalog.iter_catalog(chunk_size=10)
 
         for line in myIterator:
-            self.assertTrue(line[1]>self.RAmin)
-            self.assertTrue(line[1]<self.RAmax)
-            self.assertTrue(line[2]>self.DECmin)
-            self.assertTrue(line[2]<self.DECmax)
+            self.assertGreater(line[1], self.RAmin)
+            self.assertLess(line[1], self.RAmax)
+            self.assertGreater(line[2], self.DECmin)
+            self.assertLess(line[2], self.DECmax)
 
-        myCatalog.write_catalog('box_test_catalog.txt')
+        myCatalog.write_catalog(catName)
 
         #now we will test for the completeness of the box bounds
-        obsMdControl = ObservationMetaData(boundType = 'box',
-                       unrefractedRA = self.RAcenter,unrefractedDec=self.DECcenter,
-                       boundLength=20.0,mjd=52000.0, bandpassName = 'r')
 
-        controlCatalog = self.mystars.getCatalog('bounds_catalog',obs_metadata = obsMdControl)
-        controlCatalog.write_catalog('box_control_catalog.txt')
+        dtype = np.dtype([('id', np.int),
+                          ('raJ2000', np.float),
+                          ('decJ2000', np.float)])
 
-        ftest = open('box_test_catalog.txt')
-        idtest = []
-        for longline in ftest:
-            line = longline.split()
+        testData = np.genfromtxt(catName, dtype=dtype, delimiter=', ')
 
-            #note that catalogs are output with commas at the end of values
-            idtest.append(line[0][:-1])
-        ftest.close()
+        for line in testData:
+            self.assertGreater(line['raJ2000'], self.RAmin)
+            self.assertGreater(line['decJ2000'], self.DECmin)
+            self.assertLess(line['raJ2000'], self.RAmax)
+            self.assertLess(line['decJ2000'], self.DECmax)
 
-        fcontrol = open('box_control_catalog.txt')
-        for longline in fcontrol:
-            line = longline.split()
-            if line[0] != '#id,':
-                #note that catalogs are output with commas at the end of values
-                idcontrol = line[0][:-1]
-                racontrol = float(line[1][:-1])
-                deccontrol = float(line[2][:-1])
+        ct = 0
+        for line in self.starControlData:
+            if line['id'] not in testData['id']:
+                ct += 1
+                in_bounds = (line['raJ2000']<self.RAmax) and (line['raJ2000']>self.RAmin) \
+                            and (line['decJ2000']<self.DECmax) and (line['decJ2000']>self.DECmin)
 
-                if racontrol < self.RAmax and racontrol > self.RAmin \
-                and deccontrol < self.DECmax and deccontrol > self.DECmin:
+                msg = 'violates bounds\nRA: %e < %e <%e\nDec: %e < %e < %e\n' % \
+                       (self.RAmin, line['raJ2000'], self.RAmax,
+                        self.DECmin, line['decJ2000'], self.DECmax)
 
-                    self.assertTrue(idcontrol in idtest)
 
-        fcontrol.close()
-        os.unlink('box_control_catalog.txt')
-        os.unlink('box_test_catalog.txt')
+                self.assertFalse(in_bounds, msg=msg)
+
+        self.assertGreater(ct, 0)
+
+        if os.path.exists(catName):
+            os.unlink(catName)
 
 
     def testCircBounds(self):
@@ -231,50 +394,54 @@ class boundingBoxTest(unittest.TestCase):
         does not admit any objects outside of the bounding circle
         """
 
-        myCatalog = self.mystars.getCatalog('bounds_catalog',obs_metadata = self.obsMdCirc)
+        catName = os.path.join(getPackageDir('sims_catalogs_measures'), 'tests', 'scratchSpace',
+                               'circular_test_catalog.txt')
+
+        if os.path.exists(catName):
+            os.unlink(catName)
+
+        myCatalog = self.starDB.getCatalog('bounds_catalog',obs_metadata = self.obsMdCirc)
         myIterator = myCatalog.iter_catalog(chunk_size=10)
 
         for line in myIterator:
-            rtest = controlHaversine(self.RAcenter, self.DECcenter, line[1], line[2])
-            self.assertTrue(rtest<self.radius)
+            rtest = np.degrees(haversine(np.radians(self.RAcenter), np.radians(self.DECcenter),
+                                         np.radians(line[1]), np.radians(line[2])))
 
-        myCatalog.write_catalog('circular_test_catalog.txt')
+            self.assertLess(rtest, self.radius)
+
+        myCatalog.write_catalog(catName)
 
         #now we will test for the completeness of the circular bounds
-        obsMdControl = ObservationMetaData(boundType='box',unrefractedRA=self.RAcenter,unrefractedDec=self.DECcenter,
-                       boundLength=70.0,mjd=52000.0, bandpassName = 'r')
 
-        controlCatalog = self.mystars.getCatalog('bounds_catalog',obs_metadata = obsMdControl)
-        controlCatalog.write_catalog('circular_control_catalog.txt')
+        dtype = np.dtype([('id', np.int),
+                          ('raJ2000', np.float),
+                          ('decJ2000', np.float)])
 
-        ftest = open('circular_test_catalog.txt')
-        idtest = []
-        for longline in ftest:
-            line = longline.split()
+        testData = np.genfromtxt(catName, dtype=dtype, delimiter=', ')
 
-            #note that the catalogs are output with commas at the end of values
+        self.assertGreater(len(testData), 0)
 
-            idtest.append(line[0][:-1])
-        ftest.close()
+        for line in testData:
+            dl = np.degrees(haversine(np.radians(line['raJ2000']), np.radians(line['decJ2000']),
+                                      np.radians(self.RAcenter), np.radians(self.DECcenter)))
+
+            self.assertLess(dl, self.radius)
+
+        ct = 0
+        for line in self.starControlData:
+            if line['id'] not in testData['id']:
+                ct += 1
+                dl = np.degrees(haversine(np.radians(line['raJ2000']), np.radians(line['decJ2000']),
+                                          np.radians(self.RAcenter), np.radians(self.DECcenter)))
+
+                self.assertGreater(dl, self.radius)
+
+        self.assertGreater(ct, 0)
+
+        if os.path.exists(catName):
+            os.unlink(catName)
 
 
-        fcontrol = open('circular_control_catalog.txt')
-        for longline in fcontrol:
-            line=longline.split()
-            if line[0]!='#id,':
-
-                #note that the catalogs are output with commas at the end of values
-                idcontrol = line[0][:-1]
-                racontrol = float(line[1][:-1])
-                deccontrol = float(line[2][:-1])
-                rr = controlHaversine(self.RAcenter, self.DECcenter, racontrol, deccontrol)
-
-                if rr < self.radius:
-                    self.assertTrue(idcontrol in idtest)
-
-        fcontrol.close()
-        os.unlink('circular_control_catalog.txt')
-        os.unlink('circular_test_catalog.txt')
 
 def suite():
     """Returns a suite containing all the test cases in this module."""
