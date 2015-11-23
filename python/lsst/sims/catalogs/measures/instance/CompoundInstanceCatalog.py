@@ -243,8 +243,12 @@ class CompoundInstanceCatalog(object):
                 dbObjClassList = [self._dbo_list[ix] for ix in row]
                 catList = [instantiated_ic_list[ix] for ix in row]
 
+                # if a connection is already open to the database, use
+                # it rather than opening a new connection
+                best_connection = self.find_a_connection(dbObjClassList[0])
+
                 if self._compoundDBclass is None:
-                    compound_dbo = CompoundCatalogDBObject(dbObjClassList)
+                    compound_dbo = CompoundCatalogDBObject(dbObjClassList, connection=best_connection)
                 elif not hasattr(self._compoundDBclass, '__getitem__'):
                     # if self._compoundDBclass is not a list
                     try:
