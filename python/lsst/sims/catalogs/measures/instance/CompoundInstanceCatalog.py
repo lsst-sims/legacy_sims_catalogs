@@ -1,6 +1,8 @@
 from __future__ import with_statement
 import numpy
+from collections import OrderedDict
 from lsst.sims.catalogs.generation.db import CompoundCatalogDBObject
+
 
 class CompoundInstanceCatalog(object):
     """
@@ -8,20 +10,23 @@ class CompoundInstanceCatalog(object):
     several disparate InstanceCatalog instantiations that will ultimately
     be written to the same output catalog.
 
-    You pass the constructor a list of InstanceCatalog instantiations,
-    and ObservationMetaData, and an optional SQL constraint.
+    You pass the constructor a list of InstanceCatalog classes, a list of
+    CatalogDBObject classes, and ObservationMetaData, and an optional SQL constraint.
 
     The write_catalog method then writes all of the InstanceCatalogs to one
     ASCII file using the same API as InstanceCatalog.write_catalog.
     """
 
-    def __init__(self, instanceCatalogList, obs_metadata=None, constraint=None,
-                 compoundDBclass = None):
+    def __init__(self, instanceCatalogClassList, catalogDBObjectClassList,
+                 obs_metadata=None, constraint=None, compoundDBclass = None):
         """
-        @param [in] instanceCatalogList is a list of the InstanceCatalog
-        instantiations to be combined into one output catalog.  Note, these
-        catalogs could come with their own CatalogDBObjects.  This method
-        will do the work of combining them into CompoundCatalogDBObjects.
+        @param [in] instanceCatalogClassList is a list of the InstanceCatalog
+        classes to be combined into one output catalog.
+
+        @param [in] catalogDBObjectClassList is a list of the CatalogDBObject
+        classes to be associated with the InstanceCatalog classes in
+        instanceCatalogClassList.  There should be one CatalogDBObject class
+        for each InstanceCatalogClass.
 
         @param [in] obs_metadata is the ObservationMetaData describing
         the telescope pointing
@@ -44,11 +49,10 @@ class CompoundInstanceCatalog(object):
 
         self._compoundDBclass = compoundDBclass
         self._obs_metadata = obs_metadata
-        self._dbo_list = []
-        self._ic_list = instanceCatalogList
+        self._dbo_list = catalogDBObjectClassList
+        self._ic_list = instanceCatalogClassList
         self._constraint = constraint
-        for ic in self._ic_list:
-            self._dbo_list.append(ic.db_obj)
+        self._active_connections = []
 
         assigned = [False]*len(self._dbo_list)
         self._dbObjectGroupList = []
@@ -79,17 +83,101 @@ class CompoundInstanceCatalog(object):
         @param [out] a boolean stating whether or not db1 and db2
         query the same table of the same database
         """
+
+        if hasattr(db1, 'host'):
+            host1 = db1.host
+        else:
+            host1 = None
+
+        if hasattr(db2, 'host'):
+            host2 = db2.host
+        else:
+            host2 = None
+
+        if hasattr(db1, 'port'):
+            port1 = db1.port
+        else:
+            port1 = None
+
+        if hasattr(db2, 'port'):
+            port2 = db2.port
+        else:
+            port2 = None
+
+        if hasattr(db1, 'driver'):
+            driver1 = db1.driver
+        else:
+            driver1 = None
+
+        if hasattr(db2, 'driver'):
+            driver2 = db2.driver
+        else:
+            driver2 = None
+
+
         if db1.tableid != db2.tableid:
             return False
-        if db1.host != db2.host:
+        if host1 != host2:
             return False
         if db1.database != db2.database:
             return False
-        if db1.port != db2.port:
+        if port1 != port2:
             return False
-        if db1.driver != db2.driver:
+        if driver1 != driver2:
             return False
         return True
+
+
+    def find_a_connection(self, dboClass):
+        """
+        Find an active database connection for a DBObject
+
+        @param [in] dbo is a DBObject class that needs to be connected
+
+        @param [out] returns a connection of self._active_connections
+        that suits the DBObject.  Returns None otherwise.
+        """
+
+        if hasattr(dboClass, 'database'):
+            desired_database = dboClass.database
+        else:
+            desired_database = None
+
+        if hasattr(dboClass, 'driver'):
+            desired_driver = dboClass.driver
+        else:
+            desired_driver = None
+
+        if hasattr(dboClass, 'host'):
+            desired_host = dboClass.host
+        else:
+            desired_host = None
+
+        if hasattr(dboClass, 'port'):
+            desired_port = dboClass.port
+        else:
+            desired_port = None
+
+
+        if hasattr(dboClass, 'verbose'):
+            desired_verbose = dboClass.verbose
+        else:
+            desired_verbose = False
+
+
+        best_connection = None
+
+        for cc in self._active_connections:
+            if cc.database is desired_database and \
+               cc.driver is desired_driver and \
+               cc.host is desired_host and \
+               cc.port is desired_port and \
+               cc.verbose is desired_verbose:
+
+                best_connection = cc
+                break
+
+        return best_connection
 
 
     def write_catalog(self, filename, chunk_size=None, write_header=True, write_mode='w'):
@@ -110,15 +198,30 @@ class CompoundInstanceCatalog(object):
         'a' if you want to append to an existing output file (default: 'w')
         """
 
-        for ic in self._ic_list:
+        instantiated_ic_list = [None]*len(self._ic_list)
+
+        # first, loop over all of the InstanceCatalog and CatalogDBObject classes, pre-processing
+        # them (i.e. verifying that they have access to all of the columns they need)
+        for ix, (icClass, dboClass) in enumerate(zip(self._ic_list, self._dbo_list)):
+            best_connection = self.find_a_connection(dboClass)
+            if best_connection is None:
+                dbo = dboClass()
+                self._active_connections.append(dbo.connection)
+            else:
+                dbo = dboClass(connection=best_connection)
+
+            ic = icClass(dbo, obs_metadata=self._obs_metadata)
             ic._write_pre_process()
+            instantiated_ic_list[ix] = ic
+
 
         for row in self._dbObjectGroupList:
             if len(row)==1:
-                self._ic_list[row[0]]._query_and_write(filename, chunk_size=chunk_size,
-                                                       write_header=write_header, write_mode=write_mode,
-                                                       obs_metadata=self._obs_metadata,
-                                                       constraint=self._constraint)
+                ic = instantiated_ic_list[row[0]]
+                ic._query_and_write(filename, chunk_size=chunk_size,
+                                    write_header=write_header, write_mode=write_mode,
+                                    obs_metadata=self._obs_metadata,
+                                    constraint=self._constraint)
                 write_mode = 'a'
                 write_header = False
 
@@ -137,33 +240,37 @@ class CompoundInstanceCatalog(object):
 
         for row in self._dbObjectGroupList:
             if len(row)>1:
-                dbObjList = [self._dbo_list[ix] for ix in row]
-                catList = [self._ic_list[ix] for ix in row]
+                dbObjClassList = [self._dbo_list[ix] for ix in row]
+                catList = [instantiated_ic_list[ix] for ix in row]
+
+                # if a connection is already open to the database, use
+                # it rather than opening a new connection
+                best_connection = self.find_a_connection(dbObjClassList[0])
 
                 if self._compoundDBclass is None:
-                    compound_dbo = CompoundCatalogDBObject(dbObjList)
+                    compound_dbo = CompoundCatalogDBObject(dbObjClassList, connection=best_connection)
                 elif not hasattr(self._compoundDBclass, '__getitem__'):
                     # if self._compoundDBclass is not a list
                     try:
-                        compound_dbo = self._compoundDBclass(dbObjList)
+                        compound_dbo = self._compoundDBclass(dbObjClassList)
                     except:
-                        compound_dbo = default_compound_dbo(dbObjList)
+                        compound_dbo = default_compound_dbo(dbObjClassList)
                 else:
                     compound_dbo = None
                     for candidate in self._compoundDBclass:
                         use_it = True
                         if False in [candidate._table_restriction is not None \
                                      and dbo.tableid in candidate._table_restriction \
-                                     for dbo in dbObjList]:
+                                     for dbo in dbObjClassList]:
 
                             use_it = False
 
                         if use_it:
-                            compound_dbo = candidate(dbObjList)
+                            compound_dbo = candidate(dbObjClassList)
                             break
 
                     if compound_dbo is None:
-                        compound_dbo = default_compound_dbo(dbObjList)
+                        compound_dbo = default_compound_dbo(dbObjClassList)
 
 
                 self._write_compound(catList, compound_dbo, filename,
@@ -201,7 +308,7 @@ class CompoundInstanceCatalog(object):
         colnames = []
         master_colnames = []
         name_map = []
-        dbObjNameList = [db.objid for db in compound_dbo._dbObjectList]
+        dbObjNameList = [db.objid for db in compound_dbo._dbObjectClassList]
         for name, cat in zip(dbObjNameList, catList):
             localNames = []
             local_map = {}
