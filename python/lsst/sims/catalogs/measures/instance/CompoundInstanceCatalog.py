@@ -11,7 +11,7 @@ class CompoundInstanceCatalog(object):
     be written to the same output catalog.
 
     You pass the constructor a list of InstanceCatalog classes, a list of
-    CatalogDBObject classes, nd ObservationMetaData, and an optional SQL constraint.
+    CatalogDBObject classes, and ObservationMetaData, and an optional SQL constraint.
 
     The write_catalog method then writes all of the InstanceCatalogs to one
     ASCII file using the same API as InstanceCatalog.write_catalog.
