@@ -184,10 +184,7 @@ class InstanceCatalogTestCase(unittest.TestCase):
             dl = haversine(np.radians(line['raJ2000']), np.radians(line['decJ2000']),
                            self.obsMd._pointingRA, self.obsMd._pointingDec)
 
-            # the 0.1 degree offset is because ObservationMetaData
-            # may have had to adjust the boundLength to accommodate
-            # the transformation from observed to ICRS coordinates
-            self.assertLess(np.degrees(dl), self.obsMd.boundLength+0.1)
+            self.assertLess(np.degrees(dl), self.obsMd.boundLength)
 
         # examine the lines that did not fall in the catalog
         lines_not_in_catalog = np.where(self.starControlData['id'] not in testData['id'])[0]
@@ -244,10 +241,7 @@ class InstanceCatalogTestCase(unittest.TestCase):
             dl = haversine(np.radians(line['raJ2000']), np.radians(line['decJ2000']),
                            self.obsMd._pointingRA, self.obsMd._pointingDec)
 
-            # the 0.1 degree offset is because ObservationMetaData
-            # may have had to adjust the boundLength to accommodate
-            # the transformation from observed to ICRS coordinates
-            self.assertLess(np.degrees(dl), self.obsMd.boundLength+0.1)
+            self.assertLess(np.degrees(dl), self.obsMd.boundLength)
 
         # examine the lines that did not fall in the catalog
         lines_not_in_catalog = np.where(self.starControlData['id'] not in testData['id'])[0]
