@@ -154,6 +154,7 @@ class InstanceCatalog(object):
     # These are the class attributes to be specified in any derived class:
     catalog_type = 'instance_catalog'
     column_outputs = None
+    specFileMap = defaultSpecMap
     default_columns = []
     cannot_be_null = [] # a list of columns which, if null, cause a row not to be printed by write_catalog()
     default_formats = {'S':'%s', 'f':'%.4f', 'i':'%i'}
@@ -195,7 +196,7 @@ class InstanceCatalog(object):
                 yield column
 
     def __init__(self, db_obj, obs_metadata=None, column_outputs=None,
-                 constraint=None, specFileMap=defaultSpecMap):
+                 constraint=None, specFileMap=None):
 
         """
         @param [in] db_obj is an instantiation of the CatalogDBObject class,
@@ -219,8 +220,9 @@ class InstanceCatalog(object):
 
         (defined in sims_catalogs_measures/python/sims/catalogs/measures/instance/fileMaps.py)
 
-        that maps database entries for SED names to actual file paths.  This is optional
-        it will do the right thing by default.
+        that maps database entries for SED names to actual file paths.  If set to None,
+        the class definition of InstanceCatalog ensures that it will be set to
+        defaultSpecMap, which is the correct mapping for the LSST sims_sed_library
         """
 
         self.verbose = db_obj.verbose
@@ -253,7 +255,9 @@ class InstanceCatalog(object):
 
         self._actually_calculated_columns =[] # a list of all the columns referenced by self.column_by_name
         self.constraint = constraint
-        self.specFileMap = specFileMap
+
+        if specFileMap is not None:
+            self.specFileMap = specFileMap
 
         self.refIdCol = self.db_obj.getIdColKey()
 
