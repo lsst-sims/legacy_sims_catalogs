@@ -1,0 +1,38 @@
+If you are reading this, you are interested in contributing a catalog for
+inclusions in the LSST image simulation infrastructure.  This package is meant
+to help with this process.
+
+*** What this is ***
+This package is meant to provide a relatively simple way to develop relatively
+simple contributed catalogs.  Some of what is supported:
+* custom SEDs
+* custom variability models
+* spectrum fitting to a library of standard spectra
+
+*** What this is not ***
+A mechanism to import arbitrarily large datasets into the imSims.  We expect
+most of the contributed catalogs to be a few thousand objects at most.  We
+also only currently support Galactic point source components.  We are working
+on how to do extended and non-Milky Way sources.
+
+*** Steps to composing a catalog. ***
+1. Decide whether the positions you will provide are absolute or relative.  If
+they are relative, we will do our best to tile them on the sky in some
+reasonable way.
+2. Decide on a spectrum for each source.
+  a) The file, Star_SEDS.dat, in data/ gives a list of the stellar spectra
+used in the current version of the image simulation database.  You may choose
+any of these for your objects.
+  b) Include your own spectra.  The (two) columns of the spectra must be space
+delimited and must be wavelength in nanometers and flux density.
+  c) Match an SED from the library of spectra to the six band LSST colors of
+the object.
+3. Decide whether the object should be embedded in a 3D model of dust
+extinction.
+4. If objects are variable, modify the code in python/variability.py to apply 
+the variability model.
+5. Generate the catalog.
+6. Update settings.py
+7. Make sure all lightcurves and spectra are in the right place.
+8. Run the validator to check the catalogs.
+  $> python tests/validateCat.py

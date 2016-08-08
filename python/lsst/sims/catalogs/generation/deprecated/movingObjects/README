@@ -1,0 +1,159 @@
+Example design review documentation for sims/catalogs/movingObjects/movingObject.py
+
+$Id$
+
+*** MovingObject:  *** 
+      
+MovingObject is intended to be a class to be used in source catalog generation, holding information and methods on a single MovingObject. It contains an Orbit object, a dictionary of Ephemeris objects at various dates, as well as 
+some bookkeeping about the object following said orbit, including information about its physical parameters. 
+
+Orbit and Ephemeris are classes holding the orbital information and ephemeris information 
+(and tasks on the ephemeris, such as calculation of the magnitude in a particular filter). These will be described below.
+
+    --- START DATA IN CLASS --- 
+        # only absolutely necessary part of class is orbital elements - set these
+        self.Orbit = Orbit(q, e, i, node, argPeri, timePeri, epoch)
+        #initialize the ephemerides dictionary 
+        self.Ephemerides = {}
+        # now set non-required part of class
+        # values for identifying object and object type (NEO/MBA, etc)
+        self._objid = objid
+        self._objtype = objtype
+        # set values for predicting magnitudes
+        self._magHv = magHv
+        self._phaseGv = phaseGv
+        self._isVar = isVar
+        self._var_t0 = var_t0
+        self._var_timescale = var_timescale
+        self._var_fluxmax = var_fluxmax   # max amplitude of the variability, in flux (in fluxNorm units)
+        self._sedname = sedname
+        self._sedobj = None
+        self._u_opp = u_opp  
+        self._g_opp = g_opp
+        self._r_opp = r_opp
+        self._i_opp = i_opp
+        self._z_opp = z_opp
+        self._y_opp = y_opp
+        self._index = index
+        self._n_par = n_par
+        self._moid = moid
+    --- END DATA IN CLASS  --- 
+class MovingObject(DayMOPSObject):
+    def __init__(self, q, e, i, node, argPeri, timePeri, epoch, 
+                 magHv=-99.9, phaseGv=0.15,
+                 objtype=None, objid=None,
+                 index=None, n_par=None, moid=None, 
+                 isVar=None, var_t0=None, var_timescale=None, var_fluxmax=None,
+                 sedname = None,
+                 u_opp=None, g_opp=None, r_opp=None, i_opp=None, z_opp=None, y_opp=None):
+		 return 
+    def mjdTaiStr(self, mjdTai):
+        """ Convert float/number mjdTai to string so can use for dictionary lookup"""	
+	return mjdTaiStr	 
+    def calcEphemeris(self, mjdTaiList, obscode=807, timescale=4.0):
+	""" Calculate an ephemeris position for a single object at a list of times (or a single time) """
+        """  for many objects, use function in movingObjectList as it should be faster """    	   
+	return
+    def setupSED(self, rootSEDdir):
+        """ instantiate a simObj from lsst_mags for this SED - read in and setup SED """
+        """ rootSEDdir is the directory where the SEDS and throughput for asteroids live """
+	return copy(self._selfobj)
+    def getOrbArrayPyoorb(self, format='COM'):
+        """Return the values of the orbital elements, for use in ephemeris routines """
+	return orbitsArray
+
+
+
+*** Orbit ***  (related to movingObject above. Class becomes a member of movingObject.) 
+    --- START DATA IN CLASS  --- 
+            self._q = q
+            self._e = e
+            self._i = i
+            self._node = node
+            self._argPeri = argPeri
+            self._timePeri = timePeri
+            self._epoch = epoch
+            self._timescale = 3.0
+    --- END DATA IN CLASS  --- 
+class Orbit(DayMOPSObject):
+    def __init__(self, q, e, i, node, argPeri, timePeri, epoch, timescale=3.0):
+        """ Initialize cometary format elements """
+	return
+    def setOrbElements(self, q, e, i, node, argPeri, timePeri, epoch, timescale=3.0, format='COM'):
+        """Set cometary format orbital elements - q(AU)/e/i(deg)/node(deg)/argPeri(deg)/timePeri/epoch of orbit """
+	return
+    def __eq__(self, other):
+        """ Compare orbital elements to check if two sets of orbital elements are exactly the same """
+	return True/False
+    def propagateOrbElements(self, newepoch):
+        """ Propagate a single object to a new epoch, update the orbital parameters. """
+        """  not the fastest way to propagate a multiple objects - use movingObjectList function instead"""
+	return
+
+*** Ephemeris *** (related to movingObject above. Class becomes a member of movingObject.)
+    --- START DATA IN CLASS  --- 
+        self._mjdTai = mjdTai
+        # we should sanity check these inputs (ranges on RA/Dec, etc)
+        self._ra = ra
+        self._dec = dec 
+        self._astErr = None
+        # V mag is from the ephemeris calculation, uses H_v and G (comes from pyoorb)
+        self._magV = magV
+        # these next three likely aren't set until calculating magnitudes
+        self._filter = filter
+        self._fluxnorm = fluxnorm
+        self._magFilter = magFilter
+        self._magErr = None
+        self._snr = None
+        self._magImsim = magImsim
+        # these are set by ephemeris generation
+        self._dradt = dradt
+        self._ddecdt = ddecdt
+        self._distance = distance
+        # these are not yet set by ephemeris generation, but will be
+        self._ddistancedt = ddistancedt
+        self._solar_elongation = solar_elongation
+        self._cart_x = cart_x
+        self._cart_y = cart_y
+        self._cart_z = cart_z
+    --- END DATA IN CLASS  --- 
+class Ephemeris(DayMOPSObject):
+    def __init__(self, mjdTai, ra, dec, magV, filter=None,
+                 fluxnorm=None, magFilter=None, magImsim=None,
+                 dradt=None, ddecdt=None, distance=None, ddistancedt=None, 
+                 solar_elongation=None, cart_x=None, cart_y=None, cart_z=None):
+        """ Initialize ephemeris object. Only ra/dec/v_mag necessary, but other info appreciated"""
+	return
+    def setEphem(self, mjdTai, ra, dec, magV, filter=None, 
+                 fluxnorm=None, magFilter=None, magImsim=None,
+                 dradt=None, ddecdt=None, distance=None, ddistancedt=None, 
+                 solar_elongation=None, cart_x=None, cart_y=None, cart_z=None):
+        """ Set or update ephemeris object members """
+	return
+    def getPosition(self):
+        """ Return the very basics of the position """
+	return mjdTai, ra, dec, dradt, ddecdt, magV
+    def isInFieldofView(self, rafov, decfov, radius_fov):
+        """ Return boolean, is the object in the field of view or not """
+        """ ra/dec/radius should be in degrees """
+	return Boolean
+    def setupBandpass(self, rootSEDdir, filtername):
+        """ Instantiate a teleThruput object for a filter. """
+        """ Not storing the bandpass within the class, because it should be used for > 1 object """
+	return Bandpass
+    def calcMagFilter(self, bandpassFilter, bandpassV, asteroidSED):
+        """Calculate the magnitude of the movingObject at ephemeris['mjdTai'] in 'filter'"""
+        """ Have to read in filter bandpass and asteroid SED elsewhere """
+        """ if generating many similar magnitudes, use movingObjectList calcAllMags instead """
+	return
+    def calcSNR(image_5sigma):
+        """ Calculate the signal to noise of the movingObject at ephemeris['mjdTai'] in filter, """
+        """  with background image_5sigma"""
+	return SNR
+
+
+
+
+
+        
+

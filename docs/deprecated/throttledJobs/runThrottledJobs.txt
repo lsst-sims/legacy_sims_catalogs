@@ -1,0 +1,134 @@
+To run a throttled set of jobs... it's very easy.
+
+Create an input list of obsids.  Call this file "inList.txt".  If you want, you can change the input file name in the code.
+
+Source setupOldAthena.csh to set up the old LSST stack environment on minerva.  That script calls:
+-------------
+unsetenv PYTHONPATH
+source /share/apps/lsst_gcc440/loadLSST.csh
+setenv CAT_SHARE_DATA /share/pogo3/krughoff/shared/
+setup -r ./generation/branches/mssql/
+setup -r ./measures/trunk/
+setup throughputs
+setup python
+setup numpy
+setup pyfits
+-------------
+Obviously, you need to have the directories set up, etc.
+** The above will not work anymore (presumably) since we merged mssql branch
+back to trunk.  My version looks like this:
+.cshrc --
+setenv SHELL /bin/tcsh
+setenv SVN_EDITOR vi
+alias lsst "source /share/apps/lsst_gcc440/loadLSST.csh"
+lsst
+setup lsst
+setup numpy
+setup subversion
+#setenv CAT_SHARE_DATA /share/pogo1/dC3b/pT2/simsSharedAthena/
+setenv CAT_SHARE_DATA /share/pogo3/krughoff/shared/
+setenv PYTHONPATH ${CAT_SHARE_DATA}/py_mods/lib/python2.5/site-packages/
+setenv LD_LIBRARY_PATH ${LD_LIBRARY_PATH}:${CAT_SHARE_DATA}
+setenv OORB_CONF ${CAT_SHARE_DATA}/oorb/main/oorb.conf
+setenv OORB_DATA ${CAT_SHARE_DATA}/oorb/data
+
+~/setupStack.csh --
+setup lsst
+setup -r $HOME/programs/python/generation
+setup -r $HOME/programs/python/measures
+setup pyfits
+unsetup numpy
+setup python
+**
+
+Run testThrottleObsList.py with an argument giving the maximum number of jobs to run simultaneously.  For example:
+python testThrottleObsList.py 50
+**
+The above sets up the pbs scripts and fires them off.
+I changed this to take two arguments.  The number of concurrent jobs and the
+radius.  An optional third argument is the word testMode which fires jobs but
+does not run any catalogs code.  This uses the bin/fakeRunFiles.py ??? code.
+**
+
+There are a few parameters coded in that you can change if you want to.
+
+# The time (in seconds) to sleep between checks for job state
+waitTime = 5
+
+# The radius of the trim catalog FoV
+radDeg = 2.1
+**
+We need to follow Rob's structure for creating the working directory.  I made
+a directory: ~/catalogGenFramework like this
+[krughoff@minerva0 ~/catalogGenFramework]$ ls -lah
+total 52K
+drwxr-xr-x  4 krughoff astro     392 Mar 29 09:42 .
+drwxr-xr-x 12 krughoff krughoff  968 Mar 29 09:45 ..
+lrwxrwxrwx  1 krughoff astro      66 Mar 29 09:37 dumpJobDB.py ->
+generation/python/lsst/sims/catalogs/generation/utils/dumpJobDB.py
+lrwxrwxrwx  1 krughoff astro      47 Mar 29 09:36 generation ->
+/share/home/krughoff/programs/python/generation
+-rw-r--r--  1 krughoff astro    4.4K Mar 29 09:39 inList.txt
+drwxr-xr-x  2 krughoff astro      48 Mar 29 09:42 out
+lrwxrwxrwx  1 krughoff astro      14 Mar 29 09:38 setupOldAthena.csh ->
+setupStack.csh
+lrwxrwxrwx  1 krughoff astro      35 Mar 29 09:38 setupStack.csh ->
+/share/home/krughoff/setupStack.csh
+drwxr-xr-x  2 krughoff astro      48 Mar 29 09:42 sTScripts
+lrwxrwxrwx  1 krughoff astro      76 Mar 29 09:37 testThrottleObsList.py ->
+generation/python/lsst/sims/catalogs/generation/utils/testThrottleObsList.py
+lrwxrwxrwx  1 krughoff astro      79 Mar 29 09:37 testThrottleObsListRun.py ->
+generation/python/lsst/sims/catalogs/generation/utils/testThrottleObsListRun.py
+lrwxrwxrwx  1 krughoff astro      70 Mar 29 09:37 throttleUtils.py ->
+generation/python/lsst/sims/catalogs/generation/utils/throttleUtils.py
+**
+
+For each new job, the code creates a new minerva PBS script in the directory:
+/astro/net/pogo3/rgibson/testFramework011312/sTScripts/
+Obviously, you may want to change this.
+** 
+I think this is only in the testThrottleObsList.py file.  This should be
+turned into an environment variable or argument or something.
+Note that the input list is also named and hardcoded.
+**
+
+Each PBS script looks something like this:
+-------------
+#!/bin/csh
+#PBS -N 99_sTanon_28_99
+#PBS -l qos=astro,walltime=47:59:59,nodes=1:ppn=1
+#PBS -e /share/pogo3/rgibson/testFramework011312/out/sTanon_28_99.err
+#PBS -o /share/pogo3/rgibson/testFramework011312/out/sTanon_28_99.out
+
+cd /share/pogo3/rgibson/testFramework011312
+source setupOldAthena.csh
+python ./testThrottleObsListRun.py anon_28 anon_28_99 88151308 2.1 testMode
+echo Finished.
+-------------
+
+You can see that the script specifies a directory to hold output and error files when each job terminates.  You can change this default directory in testThrottleObsList.py as well.  I delete the scripts in this directory frequently to keep it clean.  Don't delete it while a given job is running, though.
+
+For a script named "tempSTanon_28_99.csh," the job database handle is "anon_28" and this is the 100 (zero-based) job in the sequence, corresponding to obsid 88151308 (in this case) taken from the inList.txt file.
+
+I recommend deleting before each run the ./out/ directory where the output and error scripts are placed.  You'll want to check these files for any problems with the runs.
+
+**
+Cleanup is just the standard showq/qstat |grep krughoff|awk '{print "canceljob
+"$1}' or whatever.
+**
+
+
+You may want to see a graphic display of the script status, based on the information in the job database.  To do this, go to the directory with the java files:
+generation/python/lsst/sims/catalogs/generation/utils/
+
+You can compile the java files as:
+javac -classpath . DisplayLog.java
+
+That should also compile all the dependent classes.
+
+You can run the GUI as:
+java DisplayLog anon ${1} 
+
+where ${1} is the job database identification number associated with the set of jobs that is running, and "anon" is the user name.  So for the job script "tempSTanon_28_99.csh", we would look at the status of all jobs submitted in that category using "java DisplayLog anon 28".
+
+The GUI will look for a few files to be present.  You'll want a link to inList.txt to be local to the java classes.

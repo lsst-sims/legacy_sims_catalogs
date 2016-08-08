@@ -1,0 +1,34 @@
+A version of the code to run on minerva is at:
+/astro/net/pogo1/dC3b/pT2/athena/code/starCat/
+This is where the jobs were actually run and gives examples of how the
+directories are actually structured.
+
+
+1) Obtain a set of star catalog simulations from galfast.  ftp them over to pogo3.
+Andy: Where are the files?
+Rob: /astro/net/pogo3/dC3b/pT2/newCats/
+
+2) You can split a large catalog file into smaller pieces using "sliceMarioStarCat.py inFile numPerSlice".  I usually set numPerSlice to be 5000000 stars.  That size of file takes roughly a day to run on minerva.
+*inFile is opened with gzip.open
+
+3) The stars are broken into groups:  MSRGB, BHB, RRLy, and WDs.  As an example of how to run a single file on Athena, look at runOneBHBAthena.csh.  It sources setupAthena.csh to set up all of the lsst stack stuff, copies the particular slice of catalog it is working on to a local partition1 directory, and then invokes convStarsToDB.py.
+*These scripts are at $CATALOGS_GENERATION/python/lsst/sims/catalogs/generation/starCat (including Rob's version of setupAthena.csh).
+
+4) convStarsToDB.py takes several arguments.  These are described in the file.  Usually you want something like:
+python convStarsToDB.py ${WDIR}${1} 0 0 0 doBHBs onAthena outFile=${WDIR}${1}_out
+where ${WDIR} is the local work directory that holds the input catalog slice file, and ${1} is the name of that file.  An output file ending in _out (or _out.gz) is created containing the output catalog.
+
+You have to tell convStarsToDB which types of stars it is working with, as that affects the spectrum-matching algorithm.  So in this case, you use the argument "doBHBs".  Other types of stars may use "doWDs" or "doRRLys".  The MSRGB set is the default, so there is no option for MSRGBs.  (In retrospect, this is bad... the default behavior should be to exit with an error if no type is specified.)
+
+There is an "onAthena" parameter that tells the code to use minerva pathnames.  If run from the desktop network, this parameter should be omitted.
+
+An "indexKurucz" parameter tells the code to simply create the index of Kurucz models, then exit.  This index is used by the code when it runs to rapidly search for SED models that match a given set of star colors.  You should probably look through the code to see how this works if you want to use it.
+
+The "useALEBV" will generate a new E(B-V) value for each star.  This is time-consuming.  Hopefully, you used the E(B-V) tables (which were generated using the same code as we use here) on hybrid when the galfast simulation was run.  If so, then the E(B-V) values are already coded into the input catalogs and can be read directly from those files.
+--This should really never be used.  This is the same thing that's reported by
+--galfast.  Just useful to make sure galfast is matching up to our models.
+
+--selectStarSED.py contains the code to match up colors to the sed models.
+This is called from the main convStarsToDB.py
+
+*** Be especially careful with the "noPhys" option.  This is a test option.  It may be turned on in some scripts, so make sure you know how the code is being invoked when you run it.  Turning on this option will turn off some physical effects for testing purposes.  For example, it turns off the 3D dust modeling.  This is unacceptable for simulation catalogs.

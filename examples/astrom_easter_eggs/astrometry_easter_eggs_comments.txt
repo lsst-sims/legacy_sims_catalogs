@@ -1,0 +1,52 @@
+
+comments
+
+1. Monet's "bright" high motion object
+2. Monet's faint high motion object
+3. A planetary mass object in the TW Hya association [like 2M1207AB]
+4. A planetary mass object in the beta Pic/AU Mic association [like AU Mic]
+5. A very nearby, very high motion halo brown dwarf. [like Kapteyn's Star] 
+6. A very nearby, very high motion Y dwarf [like Barnard's Star]
+7. Late L dwarf in the solar neighborhood, pretty bright.
+8. T dwarf at 20 pc. 
+9. Bright late-M dwarf.
+10. Early L dwarf at 100 pc. 
+11-15. Blue objects (underluminous white dwarfs, unphysical).  
+16. Monet's faint brown dwarf
+17. Monet's brighter brown dwarf
+18. Control extremely red object with no motion
+19. Control extremely red object with no motion
+20. L dwarf at 500pc, described in LSST Science Book
+21. Emission lines (planetary nebula)
+22. Brown dwarf
+23. Same brown dwarf as #22, but huge H alpha line and H beta
+24. another emission line (planetary nebula)
+25. Emission line at blue end of r filter
+26. Emission line at red end of r filter
+27-32. Fairly realistic late L dwarf, from 10 pc to 100pc.
+33-37. High proper motion brown dwarfs, from .5"/yr to 4.0"/yr
+38-42. Bluest spectrum in database, mu=300 mas/yr, down to very faint
+43-45. Faint, extremely red sources, large parallax.
+46. Extremely faint red source.
+47. Control extremely faint red source, no motion
+48. Even fainter brown dwarf
+49. Control, even fainter red.  
+50. Similar to faintest presently known L subdwarf
+51. Similar to first outer halo L subdwarf
+52. Same as 51, but a fainter T dwarf with direction changed
+53. Monet object, In between #1 and #2. 
+54-61. Real SDSS objects with Vrba et al. astrometry.
+62-63. Real SDSS objects moved to 100 pc.
+64. First L subdwarf
+66-68 more late-T/early-Y dwarfs
+69-73 more very blue, with high (2"/yr) motion
+74-77 early L dwarfs at 100 pc, 0.3"/yr, probing faint limit
+78-79 Nearby Y dwarfs
+80-81 More Monet M0 dwarfs, 2"/yr
+82-87. Repeat of 27-32
+88-90. Planetary Nebula spectrum. Repeat of 21.
+91-93. Te dwarfs.  See 23.
+94-96. Brown dwarfs, repeat of 43-45.
+97. Distant L dwarf, repeat of 20.
+98-100. Monet objects, repeat of 1, 2 and 53.
+101. Repeat of #9.  (bright M7 dwarf)

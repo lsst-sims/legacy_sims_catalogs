@@ -1,0 +1,9 @@
+setupRequired(daf_persistence)
+setupRequired(mysqlpython)
+setupRequired(pymssql)
+setupRequired(python)
+setupRequired(sims_utils)
+setupRequired(sqlalchemy)
+setupRequired(utils)
+
+envPrepend(PYTHONPATH, ${PRODUCT_DIR}/python)

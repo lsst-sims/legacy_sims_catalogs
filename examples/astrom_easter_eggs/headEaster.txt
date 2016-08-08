@@ -1,0 +1,21 @@
+fieldId
+id
+x?
+y?
+ra
+dec
+ID number (integer) Easter Egg file ?
+Apparent Magnitude
+Filter ID (Integer: u=0, g=1, r=2, i=3, z=4,y=5)
+Parallax (mas)
+Proper Motion, RA (mas/yr)
+Proper Motion, Dec (mas/yr)
+V radial (km/s)
+Teff (K)
+log g
+[Fe/H]
+?
+Distance (kpc)
+Filter (char: u,g,r,i,z,y)
+SED filename (char)
+

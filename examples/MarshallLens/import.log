@@ -1,0 +1,9 @@
+\i galaxy.schema
+copy galaxy_lens (
+decl,ra_bulge,av_bulge,point,a_bulge,b_bulge,magnorm_bulge,rad_vel,redshift,sedname_bulge,id,ra,ext_model_bulge,dec_bulge,g,i,pa_bulge,r,u,y,z,rv_bulge,fluxnorm_bulge
+) FROM '/astro/users/krughoff/lens.csv' DELIMITER ':' CSV HEADER;
+\i image.schema
+copy tdsl_qso_image (
+id,decl,tau,redshift,av,lensid,rv,point,nimg,imgid,ra,extmodel,absimag,sfinf,magnorm,g,i,r,u,sedname,fluxnorm,y,t_0,z
+) FROM '/astro/users/krughoff/image.csv' DELIMITER ':' CSV HEADER;
+

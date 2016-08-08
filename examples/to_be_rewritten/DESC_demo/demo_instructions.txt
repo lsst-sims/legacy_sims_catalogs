@@ -1,0 +1,93 @@
+The following assumes you've followed the install_catalog instructions and that you have a database located on the
+NCSA mysql server called krughoff_DESC_demo.  It also assumes a table in that database called "stars".  There are 
+commands to execute at the end if you want a test database.
+
+There are ???? files to edit.  Be carefull of indentation as the config files use this for determining hierarchy (I think).
+
+All paths are relative to the base directory of the catalogs_generation package $CATALOGS_GENERATION_DIR.
+
+1: python/lsst/sims/catalogs/generation/db/dbMsModel.py -- This is the only python code that needs to be editted.
+***Add the following lines.  They can go at the bottom of the file.
+b_engine =create_engine("mysql://krughoff:xxxxxxxx@lsst10.ncsa.uiuc.edu/krughoff_DESC_demo",  #Enter your connection information
+        echo=False)
+b_session = scoped_session(sessionmaker(autoflush=True, bind=b_engine))
+b_metadata = MetaData()
+b_metadata.bind = b_engine
+mystars = Table('stars', b_metadata, autoload=True)  #This is the table name
+MYSTARS = db.map(mystars)  #This is the database object name
+sessions['MYSQL'] = b_session #Label this with a unique key.  I believe only MSSQL is taken.
+
+2: data/requiredFields/objectMap.dat
+***This connects a database object to a python object
+***The simpleSpatial should be true if the catalog is all sky (or should not be tiled or interpolated).
+***This may be appended to the end of the file.
+[MYSTARS]
+  simpleSpatial = True
+  formatas = 'MYPOINT'   #Set formatting style which maps to data/requiredFields/format.dat
+  component = 'GALACTIC' #GALACTIC or EXTRAGALACTIC
+  dbname = 'MYSQL'       #Key from the sessions dictionary
+  [[MYSTARS]]
+    table = 'MYSTARS'    #This should be the name of the database object
+    ptype = 'MYPOINT'    #This maps to the value in data/requiredFields/requiredFields.dat
+    idkey = 'id'         #Make this the column that holds they primary key
+    constraint = 
+
+3: data/requiredFields/objectEnum.dat
+***This is used to make unique objects ids so you don't have to worry about knowing the ids for other object types
+***It can be appended, but needs the indentation.
+  [[MYSTARS]]  
+    id = 20  #This number needs to be unique among all objects in this file
+
+4: data/requiredFields/requiredFields.dat
+***Here is the major work.  This is where the data are mapped from columns in a query to keys in a data dictionary.
+***There needs to be an entry like the one below in every file type you want to create.  For example, you'll want to 
+***make trim files, so the following needs to go in the [TRIM] section under the appropriate component 
+***(GALACTIC, EXTRAGALACTIC, or SOLAR).  In this example you can put this starting on line 6 since I only want trim files 
+***and these sources are part of the GALACTIC model.
+    [[[MYPOINT]]]
+      id = long,'id'
+      raJ2000 = float, 'ra*PI()/180.'  #coordinates should be in radians
+      decJ2000 = float,'decl*PI()/180.'  #same here, radians please
+      magNorm = float,'magNorm'
+      sedFilename = str,'specname'
+      properMotionRa = float,'0.*PI()'  #This funny notation avoids a wierd casting issue I ran into.
+      properMotionDec = float,'0.*PI()'
+      parallax = float,'0.*PI()'
+      radialVelocity = float,'0.*PI()'
+
+5: data/requiredFields/derivedFields.dat
+***These are names of data keys that will be needed to make a trim file.  They are really just
+***used for validation.  This entry needs to go in the trim section and in the galactic section to 
+***make this example work.
+    [[[MYPOINT]]]
+      raTrim = float
+      decTrim = float
+
+6: data/requiredFields/format.dat
+***Here you explicitly set the format string to make an object line for output.  You can hopefully model based on other
+***entries in this file.
+***This needs to go in the trim section.
+  [[MYPOINT]]    
+    attributes = id,appendint,raTrim,decTrim,magNorm,sedFilename 
+    fmt = "object %d.%i %.9g %.9g %.9g %s 0. 0. 0. 0. 0. 0. point CCM 0. 0. CCM 0. 0."
+    conv = x,x,math.degrees(x),math.degrees(x),x,x
+
+***************************************************************
+Once the above is done.  Do:
+$> setup mysqlclient
+The run the demo script
+$> python examples/DESC_demo/runDemo.py 88868666 0.1 temp temp
+You should see a tar gz file in temp/.  When unpacked, this can be fed to 
+the photon simulator.
+
+***************************************************************
+You can generate an example database of stars using the following commands in the base catalogs_generation directory.  Assuming you have access toa database and have created a tables called stars with schema:
+id int not null primary key auto_increment,
+ra double,
+decl double,
+specname varchar,
+magNorm float
+
+awk 'BEGIN {srand()} \!/^$/ { if (rand() <= .01) print $1, rand()*0.2 - 0.1 + 80., rand()*0.2 - 0.1 - 10., rand()*1. + 22.5}' data/fileMaps/spec_map.dat > tmp.txt
+awk '{print "insert into stars values(NULL, "$2", "$3", \x27"$1"\x27, "$4");"}' tmp.txt > tmp.sql
+mysql -h lsst10.ncsa.uiuc.edu -p krughoff_DESC_demo < tmp.sql
