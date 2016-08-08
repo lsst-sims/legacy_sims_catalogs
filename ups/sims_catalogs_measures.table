@@ -1,0 +1,8 @@
+setupRequired(utils)
+setupRequired(python)
+setupRequired(sims_utils)
+setupRequired(sims_catalogs_generation)
+
+#Anaconda provides scipy which is needed by this package.
+
+envPrepend(PYTHONPATH, ${PRODUCT_DIR}/python)
