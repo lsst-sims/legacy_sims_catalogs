@@ -24,7 +24,7 @@ class ConnectionPassingTest(unittest.TestCase):
         cls.star_umag = np.random.random_sample(cls.n_stars)*10.0 + 15.0
         cls.star_gmag = np.random.random_sample(cls.n_stars)*10.0 + 15.0
 
-        cls.star_txt_name = os.path.join(getPackageDir('sims_catalogs_measures'),
+        cls.star_txt_name = os.path.join(getPackageDir('sims_catalogs'),
                                           'tests', 'scratchSpace',
                                           'ConnectionPassingTestStars.txt')
 
@@ -48,7 +48,7 @@ class ConnectionPassingTest(unittest.TestCase):
         cls.gal_umag = np.random.random_sample(cls.n_galaxies)*10.0+21.0
         cls.gal_gmag = np.random.random_sample(cls.n_galaxies)*10.0+21.0
 
-        cls.gal_txt_name = os.path.join(getPackageDir('sims_catalogs_measures'),
+        cls.gal_txt_name = os.path.join(getPackageDir('sims_catalogs'),
                                          'tests', 'scratchSpace',
                                          'ConnectionPassingTestGal.txt')
 
@@ -70,7 +70,7 @@ class ConnectionPassingTest(unittest.TestCase):
         cls.write_star_txt()
         cls.write_galaxy_txt()
 
-        cls.dbName = os.path.join(getPackageDir('sims_catalogs_measures'), 'tests',
+        cls.dbName = os.path.join(getPackageDir('sims_catalogs'), 'tests',
                                   'scratchSpace', 'ConnectionPassingTestDB.db')
 
         if os.path.exists(cls.dbName):
@@ -142,7 +142,7 @@ class ConnectionPassingTest(unittest.TestCase):
 
             default_formats = {'f': '%.4f'}
 
-        catName = os.path.join(getPackageDir('sims_catalogs_measures'),
+        catName = os.path.join(getPackageDir('sims_catalogs'),
                                'tests', 'scratchSpace',
                                'ConnectionPassingTestOutputCatalog.txt')
 

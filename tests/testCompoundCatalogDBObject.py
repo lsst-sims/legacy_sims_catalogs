@@ -112,7 +112,7 @@ class CompoundCatalogDBObjectTestCase(unittest.TestCase):
                                                  ], dtype=dtype)
 
 
-        baseDir = os.path.join(getPackageDir('sims_catalogs_generation'),
+        baseDir = os.path.join(getPackageDir('sims_catalogs'),
                                'tests', 'scratchSpace')
 
         cls.textFileName = os.path.join(baseDir, 'compound_test_data.txt')
@@ -540,7 +540,7 @@ class CompoundWithObsMetaData(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.baseDir = os.path.join(getPackageDir('sims_catalogs_generation'),
+        cls.baseDir = os.path.join(getPackageDir('sims_catalogs'),
                                    'tests', 'scratchSpace')
 
 

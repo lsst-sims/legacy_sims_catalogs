@@ -112,7 +112,7 @@ class InstanceCatalogTestCase(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
 
-        cls.starTextName = os.path.join(getPackageDir('sims_catalogs_measures'), 'tests',
+        cls.starTextName = os.path.join(getPackageDir('sims_catalogs'), 'tests',
                                         'scratchSpace', 'icStarTestCatalog.txt')
 
         if os.path.exists(cls.starTextName):
@@ -138,7 +138,7 @@ class InstanceCatalogTestCase(unittest.TestCase):
         and that the objects that do not end up in the catalog fall outside of the pointing
         """
 
-        catName = os.path.join(getPackageDir('sims_catalogs_measures'), 'tests', 'scratchSpace', '_starLikeCat.txt')
+        catName = os.path.join(getPackageDir('sims_catalogs'), 'tests', 'scratchSpace', '_starLikeCat.txt')
 
         if os.path.exists(catName):
             os.unlink(catName)
@@ -264,7 +264,7 @@ class InstanceCatalogTestCase(unittest.TestCase):
         """
         Test that transformations are applied to columns in an InstanceCatalog
         """
-        catName = os.path.join(getPackageDir('sims_catalogs_measures'), 'tests', 'scratchSpace',
+        catName = os.path.join(getPackageDir('sims_catalogs'), 'tests', 'scratchSpace',
                                'transformation_catalog.txt')
 
         if os.path.exists(catName):
@@ -294,7 +294,7 @@ class boundingBoxTest(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.starTextName = os.path.join(getPackageDir('sims_catalogs_measures'), 'tests', 'scratchSpace',
+        cls.starTextName = os.path.join(getPackageDir('sims_catalogs'), 'tests', 'scratchSpace',
                                         'bbStarTestCatalog.txt')
 
         cls.starDB, cls.starControlData = write_star_file_db(cls.starTextName)
@@ -332,7 +332,7 @@ class boundingBoxTest(unittest.TestCase):
         does not admit any objects outside of the bounding box
         """
 
-        catName = os.path.join(getPackageDir('sims_catalogs_measures'), 'tests',
+        catName = os.path.join(getPackageDir('sims_catalogs'), 'tests',
                                'scratchSpace', 'box_test_catalog.txt')
 
         myCatalog = self.starDB.getCatalog('bounds_catalog',obs_metadata = self.obsMdBox)
@@ -388,7 +388,7 @@ class boundingBoxTest(unittest.TestCase):
         does not admit any objects outside of the bounding circle
         """
 
-        catName = os.path.join(getPackageDir('sims_catalogs_measures'), 'tests', 'scratchSpace',
+        catName = os.path.join(getPackageDir('sims_catalogs'), 'tests', 'scratchSpace',
                                'circular_test_catalog.txt')
 
         if os.path.exists(catName):
