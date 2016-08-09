@@ -5,7 +5,7 @@ from numpy.random import random, seed
 import numpy, json
 
 from lsst.sims.utils import ObservationMetaData
-from lsst.sims.catalogs.generation.db import CatalogDBObject
+from lsst.sims.catalogs.db import CatalogDBObject
 from lsst.sims.utils import _raDecFromAltAz, _getRotSkyPos, _getRotTelPos, Site, \
                             raDecFromAltAz, haversine
 

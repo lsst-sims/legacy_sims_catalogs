@@ -5,8 +5,8 @@ import unittest
 import lsst.utils.tests as utilsTests
 from collections import OrderedDict
 from lsst.sims.utils import ObservationMetaData
-from lsst.sims.catalogs.generation.db import CatalogDBObject
-from lsst.sims.catalogs.generation.utils import myTestStars, makeStarTestDB
+from lsst.sims.catalogs.db import CatalogDBObject
+from lsst.sims.catalogs.utils import myTestStars, makeStarTestDB
 from lsst.sims.catalogs.measures.instance import InstanceCatalog, is_null
 from lsst.sims.utils import Site
 

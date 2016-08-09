@@ -1,7 +1,7 @@
 from __future__ import with_statement
 import numpy
 from collections import OrderedDict
-from lsst.sims.catalogs.generation.db import CompoundCatalogDBObject
+from lsst.sims.catalogs.db import CompoundCatalogDBObject
 
 
 class CompoundInstanceCatalog(object):

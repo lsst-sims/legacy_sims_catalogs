@@ -3,7 +3,7 @@ import sqlite3
 
 import unittest, numpy, warnings
 import lsst.utils.tests as utilsTests
-from lsst.sims.catalogs.generation.db import DBObject
+from lsst.sims.catalogs.db import DBObject
 
 def createDB():
     """

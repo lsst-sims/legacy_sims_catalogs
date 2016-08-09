@@ -5,7 +5,7 @@ import unittest
 import lsst.utils.tests as utilsTests
 from lsst.utils import getPackageDir
 from lsst.sims.utils import ObservationMetaData
-from lsst.sims.catalogs.generation.db import fileDBObject, CatalogDBObject, CompoundCatalogDBObject
+from lsst.sims.catalogs.db import fileDBObject, CatalogDBObject, CompoundCatalogDBObject
 from lsst.sims.catalogs.measures.instance import InstanceCatalog, \
                                                  CompoundInstanceCatalog
 

@@ -6,9 +6,9 @@ import unittest, numpy
 import lsst.utils.tests as utilsTests
 from lsst.utils import getPackageDir
 from lsst.sims.utils import ObservationMetaData
-from lsst.sims.catalogs.generation.db import CatalogDBObject, fileDBObject
-import lsst.sims.catalogs.generation.utils.testUtils as tu
-from lsst.sims.catalogs.generation.utils.testUtils import myTestStars, myTestGals
+from lsst.sims.catalogs.db import CatalogDBObject, fileDBObject
+import lsst.sims.catalogs.utils.testUtils as tu
+from lsst.sims.catalogs.utils.testUtils import myTestStars, myTestGals
 from lsst.sims.utils import haversine
 
 

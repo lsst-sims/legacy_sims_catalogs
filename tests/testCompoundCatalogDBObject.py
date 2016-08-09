@@ -6,9 +6,9 @@ import lsst.utils.tests as utilsTests
 from lsst.utils import getPackageDir
 
 from lsst.sims.utils import ObservationMetaData
-from lsst.sims.catalogs.generation.db import fileDBObject, \
-                                      CompoundCatalogDBObject, \
-                                      CatalogDBObject
+from lsst.sims.catalogs.db import fileDBObject, \
+                                  CompoundCatalogDBObject, \
+                                  CatalogDBObject
 
 class dbClass1(CatalogDBObject):
     objid = 'class1'

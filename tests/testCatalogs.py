@@ -5,7 +5,7 @@ import unittest
 from lsst.utils import getPackageDir
 import lsst.utils.tests as utilsTests
 from lsst.sims.utils import ObservationMetaData
-from lsst.sims.catalogs.generation.db import CatalogDBObject, fileDBObject
+from lsst.sims.catalogs.db import CatalogDBObject, fileDBObject
 from lsst.sims.catalogs.measures.instance import InstanceCatalog, compound
 from lsst.sims.utils import haversine, observedFromICRS
 
@@ -328,7 +328,7 @@ class boundingBoxTest(unittest.TestCase):
 
     def testBoxBounds(self):
         """
-        Make sure that box_bound_constraint in sims.catalogs.generation.db.dbConnection.py
+        Make sure that box_bound_constraint in sims.catalogs.db.dbConnection.py
         does not admit any objects outside of the bounding box
         """
 
@@ -384,7 +384,7 @@ class boundingBoxTest(unittest.TestCase):
     def testCircBounds(self):
 
         """
-        Make sure that circular_bound_constraint in sims.catalogs.generation.db.dbConnection.py
+        Make sure that circular_bound_constraint in sims.catalogs.db.dbConnection.py
         does not admit any objects outside of the bounding circle
         """
 
