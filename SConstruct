@@ -1,3 +1,3 @@
 # -*- python -*-
 from lsst.sconsUtils import scripts
-script.BasicSConstruct("sims_catalogs")
+scripts.BasicSConstruct("sims_catalogs")
