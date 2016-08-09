@@ -569,11 +569,10 @@ class CatalogDBObject(DBObject):
 
     def getCatalog(self, ftype, *args, **kwargs):
         try:
-            from lsst.sims.catalogs.measures.instance import\
-                    InstanceCatalog
+            from lsst.sims.catalogs import InstanceCatalog
             return InstanceCatalog.new_catalog(ftype, self, *args, **kwargs)
         except ImportError:
-            raise ImportError("sims_catalogs_measures not set up.  Cannot get InstanceCatalog from the object.")
+            raise ImportError("sims_catalogs not set up.  Cannot get InstanceCatalog from the object.")
 
     def getIdColKey(self):
         return self.idColKey

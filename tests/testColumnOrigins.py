@@ -3,7 +3,7 @@ import numpy
 import unittest
 import sqlite3, json
 import lsst.utils.tests as utilsTests
-from lsst.sims.catalogs.measures.instance import InstanceCatalog, cached, compound
+from lsst.sims.catalogs import InstanceCatalog, cached, compound
 from lsst.sims.catalogs.db import CatalogDBObject
 
 def makeTestDB(name, size=10, **kwargs):

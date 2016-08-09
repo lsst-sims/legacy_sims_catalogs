@@ -6,7 +6,7 @@ from lsst.utils import getPackageDir
 import lsst.utils.tests as utilsTests
 from lsst.sims.utils import ObservationMetaData
 from lsst.sims.catalogs.db import CatalogDBObject, fileDBObject
-from lsst.sims.catalogs.measures.instance import InstanceCatalog, compound
+from lsst.sims.catalogs import InstanceCatalog, compound
 from lsst.sims.utils import haversine, observedFromICRS
 
 #a class of catalog that outputs all the significant figures in
