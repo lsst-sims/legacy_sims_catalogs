@@ -7,7 +7,7 @@ from collections import OrderedDict
 from lsst.sims.utils import ObservationMetaData
 from lsst.sims.catalogs.db import CatalogDBObject
 from lsst.sims.catalogs.utils import myTestStars, makeStarTestDB
-from lsst.sims.catalogs import InstanceCatalog, is_null
+from lsst.sims.catalogs.definitions import InstanceCatalog, is_null
 from lsst.sims.utils import Site
 
 def createCannotBeNullTestDB(filename=None, add_nans=True):

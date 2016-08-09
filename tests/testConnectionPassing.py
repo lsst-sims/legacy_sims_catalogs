@@ -6,7 +6,7 @@ import lsst.utils.tests as utilsTests
 
 from lsst.utils import getPackageDir
 from lsst.sims.catalogs.db import fileDBObject, CatalogDBObject
-from lsst.sims.catalogs import InstanceCatalog
+from lsst.sims.catalogs.definitions import InstanceCatalog
 
 class ConnectionPassingTest(unittest.TestCase):
     """

@@ -6,7 +6,7 @@ import lsst.utils.tests as utilsTests
 from lsst.utils import getPackageDir
 from lsst.sims.utils import ObservationMetaData
 from lsst.sims.catalogs.db import fileDBObject, CatalogDBObject, CompoundCatalogDBObject
-from lsst.sims.catalogs import InstanceCatalog, CompoundInstanceCatalog
+from lsst.sims.catalogs.definitions import InstanceCatalog, CompoundInstanceCatalog
 
 class negativeRaCompound(CompoundCatalogDBObject):
 
