@@ -1,6 +1,6 @@
 import numpy
 from collections import OrderedDict
-from lsst.sims.catalogs.generation.db import CatalogDBObject
+from lsst.sims.catalogs.db import CatalogDBObject
 
 __all__ = ["CompoundCatalogDBObject"]
 

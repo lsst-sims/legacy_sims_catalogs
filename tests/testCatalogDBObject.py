@@ -6,9 +6,9 @@ import unittest, numpy
 import lsst.utils.tests as utilsTests
 from lsst.utils import getPackageDir
 from lsst.sims.utils import ObservationMetaData
-from lsst.sims.catalogs.generation.db import CatalogDBObject, fileDBObject
-import lsst.sims.catalogs.generation.utils.testUtils as tu
-from lsst.sims.catalogs.generation.utils.testUtils import myTestStars, myTestGals
+from lsst.sims.catalogs.db import CatalogDBObject, fileDBObject
+import lsst.sims.catalogs.utils.testUtils as tu
+from lsst.sims.catalogs.utils.testUtils import myTestStars, myTestGals
 from lsst.sims.utils import haversine
 
 
@@ -18,7 +18,7 @@ def createNonsenseDB():
     This will be used to make sure that circle and box spatial bounds yield the points
     they are supposed to.
     """
-    dataDir = os.path.join(getPackageDir('sims_catalogs_generation'), 'tests', 'testData')
+    dataDir = os.path.join(getPackageDir('sims_catalogs'), 'tests', 'testData')
     if os.path.exists('testCatalogDBObjectNonsenseDB.db'):
         os.unlink('testCatalogDBObjectNonsenseDB.db')
 
@@ -143,7 +143,7 @@ class CatalogDBObjectTestCase(unittest.TestCase):
         self.obsMd = ObservationMetaData(pointingRA=210.0, pointingDec=-60.0, boundLength=1.75,
                                          boundType='circle', mjd=52000., bandpassName='r')
 
-        self.filepath = os.path.join(getPackageDir('sims_catalogs_generation'), 'tests', 'testData', 'CatalogsGenerationTestData.txt')
+        self.filepath = os.path.join(getPackageDir('sims_catalogs'), 'tests', 'testData', 'CatalogsGenerationTestData.txt')
 
         """
         baselineData will store another copy of the data that should be stored in
@@ -854,9 +854,9 @@ class fileDBObjectTestCase(unittest.TestCase):
 
     def setUp(self):
         self.testDataFile = os.path.join(
-            getPackageDir('sims_catalogs_generation'), 'tests', 'testData', 'CatalogsGenerationTestData.txt')
+            getPackageDir('sims_catalogs'), 'tests', 'testData', 'CatalogsGenerationTestData.txt')
         self.testHeaderFile = os.path.join(
-            getPackageDir('sims_catalogs_generation'), 'tests', 'testData', 'CatalogsGenerationTestDataHeader.txt')
+            getPackageDir('sims_catalogs'), 'tests', 'testData', 'CatalogsGenerationTestDataHeader.txt')
 
         self.myNonsense = fileDBObject.from_objid('fileNonsense', self.testDataFile,
                        dtype = numpy.dtype([('id', int), ('ra', float), ('dec', float), ('mag', float)]),

@@ -5,9 +5,8 @@ import unittest
 import lsst.utils.tests as utilsTests
 from lsst.utils import getPackageDir
 from lsst.sims.utils import ObservationMetaData
-from lsst.sims.catalogs.generation.db import fileDBObject, CatalogDBObject, CompoundCatalogDBObject
-from lsst.sims.catalogs.measures.instance import InstanceCatalog, \
-                                                 CompoundInstanceCatalog
+from lsst.sims.catalogs.db import fileDBObject, CatalogDBObject, CompoundCatalogDBObject
+from lsst.sims.catalogs.definitions import InstanceCatalog, CompoundInstanceCatalog
 
 class negativeRaCompound(CompoundCatalogDBObject):
 
@@ -34,7 +33,7 @@ class negativeDecCompound_table2(CompoundCatalogDBObject):
 class cartoonDBbase(object):
 
     driver = 'sqlite'
-    database = os.path.join(getPackageDir('sims_catalogs_measures'),
+    database = os.path.join(getPackageDir('sims_catalogs'),
                             'tests', 'scratchSpace', 'compound_db.db')
 
 
@@ -141,7 +140,7 @@ class CompoundCatalogTest(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.baseDir = os.path.join(getPackageDir('sims_catalogs_measures'),
+        cls.baseDir = os.path.join(getPackageDir('sims_catalogs'),
                                'tests', 'scratchSpace')
 
         cls.table1FileName = os.path.join(cls.baseDir, 'compound_table1.txt')

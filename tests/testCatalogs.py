@@ -5,8 +5,9 @@ import unittest
 from lsst.utils import getPackageDir
 import lsst.utils.tests as utilsTests
 from lsst.sims.utils import ObservationMetaData
-from lsst.sims.catalogs.generation.db import CatalogDBObject, fileDBObject
-from lsst.sims.catalogs.measures.instance import InstanceCatalog, compound
+from lsst.sims.catalogs.db import CatalogDBObject, fileDBObject
+from lsst.sims.catalogs.definitions import InstanceCatalog
+from lsst.sims.catalogs.decorators import compound
 from lsst.sims.utils import haversine, observedFromICRS
 
 #a class of catalog that outputs all the significant figures in
@@ -112,7 +113,7 @@ class InstanceCatalogTestCase(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
 
-        cls.starTextName = os.path.join(getPackageDir('sims_catalogs_measures'), 'tests',
+        cls.starTextName = os.path.join(getPackageDir('sims_catalogs'), 'tests',
                                         'scratchSpace', 'icStarTestCatalog.txt')
 
         if os.path.exists(cls.starTextName):
@@ -138,7 +139,7 @@ class InstanceCatalogTestCase(unittest.TestCase):
         and that the objects that do not end up in the catalog fall outside of the pointing
         """
 
-        catName = os.path.join(getPackageDir('sims_catalogs_measures'), 'tests', 'scratchSpace', '_starLikeCat.txt')
+        catName = os.path.join(getPackageDir('sims_catalogs'), 'tests', 'scratchSpace', '_starLikeCat.txt')
 
         if os.path.exists(catName):
             os.unlink(catName)
@@ -264,7 +265,7 @@ class InstanceCatalogTestCase(unittest.TestCase):
         """
         Test that transformations are applied to columns in an InstanceCatalog
         """
-        catName = os.path.join(getPackageDir('sims_catalogs_measures'), 'tests', 'scratchSpace',
+        catName = os.path.join(getPackageDir('sims_catalogs'), 'tests', 'scratchSpace',
                                'transformation_catalog.txt')
 
         if os.path.exists(catName):
@@ -294,7 +295,7 @@ class boundingBoxTest(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.starTextName = os.path.join(getPackageDir('sims_catalogs_measures'), 'tests', 'scratchSpace',
+        cls.starTextName = os.path.join(getPackageDir('sims_catalogs'), 'tests', 'scratchSpace',
                                         'bbStarTestCatalog.txt')
 
         cls.starDB, cls.starControlData = write_star_file_db(cls.starTextName)
@@ -328,11 +329,11 @@ class boundingBoxTest(unittest.TestCase):
 
     def testBoxBounds(self):
         """
-        Make sure that box_bound_constraint in sims.catalogs.generation.db.dbConnection.py
+        Make sure that box_bound_constraint in sims.catalogs.db.dbConnection.py
         does not admit any objects outside of the bounding box
         """
 
-        catName = os.path.join(getPackageDir('sims_catalogs_measures'), 'tests',
+        catName = os.path.join(getPackageDir('sims_catalogs'), 'tests',
                                'scratchSpace', 'box_test_catalog.txt')
 
         myCatalog = self.starDB.getCatalog('bounds_catalog',obs_metadata = self.obsMdBox)
@@ -384,11 +385,11 @@ class boundingBoxTest(unittest.TestCase):
     def testCircBounds(self):
 
         """
-        Make sure that circular_bound_constraint in sims.catalogs.generation.db.dbConnection.py
+        Make sure that circular_bound_constraint in sims.catalogs.db.dbConnection.py
         does not admit any objects outside of the bounding circle
         """
 
-        catName = os.path.join(getPackageDir('sims_catalogs_measures'), 'tests', 'scratchSpace',
+        catName = os.path.join(getPackageDir('sims_catalogs'), 'tests', 'scratchSpace',
                                'circular_test_catalog.txt')
 
         if os.path.exists(catName):

@@ -1,7 +1,7 @@
 from __future__ import with_statement
 import unittest
 import lsst.utils.tests as utilsTests
-from lsst.sims.catalogs.measures.instance import register_class, register_method
+from lsst.sims.catalogs.decorators import register_class, register_method
 
 @register_class
 class ClassA(object):

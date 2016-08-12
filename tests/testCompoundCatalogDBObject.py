@@ -6,9 +6,9 @@ import lsst.utils.tests as utilsTests
 from lsst.utils import getPackageDir
 
 from lsst.sims.utils import ObservationMetaData
-from lsst.sims.catalogs.generation.db import fileDBObject, \
-                                      CompoundCatalogDBObject, \
-                                      CatalogDBObject
+from lsst.sims.catalogs.db import fileDBObject, \
+                                  CompoundCatalogDBObject, \
+                                  CatalogDBObject
 
 class dbClass1(CatalogDBObject):
     objid = 'class1'
@@ -112,7 +112,7 @@ class CompoundCatalogDBObjectTestCase(unittest.TestCase):
                                                  ], dtype=dtype)
 
 
-        baseDir = os.path.join(getPackageDir('sims_catalogs_generation'),
+        baseDir = os.path.join(getPackageDir('sims_catalogs'),
                                'tests', 'scratchSpace')
 
         cls.textFileName = os.path.join(baseDir, 'compound_test_data.txt')
@@ -540,7 +540,7 @@ class CompoundWithObsMetaData(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.baseDir = os.path.join(getPackageDir('sims_catalogs_generation'),
+        cls.baseDir = os.path.join(getPackageDir('sims_catalogs'),
                                    'tests', 'scratchSpace')
 
 
