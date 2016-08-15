@@ -8,7 +8,7 @@ from lsst.sims.catalogs.decorators import cached, compound
 from lsst.sims.catalogs.db import CatalogDBObject
 
 
-def setup_modul(module):
+def setup_module(module):
     lsst.utils.tests.init()
 
 
