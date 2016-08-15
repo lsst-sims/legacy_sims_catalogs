@@ -840,10 +840,11 @@ class CatalogDBObjectTestCase(unittest.TestCase):
         ct = 0
         db02 = testCatalogDBObjectTestGalaxies(connection=dbo1.connection)
         cols = ['raJ2000', 'decJ2000', 'redshift']
+        results = db02.query_columns(cols)
         for chunk in results:
             for line in chunk:
                 ct += 1
-        self.assertEqual(ct, 0)
+        self.assertGreater(ct, 0)
 
 
 class fileDBObjectTestCase(unittest.TestCase):
