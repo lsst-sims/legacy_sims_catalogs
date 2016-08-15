@@ -3,7 +3,7 @@ import os
 import sqlite3
 
 import unittest
-import numpy
+import numpy as np
 import lsst.utils.tests
 from lsst.utils import getPackageDir
 from lsst.sims.utils import ObservationMetaData
@@ -86,8 +86,8 @@ class myNonsenseDB(CatalogDBObject):
     raColName = 'ra'
     decColName = 'dec'
     columns = [('NonsenseId', 'id', int),
-               ('NonsenseRaJ2000', 'ra*%f'%(numpy.pi/180.)),
-               ('NonsenseDecJ2000', 'dec*%f'%(numpy.pi/180.)),
+               ('NonsenseRaJ2000', 'ra*%f'%(np.pi/180.)),
+               ('NonsenseDecJ2000', 'dec*%f'%(np.pi/180.)),
                ('NonsenseMag', 'mag', float)]
 
 
@@ -102,8 +102,8 @@ class myNonsenseDB_noConnection(CatalogDBObject):
     raColName = 'ra'
     decColName = 'dec'
     columns = [('NonsenseId', 'id', int),
-               ('NonsenseRaJ2000', 'ra*%f'%(numpy.pi/180.)),
-               ('NonsenseDecJ2000', 'dec*%f'%(numpy.pi/180.)),
+               ('NonsenseRaJ2000', 'ra*%f'%(np.pi/180.)),
+               ('NonsenseDecJ2000', 'dec*%f'%(np.pi/180.)),
                ('NonsenseMag', 'mag', float)]
 
 
@@ -114,8 +114,8 @@ class myNonsenseFileDB(fileDBObject):
     raColName = 'ra'
     decColName = 'dec'
     columns = [('NonsenseId', 'id', int),
-               ('NonsenseRaJ2000', 'ra*%f'%(numpy.pi/180.)),
-               ('NonsenseDecJ2000', 'dec*%f'%(numpy.pi/180.)),
+               ('NonsenseRaJ2000', 'ra*%f'%(np.pi/180.)),
+               ('NonsenseDecJ2000', 'dec*%f'%(np.pi/180.)),
                ('NonsenseMag', 'mag', float)]
 
 
@@ -164,7 +164,7 @@ class CatalogDBObjectTestCase(unittest.TestCase):
         """
 
         self.dtype = [('id', int), ('ra', float), ('dec', float), ('mag', float)]
-        self.baselineData = numpy.loadtxt(self.filepath, dtype=self.dtype)
+        self.baselineData = np.loadtxt(self.filepath, dtype=self.dtype)
 
     def tearDown(self):
         del self.obsMd
@@ -197,8 +197,8 @@ class CatalogDBObjectTestCase(unittest.TestCase):
         for chunk in myquery:
             for star in chunk:
                 ct += 1
-                self.assertLess(numpy.degrees(star[1]), 90.0+tol)
-                self.assertGreater(numpy.degrees(star[1]), 45.0-tol)
+                self.assertLess(np.degrees(star[1]), 90.0+tol)
+                self.assertGreater(np.degrees(star[1]), 45.0-tol)
         self.assertGreater(ct, 0)
 
     def testNonsenseCircularConstraints(self):
@@ -220,9 +220,9 @@ class CatalogDBObjectTestCase(unittest.TestCase):
 
         circQuery = myNonsense.query_columns(colnames = mycolumns, obs_metadata=circObsMd, chunk_size=100)
 
-        raCenter = numpy.radians(raCenter)
-        decCenter = numpy.radians(decCenter)
-        radius = numpy.radians(radius)
+        raCenter = np.radians(raCenter)
+        decCenter = np.radians(decCenter)
+        radius = np.radians(radius)
 
         goodPoints = []
 
@@ -234,13 +234,13 @@ class CatalogDBObjectTestCase(unittest.TestCase):
 
                 self.assertLess(distance, radius)
 
-                dex = numpy.where(self.baselineData['id'] == row[0])[0][0]
+                dex = np.where(self.baselineData['id'] == row[0])[0][0]
 
                 # store a list of which objects fell within our circle bound
                 goodPoints.append(row[0])
 
-                self.assertAlmostEqual(numpy.radians(self.baselineData['ra'][dex]), row[1], 3)
-                self.assertAlmostEqual(numpy.radians(self.baselineData['dec'][dex]), row[2], 3)
+                self.assertAlmostEqual(np.radians(self.baselineData['ra'][dex]), row[1], 3)
+                self.assertAlmostEqual(np.radians(self.baselineData['dec'][dex]), row[2], 3)
                 self.assertAlmostEqual(self.baselineData['mag'][dex], row[3], 3)
         self.assertGreater(ct, 0)
 
@@ -249,7 +249,7 @@ class CatalogDBObjectTestCase(unittest.TestCase):
             # make sure that all of the points not returned by the query were, in fact, outside of
             # the circle bound
             ct += 1
-            distance = haversine(raCenter, decCenter, numpy.radians(entry[1]), numpy.radians(entry[2]))
+            distance = haversine(raCenter, decCenter, np.radians(entry[1]), np.radians(entry[2]))
             self.assertGreater(distance, radius)
         self.assertGreater(ct, 0)
 
@@ -271,11 +271,11 @@ class CatalogDBObjectTestCase(unittest.TestCase):
                 ct += 1
                 self.assertLess(row[1], 45.0)
 
-                dex = numpy.where(self.baselineData['id'] == row[0])[0][0]
+                dex = np.where(self.baselineData['id'] == row[0])[0][0]
 
                 goodPoints.append(row[0])
 
-                self.assertAlmostEqual(numpy.radians(self.baselineData['ra'][dex]), row[1], 3)
+                self.assertAlmostEqual(np.radians(self.baselineData['ra'][dex]), row[1], 3)
                 self.assertAlmostEqual(self.baselineData['mag'][dex], row[2], 3)
 
         self.assertGreater(ct, 0)
@@ -305,15 +305,15 @@ class CatalogDBObjectTestCase(unittest.TestCase):
         mycolumns = ['NonsenseId', 'NonsenseRaJ2000', 'NonsenseDecJ2000', 'NonsenseMag']
 
         boxObsMd = ObservationMetaData(boundType='box', pointingDec=decCenter, pointingRA=raCenter,
-                                       boundLength=numpy.array([0.5*(raMax-raMin), 0.5*(decMax-decMin)]),
+                                       boundLength=np.array([0.5*(raMax-raMin), 0.5*(decMax-decMin)]),
                                        mjd=52000., bandpassName='r')
 
         boxQuery = myNonsense.query_columns(obs_metadata=boxObsMd, chunk_size=100, colnames=mycolumns)
 
-        raMin = numpy.radians(raMin)
-        raMax = numpy.radians(raMax)
-        decMin = numpy.radians(decMin)
-        decMax = numpy.radians(decMax)
+        raMin = np.radians(raMin)
+        raMax = np.radians(raMax)
+        decMin = np.radians(decMin)
+        decMax = np.radians(decMax)
 
         goodPoints = []
 
@@ -326,13 +326,13 @@ class CatalogDBObjectTestCase(unittest.TestCase):
                 self.assertLess(row[2], decMax)
                 self.assertGreater(row[2], decMin)
 
-                dex = numpy.where(self.baselineData['id'] == row[0])[0][0]
+                dex = np.where(self.baselineData['id'] == row[0])[0][0]
 
                 # keep a list of which points were returned by teh query
                 goodPoints.append(row[0])
 
-                self.assertAlmostEqual(numpy.radians(self.baselineData['ra'][dex]), row[1], 3)
-                self.assertAlmostEqual(numpy.radians(self.baselineData['dec'][dex]), row[2], 3)
+                self.assertAlmostEqual(np.radians(self.baselineData['ra'][dex]), row[1], 3)
+                self.assertAlmostEqual(np.radians(self.baselineData['dec'][dex]), row[2], 3)
                 self.assertAlmostEqual(self.baselineData['mag'][dex], row[3], 3)
 
         self.assertGreater(ct, 0)
@@ -364,17 +364,17 @@ class CatalogDBObjectTestCase(unittest.TestCase):
         mycolumns = ['NonsenseId', 'NonsenseRaJ2000', 'NonsenseDecJ2000', 'NonsenseMag']
 
         boxObsMd = ObservationMetaData(boundType='box', pointingRA=raCenter, pointingDec=decCenter,
-                                       boundLength=numpy.array([0.5*(raMax-raMin), 0.5*(decMax-decMin)]),
+                                       boundLength=np.array([0.5*(raMax-raMin), 0.5*(decMax-decMin)]),
                                        mjd=52000., bandpassName='r')
 
         boxQuery = myNonsense.query_columns(colnames = mycolumns,
                                             obs_metadata=boxObsMd, chunk_size=100,
                                             constraint = 'mag > 11.0')
 
-        raMin = numpy.radians(raMin)
-        raMax = numpy.radians(raMax)
-        decMin = numpy.radians(decMin)
-        decMax = numpy.radians(decMax)
+        raMin = np.radians(raMin)
+        raMax = np.radians(raMax)
+        decMin = np.radians(decMin)
+        decMax = np.radians(decMax)
 
         goodPoints = []
 
@@ -389,13 +389,13 @@ class CatalogDBObjectTestCase(unittest.TestCase):
                 self.assertGreater(row[2], decMin)
                 self.assertGreater(row[3], 11.0)
 
-                dex = numpy.where(self.baselineData['id'] == row[0])[0][0]
+                dex = np.where(self.baselineData['id'] == row[0])[0][0]
 
                 # keep a list of the points returned by the query
                 goodPoints.append(row[0])
 
-                self.assertAlmostEqual(numpy.radians(self.baselineData['ra'][dex]), row[1], 3)
-                self.assertAlmostEqual(numpy.radians(self.baselineData['dec'][dex]), row[2], 3)
+                self.assertAlmostEqual(np.radians(self.baselineData['ra'][dex]), row[1], 3)
+                self.assertAlmostEqual(np.radians(self.baselineData['dec'][dex]), row[2], 3)
                 self.assertAlmostEqual(self.baselineData['mag'][dex], row[3], 3)
 
         self.assertGreater(ct, 0)
@@ -430,7 +430,7 @@ class CatalogDBObjectTestCase(unittest.TestCase):
         """
         myNonsense = CatalogDBObject.from_objid('Nonsense')
         query = 'SELECT test.id, test.mag, test2.id, test2.mag FROM test, test2 WHERE test.id=test2.id'
-        dtype = numpy.dtype([('id1', int), ('mag1', float), ('id2', int), ('mag2', float)])
+        dtype = np.dtype([('id1', int), ('mag1', float), ('id2', int), ('mag2', float)])
         results = myNonsense.get_chunk_iterator(query, chunk_size=100, dtype=dtype)
         i = 0
         for chunk in results:
@@ -504,11 +504,11 @@ class CatalogDBObjectTestCase(unittest.TestCase):
         self.assertIn('testCatalogDBObjectTestgals', CatalogDBObject.registry)
         self.assertIn('Nonsense', CatalogDBObject.registry)
 
-        colsShouldBe = [('id', None, int), ('raJ2000', 'ra*%f'%(numpy.pi/180.)),
-                        ('decJ2000', 'decl*%f'%(numpy.pi/180.)),
-                        ('parallax', 'parallax*%.15f'%(numpy.pi/(648000000.0))),
-                        ('properMotionRa', 'properMotionRa*%.15f'%(numpy.pi/180.)),
-                        ('properMotionDec', 'properMotionDec*%.15f'%(numpy.pi/180.)),
+        colsShouldBe = [('id', None, int), ('raJ2000', 'ra*%f'%(np.pi/180.)),
+                        ('decJ2000', 'decl*%f'%(np.pi/180.)),
+                        ('parallax', 'parallax*%.15f'%(np.pi/(648000000.0))),
+                        ('properMotionRa', 'properMotionRa*%.15f'%(np.pi/180.)),
+                        ('properMotionDec', 'properMotionDec*%.15f'%(np.pi/180.)),
                         ('umag', None), ('gmag', None), ('rmag', None), ('imag', None),
                         ('zmag', None), ('ymag', None),
                         ('magNorm', 'mag_norm', float)]
@@ -517,16 +517,16 @@ class CatalogDBObjectTestCase(unittest.TestCase):
             self.assertEqual(col, coltest)
 
         colsShouldBe = [('NonsenseId', 'id', int),
-                        ('NonsenseRaJ2000', 'ra*%f'%(numpy.pi/180.)),
-                        ('NonsenseDecJ2000', 'dec*%f'%(numpy.pi/180.)),
+                        ('NonsenseRaJ2000', 'ra*%f'%(np.pi/180.)),
+                        ('NonsenseDecJ2000', 'dec*%f'%(np.pi/180.)),
                         ('NonsenseMag', 'mag', float)]
 
         for (col, coltest) in zip(myNonsense.columns, colsShouldBe):
             self.assertEqual(col, coltest)
 
         colsShouldBe = [('id', None, int),
-                        ('raJ2000', 'ra*%f' % (numpy.pi/180.)),
-                        ('decJ2000', 'decl*%f'%(numpy.pi/180.)),
+                        ('raJ2000', 'ra*%f' % (np.pi/180.)),
+                        ('decJ2000', 'decl*%f'%(np.pi/180.)),
                         ('umag', None),
                         ('gmag', None),
                         ('rmag', None),
@@ -590,9 +590,9 @@ class CatalogDBObjectTestCase(unittest.TestCase):
 
         circQuery = myNonsense.query_columns(colnames = mycolumns, obs_metadata=circObsMd, chunk_size=100)
 
-        raCenter = numpy.radians(raCenter)
-        decCenter = numpy.radians(decCenter)
-        radius = numpy.radians(radius)
+        raCenter = np.radians(raCenter)
+        decCenter = np.radians(decCenter)
+        radius = np.radians(radius)
 
         goodPoints = []
 
@@ -604,13 +604,13 @@ class CatalogDBObjectTestCase(unittest.TestCase):
 
                 self.assertLess(distance, radius)
 
-                dex = numpy.where(self.baselineData['id'] == row[0])[0][0]
+                dex = np.where(self.baselineData['id'] == row[0])[0][0]
 
                 # store a list of which objects fell within our circle bound
                 goodPoints.append(row[0])
 
-                self.assertAlmostEqual(numpy.radians(self.baselineData['ra'][dex]), row[1], 3)
-                self.assertAlmostEqual(numpy.radians(self.baselineData['dec'][dex]), row[2], 3)
+                self.assertAlmostEqual(np.radians(self.baselineData['ra'][dex]), row[1], 3)
+                self.assertAlmostEqual(np.radians(self.baselineData['dec'][dex]), row[2], 3)
                 self.assertAlmostEqual(self.baselineData['mag'][dex], row[3], 3)
         self.assertGreater(ct, 0)
 
@@ -618,7 +618,7 @@ class CatalogDBObjectTestCase(unittest.TestCase):
         for entry in [xx for xx in self.baselineData if xx[0] not in goodPoints]:
             # make sure that all of the points not returned by the query were, in fact, outside of
             # the circle bound
-            distance = haversine(raCenter, decCenter, numpy.radians(entry[1]), numpy.radians(entry[2]))
+            distance = haversine(raCenter, decCenter, np.radians(entry[1]), np.radians(entry[2]))
             self.assertGreater(distance, radius)
             ct += 1
         self.assertGreater(ct, 0)
@@ -644,11 +644,11 @@ class CatalogDBObjectTestCase(unittest.TestCase):
                 ct += 1
                 self.assertLess(row[1], 45.0)
 
-                dex = numpy.where(self.baselineData['id'] == row[0])[0][0]
+                dex = np.where(self.baselineData['id'] == row[0])[0][0]
 
                 goodPoints.append(row[0])
 
-                self.assertAlmostEqual(numpy.radians(self.baselineData['ra'][dex]), row[1], 3)
+                self.assertAlmostEqual(np.radians(self.baselineData['ra'][dex]), row[1], 3)
                 self.assertAlmostEqual(self.baselineData['mag'][dex], row[2], 3)
 
         self.assertGreater(ct, 0)
@@ -681,15 +681,15 @@ class CatalogDBObjectTestCase(unittest.TestCase):
         mycolumns = ['NonsenseId', 'NonsenseRaJ2000', 'NonsenseDecJ2000', 'NonsenseMag']
 
         boxObsMd = ObservationMetaData(boundType='box', pointingDec=decCenter, pointingRA=raCenter,
-                                       boundLength=numpy.array([0.5*(raMax-raMin), 0.5*(decMax-decMin)]),
+                                       boundLength=np.array([0.5*(raMax-raMin), 0.5*(decMax-decMin)]),
                                        mjd=52000., bandpassName='r')
 
         boxQuery = myNonsense.query_columns(obs_metadata=boxObsMd, chunk_size=100, colnames=mycolumns)
 
-        raMin = numpy.radians(raMin)
-        raMax = numpy.radians(raMax)
-        decMin = numpy.radians(decMin)
-        decMax = numpy.radians(decMax)
+        raMin = np.radians(raMin)
+        raMax = np.radians(raMax)
+        decMin = np.radians(decMin)
+        decMax = np.radians(decMax)
 
         goodPoints = []
 
@@ -702,13 +702,13 @@ class CatalogDBObjectTestCase(unittest.TestCase):
                 self.assertLess(row[2], decMax)
                 self.assertGreater(row[2], decMin)
 
-                dex = numpy.where(self.baselineData['id'] == row[0])[0][0]
+                dex = np.where(self.baselineData['id'] == row[0])[0][0]
 
                 # keep a list of which points were returned by teh query
                 goodPoints.append(row[0])
 
-                self.assertAlmostEqual(numpy.radians(self.baselineData['ra'][dex]), row[1], 3)
-                self.assertAlmostEqual(numpy.radians(self.baselineData['dec'][dex]), row[2], 3)
+                self.assertAlmostEqual(np.radians(self.baselineData['ra'][dex]), row[1], 3)
+                self.assertAlmostEqual(np.radians(self.baselineData['dec'][dex]), row[2], 3)
                 self.assertAlmostEqual(self.baselineData['mag'][dex], row[3], 3)
         self.assertGreater(ct, 0)
 
@@ -742,17 +742,17 @@ class CatalogDBObjectTestCase(unittest.TestCase):
         mycolumns = ['NonsenseId', 'NonsenseRaJ2000', 'NonsenseDecJ2000', 'NonsenseMag']
 
         boxObsMd = ObservationMetaData(boundType='box', pointingRA=raCenter, pointingDec=decCenter,
-                                       boundLength=numpy.array([0.5*(raMax-raMin), 0.5*(decMax-decMin)]),
+                                       boundLength=np.array([0.5*(raMax-raMin), 0.5*(decMax-decMin)]),
                                        mjd=52000., bandpassName='r')
 
         boxQuery = myNonsense.query_columns(colnames = mycolumns,
                                             obs_metadata=boxObsMd, chunk_size=100,
                                             constraint = 'mag > 11.0')
 
-        raMin = numpy.radians(raMin)
-        raMax = numpy.radians(raMax)
-        decMin = numpy.radians(decMin)
-        decMax = numpy.radians(decMax)
+        raMin = np.radians(raMin)
+        raMax = np.radians(raMax)
+        decMin = np.radians(decMin)
+        decMax = np.radians(decMax)
 
         goodPoints = []
 
@@ -767,13 +767,13 @@ class CatalogDBObjectTestCase(unittest.TestCase):
                 self.assertGreater(row[2], decMin)
                 self.assertGreater(row[3], 11.0)
 
-                dex = numpy.where(self.baselineData['id'] == row[0])[0][0]
+                dex = np.where(self.baselineData['id'] == row[0])[0][0]
 
                 # keep a list of the points returned by the query
                 goodPoints.append(row[0])
 
-                self.assertAlmostEqual(numpy.radians(self.baselineData['ra'][dex]), row[1], 3)
-                self.assertAlmostEqual(numpy.radians(self.baselineData['dec'][dex]), row[2], 3)
+                self.assertAlmostEqual(np.radians(self.baselineData['ra'][dex]), row[1], 3)
+                self.assertAlmostEqual(np.radians(self.baselineData['dec'][dex]), row[2], 3)
                 self.assertAlmostEqual(self.baselineData['mag'][dex], row[3], 3)
         self.assertGreater(ct, 0)
 
@@ -815,7 +815,7 @@ class CatalogDBObjectTestCase(unittest.TestCase):
         myNonsense_base = CatalogDBObject.from_objid('Nonsense')
         myNonsense = myNonsenseDB_noConnection(connection=myNonsense_base.connection)
         query = 'SELECT test.id, test.mag, test2.id, test2.mag FROM test, test2 WHERE test.id=test2.id'
-        dtype = numpy.dtype([('id1', int), ('mag1', float), ('id2', int), ('mag2', float)])
+        dtype = np.dtype([('id1', int), ('mag1', float), ('id2', int), ('mag2', float)])
         results = myNonsense.get_chunk_iterator(query, chunk_size=100, dtype=dtype)
         i = 0
         for chunk in results:
@@ -865,8 +865,8 @@ class fileDBObjectTestCase(unittest.TestCase):
             getPackageDir('sims_catalogs'), 'tests', 'testData', 'CatalogsGenerationTestDataHeader.txt')
 
         self.myNonsense = fileDBObject.from_objid('fileNonsense', self.testDataFile,
-                                                  dtype = numpy.dtype([('id', int), ('ra', float),
-                                                                       ('dec', float), ('mag', float)]),
+                                                  dtype = np.dtype([('id', int), ('ra', float),
+                                                                    ('dec', float), ('mag', float)]),
                                                   skipLines = 0)
         # note that skipLines defaults to 1 so, if you do not include this, you will
         # lose the first line of your input file (which maybe you want to do if that
@@ -881,7 +881,7 @@ class fileDBObjectTestCase(unittest.TestCase):
         against when we ask for all of the objects within a certain box or circle bound
         """
         self.dtype = [('id', int), ('ra', float), ('dec', float), ('mag', float)]
-        self.baselineData = numpy.loadtxt(self.testDataFile, dtype=self.dtype)
+        self.baselineData = np.loadtxt(self.testDataFile, dtype=self.dtype)
 
     def tearDown(self):
         del self.testDataFile
@@ -912,9 +912,9 @@ class fileDBObjectTestCase(unittest.TestCase):
         circQuery = self.myNonsense.query_columns(colnames = mycolumns, obs_metadata=circObsMd,
                                                   chunk_size=100)
 
-        raCenter = numpy.radians(raCenter)
-        decCenter = numpy.radians(decCenter)
-        radius = numpy.radians(radius)
+        raCenter = np.radians(raCenter)
+        decCenter = np.radians(decCenter)
+        radius = np.radians(radius)
 
         goodPoints = []
 
@@ -926,13 +926,13 @@ class fileDBObjectTestCase(unittest.TestCase):
 
                 self.assertLess(distance, radius)
 
-                dex = numpy.where(self.baselineData['id'] == row[0])[0][0]
+                dex = np.where(self.baselineData['id'] == row[0])[0][0]
 
                 # store a list of which objects fell within our circle bound
                 goodPoints.append(row[0])
 
-                self.assertAlmostEqual(numpy.radians(self.baselineData['ra'][dex]), row[1], 3)
-                self.assertAlmostEqual(numpy.radians(self.baselineData['dec'][dex]), row[2], 3)
+                self.assertAlmostEqual(np.radians(self.baselineData['ra'][dex]), row[1], 3)
+                self.assertAlmostEqual(np.radians(self.baselineData['dec'][dex]), row[2], 3)
                 self.assertAlmostEqual(self.baselineData['mag'][dex], row[3], 3)
         self.assertGreater(ct, 0)
 
@@ -940,7 +940,7 @@ class fileDBObjectTestCase(unittest.TestCase):
         for entry in [xx for xx in self.baselineData if xx[0] not in goodPoints]:
             # make sure that all of the points not returned by the query were, in fact, outside of
             # the circle bound
-            distance = haversine(raCenter, decCenter, numpy.radians(entry[1]), numpy.radians(entry[2]))
+            distance = haversine(raCenter, decCenter, np.radians(entry[1]), np.radians(entry[2]))
             self.assertGreater(distance, radius)
             ct += 1
         self.assertGreater(ct, 0)
@@ -953,10 +953,10 @@ class fileDBObjectTestCase(unittest.TestCase):
         for chunk in headerQuery:
             for row in chunk:
                 distance = haversine(raCenter, decCenter, row[1], row[2])
-                dex = numpy.where(self.baselineData['id'] == row[0])[0][0]
+                dex = np.where(self.baselineData['id'] == row[0])[0][0]
                 goodPointsHeader.append(row[0])
-                self.assertAlmostEqual(numpy.radians(self.baselineData['ra'][dex]), row[1], 3)
-                self.assertAlmostEqual(numpy.radians(self.baselineData['dec'][dex]), row[2], 3)
+                self.assertAlmostEqual(np.radians(self.baselineData['ra'][dex]), row[1], 3)
+                self.assertAlmostEqual(np.radians(self.baselineData['dec'][dex]), row[2], 3)
                 self.assertAlmostEqual(self.baselineData['mag'][dex], row[3], 3)
 
         self.assertEqual(len(goodPoints), len(goodPointsHeader))
@@ -980,11 +980,11 @@ class fileDBObjectTestCase(unittest.TestCase):
                 ct += 1
                 self.assertLess(row[1], 45.0)
 
-                dex = numpy.where(self.baselineData['id'] == row[0])[0][0]
+                dex = np.where(self.baselineData['id'] == row[0])[0][0]
 
                 goodPoints.append(row[0])
 
-                self.assertAlmostEqual(numpy.radians(self.baselineData['ra'][dex]), row[1], 3)
+                self.assertAlmostEqual(np.radians(self.baselineData['ra'][dex]), row[1], 3)
                 self.assertAlmostEqual(self.baselineData['mag'][dex], row[2], 3)
 
         self.assertGreater(ct, 0)
@@ -1001,9 +1001,9 @@ class fileDBObjectTestCase(unittest.TestCase):
         goodPointsHeader = []
         for chunk in headerQuery:
             for row in chunk:
-                dex = numpy.where(self.baselineData['id'] == row[0])[0][0]
+                dex = np.where(self.baselineData['id'] == row[0])[0][0]
                 goodPointsHeader.append(row[0])
-                self.assertAlmostEqual(numpy.radians(self.baselineData['ra'][dex]), row[1], 3)
+                self.assertAlmostEqual(np.radians(self.baselineData['ra'][dex]), row[1], 3)
                 self.assertAlmostEqual(self.baselineData['mag'][dex], row[2], 3)
 
         self.assertEqual(len(goodPoints), len(goodPointsHeader))
@@ -1026,15 +1026,15 @@ class fileDBObjectTestCase(unittest.TestCase):
         mycolumns = ['NonsenseId', 'NonsenseRaJ2000', 'NonsenseDecJ2000', 'NonsenseMag']
 
         boxObsMd = ObservationMetaData(boundType='box', pointingRA=raCenter, pointingDec=decCenter,
-                                       boundLength=numpy.array([0.5*(raMax-raMin), 0.5*(decMax-decMin)]),
+                                       boundLength=np.array([0.5*(raMax-raMin), 0.5*(decMax-decMin)]),
                                        mjd=52000., bandpassName='r')
 
         boxQuery = self.myNonsense.query_columns(obs_metadata=boxObsMd, chunk_size=100, colnames=mycolumns)
 
-        raMin = numpy.radians(raMin)
-        raMax = numpy.radians(raMax)
-        decMin = numpy.radians(decMin)
-        decMax = numpy.radians(decMax)
+        raMin = np.radians(raMin)
+        raMax = np.radians(raMax)
+        decMin = np.radians(decMin)
+        decMax = np.radians(decMax)
 
         goodPoints = []
 
@@ -1047,13 +1047,13 @@ class fileDBObjectTestCase(unittest.TestCase):
                 self.assertLess(row[2], decMax)
                 self.assertGreater(row[2], decMin)
 
-                dex = numpy.where(self.baselineData['id'] == row[0])[0][0]
+                dex = np.where(self.baselineData['id'] == row[0])[0][0]
 
                 # keep a list of which points were returned by teh query
                 goodPoints.append(row[0])
 
-                self.assertAlmostEqual(numpy.radians(self.baselineData['ra'][dex]), row[1], 3)
-                self.assertAlmostEqual(numpy.radians(self.baselineData['dec'][dex]), row[2], 3)
+                self.assertAlmostEqual(np.radians(self.baselineData['ra'][dex]), row[1], 3)
+                self.assertAlmostEqual(np.radians(self.baselineData['dec'][dex]), row[2], 3)
                 self.assertAlmostEqual(self.baselineData['mag'][dex], row[3], 3)
         self.assertGreater(ct, 0)
 
@@ -1072,10 +1072,10 @@ class fileDBObjectTestCase(unittest.TestCase):
         goodPointsHeader = []
         for chunk in headerQuery:
             for row in chunk:
-                dex = numpy.where(self.baselineData['id'] == row[0])[0][0]
+                dex = np.where(self.baselineData['id'] == row[0])[0][0]
                 goodPointsHeader.append(row[0])
-                self.assertAlmostEqual(numpy.radians(self.baselineData['ra'][dex]), row[1], 3)
-                self.assertAlmostEqual(numpy.radians(self.baselineData['dec'][dex]), row[2], 3)
+                self.assertAlmostEqual(np.radians(self.baselineData['ra'][dex]), row[1], 3)
+                self.assertAlmostEqual(np.radians(self.baselineData['dec'][dex]), row[2], 3)
                 self.assertAlmostEqual(self.baselineData['mag'][dex], row[3], 3)
 
         self.assertEqual(len(goodPoints), len(goodPointsHeader))
@@ -1097,17 +1097,17 @@ class fileDBObjectTestCase(unittest.TestCase):
         mycolumns = ['NonsenseId', 'NonsenseRaJ2000', 'NonsenseDecJ2000', 'NonsenseMag']
 
         boxObsMd = ObservationMetaData(boundType='box', pointingRA=raCenter, pointingDec=decCenter,
-                                       boundLength=numpy.array([0.5*(raMax-raMin), 0.5*(decMax-decMin)]),
+                                       boundLength=np.array([0.5*(raMax-raMin), 0.5*(decMax-decMin)]),
                                        mjd=52000., bandpassName='r')
 
         boxQuery = self.myNonsense.query_columns(colnames = mycolumns,
                                                  obs_metadata=boxObsMd, chunk_size=100,
                                                  constraint = 'mag > 11.0')
 
-        raMin = numpy.radians(raMin)
-        raMax = numpy.radians(raMax)
-        decMin = numpy.radians(decMin)
-        decMax = numpy.radians(decMax)
+        raMin = np.radians(raMin)
+        raMax = np.radians(raMax)
+        decMin = np.radians(decMin)
+        decMax = np.radians(decMax)
 
         goodPoints = []
 
@@ -1122,13 +1122,13 @@ class fileDBObjectTestCase(unittest.TestCase):
                 self.assertGreater(row[2], decMin)
                 self.assertGreater(row[3], 11.0)
 
-                dex = numpy.where(self.baselineData['id'] == row[0])[0][0]
+                dex = np.where(self.baselineData['id'] == row[0])[0][0]
 
                 # keep a list of the points returned by the query
                 goodPoints.append(row[0])
 
-                self.assertAlmostEqual(numpy.radians(self.baselineData['ra'][dex]), row[1], 3)
-                self.assertAlmostEqual(numpy.radians(self.baselineData['dec'][dex]), row[2], 3)
+                self.assertAlmostEqual(np.radians(self.baselineData['ra'][dex]), row[1], 3)
+                self.assertAlmostEqual(np.radians(self.baselineData['dec'][dex]), row[2], 3)
                 self.assertAlmostEqual(self.baselineData['mag'][dex], row[3], 3)
         self.assertGreater(ct, 0)
 
@@ -1150,10 +1150,10 @@ class fileDBObjectTestCase(unittest.TestCase):
         goodPointsHeader = []
         for chunk in headerQuery:
             for row in chunk:
-                dex = numpy.where(self.baselineData['id'] == row[0])[0][0]
+                dex = np.where(self.baselineData['id'] == row[0])[0][0]
                 goodPointsHeader.append(row[0])
-                self.assertAlmostEqual(numpy.radians(self.baselineData['ra'][dex]), row[1], 3)
-                self.assertAlmostEqual(numpy.radians(self.baselineData['dec'][dex]), row[2], 3)
+                self.assertAlmostEqual(np.radians(self.baselineData['ra'][dex]), row[1], 3)
+                self.assertAlmostEqual(np.radians(self.baselineData['dec'][dex]), row[2], 3)
                 self.assertAlmostEqual(self.baselineData['mag'][dex], row[3], 3)
 
         self.assertEqual(len(goodPoints), len(goodPointsHeader))
