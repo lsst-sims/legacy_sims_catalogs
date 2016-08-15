@@ -3,7 +3,7 @@ import os
 import sqlite3
 
 import unittest, numpy
-import lsst.utils.tests as utilsTests
+import lsst.utils.tests
 from lsst.utils import getPackageDir
 from lsst.sims.utils import ObservationMetaData
 from lsst.sims.catalogs.db import CatalogDBObject, fileDBObject
@@ -11,6 +11,8 @@ import lsst.sims.catalogs.utils.testUtils as tu
 from lsst.sims.catalogs.utils.testUtils import myTestStars, myTestGals
 from lsst.sims.utils import haversine
 
+def setup_modul(module):
+    lsst.utils.tests.init()
 
 def createNonsenseDB():
     """
@@ -1159,19 +1161,8 @@ class fileDBObjectTestCase(unittest.TestCase):
         self.assertGreater(ct, 0)
 
 
-def suite():
-    """Returns a suite containing all the test cases in this module."""
-    utilsTests.init()
-    suites = []
-    suites += unittest.makeSuite(CatalogDBObjectTestCase)
-    suites += unittest.makeSuite(fileDBObjectTestCase)
-    suites += unittest.makeSuite(utilsTests.MemoryTestCase)
-
-    return unittest.TestSuite(suites)
-
-def run(shouldExit=False):
-    """Run the tests"""
-    utilsTests.run(suite(), shouldExit)
+class MemoryTestClass(lsst.utils.tests.MemoryTestCase):
+    pass
 
 if __name__ == "__main__":
-    run(True)
+    unittest.main()
