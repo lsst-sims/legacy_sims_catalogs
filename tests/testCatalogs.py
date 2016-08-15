@@ -3,12 +3,15 @@ import os
 import numpy as np
 import unittest
 from lsst.utils import getPackageDir
-import lsst.utils.tests as utilsTests
+import lsst.utils.tests
 from lsst.sims.utils import ObservationMetaData
 from lsst.sims.catalogs.db import CatalogDBObject, fileDBObject
 from lsst.sims.catalogs.definitions import InstanceCatalog
 from lsst.sims.catalogs.decorators import compound
 from lsst.sims.utils import haversine, observedFromICRS
+
+def setup_module(module):
+    lsst.utils.tests.init()
 
 #a class of catalog that outputs all the significant figures in
 #ra and dec so that it can be read back in to make sure that our
@@ -437,20 +440,10 @@ class boundingBoxTest(unittest.TestCase):
             os.unlink(catName)
 
 
+class MemoryTestClass(lsst.utils.tests.MemoryTestCase):
+    pass
 
-def suite():
-    """Returns a suite containing all the test cases in this module."""
-    utilsTests.init()
-    suites = []
-    suites += unittest.makeSuite(InstanceCatalogTestCase)
-    suites += unittest.makeSuite(utilsTests.MemoryTestCase)
-    suites += unittest.makeSuite(boundingBoxTest)
-
-    return unittest.TestSuite(suites)
-
-def run(shouldExit=False):
-    """Run the tests"""
-    utilsTests.run(suite(), shouldExit)
 
 if __name__ == "__main__":
-    run(True)
+    lsst.utils.tests.init()
+    unittest.main()
