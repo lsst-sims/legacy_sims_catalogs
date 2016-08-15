@@ -1,5 +1,5 @@
 import os
-import numpy
+import numpy as np
 import unittest
 import sqlite3, json
 import lsst.utils.tests as utilsTests
@@ -28,8 +28,8 @@ def makeTestDB(name, size=10, **kwargs):
 
     for i in xrange(size):
 
-        ra = numpy.random.sample()*360.0
-        dec = (numpy.random.sample()-0.5)*180.0
+        ra = np.random.sample()*360.0
+        dec = (np.random.sample()-0.5)*180.0
 
         #insert the row into the data base
         qstr = '''INSERT INTO testTable VALUES (%i, '%f', '%f', '%f', '%f')''' % (i, 2.0*i,3.0*i,ra,dec)
@@ -49,8 +49,8 @@ class testDBObject(CatalogDBObject):
     raColName = 'ra'
     decColName = 'decl'
     columns = [('objid', 'id', int),
-               ('raJ2000', 'ra*%f'%(numpy.pi/180.)),
-               ('decJ2000', 'decl*%f'%(numpy.pi/180.)),
+               ('raJ2000', 'ra*%f'%(np.pi/180.)),
+               ('decJ2000', 'decl*%f'%(np.pi/180.)),
                ('aa', None),
                ('bb', None)]
 
@@ -63,14 +63,14 @@ class mixin1(object):
         aa = self.column_by_name('aa')
         bb = self.column_by_name('bb')
 
-        return numpy.array(aa-bb)
+        return np.array(aa-bb)
 
     @cached
     def get_dd(self):
         aa = self.column_by_name('aa')
         bb = self.column_by_name('bb')
 
-        return numpy.array(aa+bb)
+        return np.array(aa+bb)
 
 class mixin2(object):
     @compound('cc','dd')
@@ -78,7 +78,7 @@ class mixin2(object):
         aa = self.column_by_name('aa')
         bb = self.column_by_name('bb')
 
-        return numpy.array([aa-bb,aa+bb])
+        return np.array([aa-bb,aa+bb])
 
 class mixin3(object):
     @cached
@@ -86,7 +86,7 @@ class mixin3(object):
         aa = self.column_by_name('aa')
         bb = self.column_by_name('bb')
 
-        return numpy.array(aa-bb)
+        return np.array(aa-bb)
 
 #Below we define catalog classes that use different combinations
 #of the mixins above to calculate the columns 'cc' and 'dd'
@@ -236,7 +236,7 @@ class myDummyCatalogClass(InstanceCatalog):
     @compound('dd','ee','ff')
     def get_compound(self):
 
-        return numpy.array([
+        return np.array([
                            self.column_by_name('aa')+2.0,
                            self.column_by_name('aa')+3.0,
                            self.column_by_name('aa')+4.0
