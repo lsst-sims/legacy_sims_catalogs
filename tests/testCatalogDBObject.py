@@ -13,7 +13,7 @@ from lsst.sims.catalogs.utils.testUtils import myTestStars, myTestGals
 from lsst.sims.utils import haversine
 
 
-def setup_modul(module):
+def setup_module(module):
     lsst.utils.tests.init()
 
 
