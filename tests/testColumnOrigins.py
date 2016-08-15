@@ -2,10 +2,15 @@ import os
 import numpy as np
 import unittest
 import sqlite3, json
-import lsst.utils.tests as utilsTests
+import lsst.utils.tests
 from lsst.sims.catalogs.definitions import InstanceCatalog
 from lsst.sims.catalogs.decorators import cached, compound
 from lsst.sims.catalogs.db import CatalogDBObject
+
+
+def setup_modul(module):
+    lsst.utils.tests.init()
+
 
 def makeTestDB(name, size=10, **kwargs):
     """
@@ -131,15 +136,9 @@ class testColumnOrigins(unittest.TestCase):
 
     def setUp(self):
         self.myDBobject = testDBObject(database=self.dbName)
-        self.mixin1Name = '<class \'__main__.mixin1\'>'
-        self.mixin2Name = '<class \'__main__.mixin2\'>'
-        self.mixin3Name = '<class \'__main__.mixin3\'>'
 
     def tearDown(self):
         del self.myDBobject
-        del self.mixin1Name
-        del self.mixin2Name
-        del self.mixin3Name
 
     def testDefaults(self):
         """
@@ -166,8 +165,10 @@ class testColumnOrigins(unittest.TestCase):
         self.assertEqual(myCatalog._column_origins['decJ2000'],'the database')
         self.assertEqual(myCatalog._column_origins['aa'],'the database')
         self.assertEqual(myCatalog._column_origins['bb'],'the database')
-        self.assertEqual(str(myCatalog._column_origins['cc']),self.mixin1Name)
-        self.assertEqual(str(myCatalog._column_origins['dd']),self.mixin1Name)
+
+        # test that the last string in the column origin name refers to the correct mixin
+        self.assertEqual(str(myCatalog._column_origins['cc']).replace("'>",'').split('.')[-1], 'mixin1')
+        self.assertEqual(str(myCatalog._column_origins['dd']).replace("'>",'').split('.')[-1], 'mixin1')
 
     def testMixin2(self):
         """
@@ -180,8 +181,10 @@ class testColumnOrigins(unittest.TestCase):
         self.assertEqual(myCatalog._column_origins['decJ2000'],'the database')
         self.assertEqual(myCatalog._column_origins['aa'],'the database')
         self.assertEqual(myCatalog._column_origins['bb'],'the database')
-        self.assertEqual(str(myCatalog._column_origins['cc']),self.mixin2Name)
-        self.assertEqual(str(myCatalog._column_origins['dd']),self.mixin2Name)
+
+        # test that the final string in the column origins name refers to the mixin
+        self.assertEqual(str(myCatalog._column_origins['cc']).replace("'>",'').split('.')[-1], 'mixin2')
+        self.assertEqual(str(myCatalog._column_origins['dd']).replace("'>",'').split('.')[-1], 'mixin2')
 
     def testMixin3(self):
         """
@@ -194,7 +197,9 @@ class testColumnOrigins(unittest.TestCase):
         self.assertEqual(myCatalog._column_origins['decJ2000'],'the database')
         self.assertEqual(myCatalog._column_origins['aa'],'the database')
         self.assertEqual(myCatalog._column_origins['bb'],'the database')
-        self.assertEqual(str(myCatalog._column_origins['cc']),self.mixin3Name)
+
+        # test that the final string in the column origins name refers to the correct origin
+        self.assertEqual(str(myCatalog._column_origins['cc']).replace("'>",'').split('.')[-1], 'mixin3')
         self.assertEqual(str(myCatalog._column_origins['dd']),'default column')
 
     def testMixin3Mixin1(self):
@@ -208,8 +213,8 @@ class testColumnOrigins(unittest.TestCase):
         self.assertEqual(myCatalog._column_origins['decJ2000'],'the database')
         self.assertEqual(myCatalog._column_origins['aa'],'the database')
         self.assertEqual(myCatalog._column_origins['bb'],'the database')
-        self.assertEqual(str(myCatalog._column_origins['cc']),self.mixin3Name)
-        self.assertEqual(str(myCatalog._column_origins['dd']),self.mixin1Name)
+        self.assertEqual(str(myCatalog._column_origins['cc']).replace("'>",'').split('.')[-1], 'mixin3')
+        self.assertEqual(str(myCatalog._column_origins['dd']).replace("'>",'').split('.')[-1], 'mixin1')
 
     def testAunspecified(self):
         """
@@ -222,8 +227,10 @@ class testColumnOrigins(unittest.TestCase):
         self.assertEqual(myCatalog._column_origins['decJ2000'],'the database')
         self.assertEqual(myCatalog._column_origins['aa'],'the database')
         self.assertEqual(myCatalog._column_origins['bb'],'the database')
-        self.assertEqual(str(myCatalog._column_origins['cc']),self.mixin3Name)
-        self.assertEqual(str(myCatalog._column_origins['dd']),self.mixin1Name)
+
+        # test that the last string in the column origin name points to the correct mixin
+        self.assertEqual(str(myCatalog._column_origins['cc']).replace("'>",'').split('.')[-1], 'mixin3')
+        self.assertEqual(str(myCatalog._column_origins['dd']).replace("'>",'').split('.')[-1], 'mixin1')
 
 
 class myDummyCatalogClass(InstanceCatalog):
@@ -341,15 +348,10 @@ class AllAvailableColumns(unittest.TestCase):
         self.assertRaises(ValueError, myDependentColumnsClass_shouldFail, self.db, column_outputs=['dd'])
 
 
-def suite():
-    utilsTests.init()
-    suites = []
-    suites += unittest.makeSuite(testColumnOrigins)
-    suites += unittest.makeSuite(AllAvailableColumns)
-    return unittest.TestSuite(suites)
+class MemoryTestClass(lsst.utils.tests.MemoryTestCase):
+    pass
 
-def run(shouldExit = False):
-    utilsTests.run(suite(),shouldExit)
 
 if __name__ == "__main__":
-    run(True)
+    lsst.utils.tests.init()
+    unittest.main()
