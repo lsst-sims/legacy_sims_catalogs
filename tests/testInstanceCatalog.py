@@ -235,7 +235,7 @@ class InstanceCatalogMetaDataTest(unittest.TestCase):
         columnsShouldBe = ['raJ2000', 'decJ2000', 'properMotionRa', 'properMotionDec']
 
         for col in columnsShouldBe:
-            self.assertTrue(col in testCat._actually_calculated_columns)
+            self.assertIn(col, testCat._actually_calculated_columns)
 
         generatedColumns = []
         for col in testCat.iter_column_names():
@@ -256,10 +256,10 @@ class InstanceCatalogMetaDataTest(unittest.TestCase):
         header = header.strip('#')
         header = header.strip('\n')
         header = header.split(', ')
-        self.assertTrue('raJ2000' in header)
-        self.assertTrue('decJ2000' in header)
-        self.assertTrue('properMotionRa' in header)
-        self.assertTrue('properMotionDec' in header)
+        self.assertIn('raJ2000', header)
+        self.assertIn('decJ2000', header)
+        self.assertIn('properMotionRa', header)
+        self.assertIn('properMotionDec', header)
         if os.path.exists('testArgCatalog.txt'):
             os.unlink('testArgCatalog.txt')
 
@@ -275,7 +275,7 @@ class InstanceCatalogMetaDataTest(unittest.TestCase):
 
         columns = ['n1', 'n2', 'n3', 'difference']
         for col in columns:
-            self.assertTrue(col in cat._actually_calculated_columns)
+            self.assertIn(col, cat._actually_calculated_columns)
 
         cat.write_catalog('cartoonValCat.txt')
         testData = np.genfromtxt('cartoonValCat.txt', dtype=dtype, delimiter=',')
@@ -308,7 +308,7 @@ class InstanceCatalogMetaDataTest(unittest.TestCase):
         cat = otherCartoonValueCatalog(db)
         columns = ['n1', 'n2', 'n3', 'difference']
         for col in columns:
-            self.assertTrue(col in cat._actually_calculated_columns)
+            self.assertIn(col, cat._actually_calculated_columns)
 
         if os.path.exists('valueTestDB.db'):
             os.unlink('valueTestDB.db')
@@ -370,7 +370,7 @@ class InstanceCatalogCannotBeNullTest(unittest.TestCase):
                                            (k, str(xx), str(testData[j][k]), cat.cannot_be_null))
                                     self.assertAlmostEqual(xx, testData[j][k], 3, msg=msg)
                                 else:
-                                    self.assertTrue(np.isnan(testData[j][k]))
+                                    np.testing.assert_equal(testData[j][k], np.NaN)
                             else:
                                 msg = ('%s (%s) is not %s (%s)' %
                                        (xx, type(xx), testData[j][k], type(testData[j][k])))
@@ -380,7 +380,7 @@ class InstanceCatalogCannotBeNullTest(unittest.TestCase):
                 self.assertEqual(i, 99)  # make sure that we tested all of the baseline rows
                 self.assertEqual(j, len(testData))  # make sure that we tested all of the testData rows
                 msg = '%d >= %d' % (j, i)
-                self.assertTrue(j < i, msg=msg)  # make sure that some rows did not make it into the catalog
+                self.assertLess(j, i, msg=msg)  # make sure that some rows did not make it into the catalog
 
             if os.path.exists(fileName):
                 os.unlink(fileName)
@@ -406,7 +406,7 @@ class InstanceCatalogCannotBeNullTest(unittest.TestCase):
                         if not np.isnan(xx):
                             self.assertAlmostEqual(xx, testData[i][k], 3)
                         else:
-                            self.assertTrue(np.isnan(testData[i][k]))
+                            np.testing.assert_equal(testData[i][k], np.NaN)
                     else:
                         msg = '%s is not %s' % (xx, testData[i][k])
                         self.assertEqual(xx.strip(), testData[i][k].strip(), msg=msg)
