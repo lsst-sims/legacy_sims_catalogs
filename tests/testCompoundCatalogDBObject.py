@@ -181,8 +181,8 @@ class CompoundCatalogDBObjectTestCase(unittest.TestCase):
         with self.assertRaises(RuntimeError) as context:
             CompoundCatalogDBObject([db1, db2])
 
-        self.assertTrue("['%s', '%s']" % (self.otherDbName, self.dbName)
-                        in context.exception.message)
+        self.assertIn("['%s', '%s']" % (self.otherDbName, self.dbName),
+                      context.exception.message)
 
         # test case where they are querying the same database, but different
         # tables
@@ -198,7 +198,7 @@ class CompoundCatalogDBObjectTestCase(unittest.TestCase):
         with self.assertRaises(RuntimeError) as context:
             CompoundCatalogDBObject([testDbClass3, testDbClass4])
 
-        self.assertTrue("['otherTest', 'test']" in context.exception.message)
+        self.assertIn("['otherTest', 'test']", context.exception.message)
 
         # test case where the CatalogDBObjects have the same objid
         class testDbClass5(dbClass4):
@@ -214,7 +214,7 @@ class CompoundCatalogDBObjectTestCase(unittest.TestCase):
         with self.assertRaises(RuntimeError) as context:
             CompoundCatalogDBObject([testDbClass5, testDbClass6])
 
-        self.assertTrue("objid dummy is duplicated" in context.exception.message)
+        self.assertIn("objid dummy is duplicated", context.exception.message)
 
         # test case where CompoundCatalogDBObject does not support the
         # tables being queried
@@ -230,7 +230,7 @@ class CompoundCatalogDBObjectTestCase(unittest.TestCase):
             specificCompoundObj_otherTest([testDbClass7, testDbClass8])
 
         msg = "This CompoundCatalogDBObject does not support the table 'test'"
-        self.assertTrue(msg in context.exception.message)
+        self.assertIn(msg, context.exception.message)
 
     def testCompoundCatalogDBObject(self):
         """
@@ -425,7 +425,7 @@ class CompoundCatalogDBObjectTestCase(unittest.TestCase):
         for chunk in results:
             ct += len(chunk['%s_aa' % db1.objid])
             rows = chunk['id']
-            self.assertTrue(len(rows) <= 10)
+            self.assertLessEqual(len(rows), 10)
 
             numpy.testing.assert_array_almost_equal(chunk['%s_aa' % db1.objid],
                                                     self.controlArray['a'][rows],
@@ -520,6 +520,8 @@ class testStarDB2(CatalogDBObject):
 
 
 class CompoundWithObsMetaData(unittest.TestCase):
+
+    longMessage = True
 
     @classmethod
     def setUpClass(cls):
@@ -620,10 +622,10 @@ class CompoundWithObsMetaData(unittest.TestCase):
                 self.assertAlmostEqual(line['%s_raJ2000' % db2.objid], 2.0*self.controlArray['ra'][ix], 10)
                 self.assertAlmostEqual(line['%s_decJ2000' % db2.objid], 2.0*self.controlArray['dec'][ix], 10)
                 self.assertAlmostEqual(line['%s_magMod' % db2.objid], 2.0*self.controlArray['mag'][ix], 10)
-                self.assertTrue(self.controlArray['ra'][ix] > 100.0)
-                self.assertTrue(self.controlArray['ra'][ix] < 260.0)
-                self.assertTrue(self.controlArray['dec'][ix] > -25.0)
-                self.assertTrue(self.controlArray['dec'][ix] < 25.0)
+                self.assertGreater(self.controlArray['ra'][ix], 100.0)
+                self.assertLess(self.controlArray['ra'][ix], 260.0)
+                self.assertGreater(self.controlArray['dec'][ix], -25.0)
+                self.assertLess(self.controlArray['dec'][ix], 25.0)
 
         bad_rows = [ii for ii in range(self.controlArray.shape[0]) if ii not in good_rows]
 
@@ -631,9 +633,9 @@ class CompoundWithObsMetaData(unittest.TestCase):
                      for (rr, dd) in zip(self.controlArray['ra'][bad_rows],
                                          self.controlArray['dec'][bad_rows])]
 
-        self.assertFalse(True in in_bounds)
-        self.assertTrue(len(good_rows) > 0)
-        self.assertTrue(len(bad_rows) > 0)
+        self.assertNotIn(True, in_bounds, msg='failed to build bad_rows')
+        self.assertGreater(len(good_rows), 0)
+        self.assertGreater(len(bad_rows), 0)
 
     def testContraint(self):
         """
@@ -673,15 +675,15 @@ class CompoundWithObsMetaData(unittest.TestCase):
                 self.assertAlmostEqual(line['%s_raJ2000' % db2.objid], 2.0*self.controlArray['ra'][ix], 10)
                 self.assertAlmostEqual(line['%s_decJ2000' % db2.objid], 2.0*self.controlArray['dec'][ix], 10)
                 self.assertAlmostEqual(line['%s_magMod' % db2.objid], 2.0*self.controlArray['mag'][ix], 10)
-                self.assertTrue(self.controlArray['mag'][ix] < 11.0)
+                self.assertLess(self.controlArray['mag'][ix], 11.0)
 
         bad_rows = [ii for ii in range(self.controlArray.shape[0]) if ii not in good_rows]
 
         in_bounds = [mm < 11.0 for mm in self.controlArray['mag'][bad_rows]]
 
-        self.assertFalse(True in in_bounds)
-        self.assertTrue(len(good_rows) > 0)
-        self.assertTrue(len(bad_rows) > 0)
+        self.assertNotIn(True, in_bounds, msg='failed to build bad_rows')
+        self.assertGreater(len(good_rows), 0)
+        self.assertGreater(len(bad_rows), 0)
         self.assertEqual(len(good_rows)+len(bad_rows), self.controlArray.shape[0])
 
     def testObsMetadataAndConstraint(self):
@@ -729,11 +731,11 @@ class CompoundWithObsMetaData(unittest.TestCase):
                 self.assertAlmostEqual(line['%s_raJ2000' % db2.objid], 2.0*self.controlArray['ra'][ix], 10)
                 self.assertAlmostEqual(line['%s_decJ2000' % db2.objid], 2.0*self.controlArray['dec'][ix], 10)
                 self.assertAlmostEqual(line['%s_magMod' % db2.objid], 2.0*self.controlArray['mag'][ix], 10)
-                self.assertTrue(self.controlArray['ra'][ix] > 100.0)
-                self.assertTrue(self.controlArray['ra'][ix] < 260.0)
-                self.assertTrue(self.controlArray['dec'][ix] > -25.0)
-                self.assertTrue(self.controlArray['dec'][ix] < 25.0)
-                self.assertTrue(self.controlArray['mag'][ix] > 15.0)
+                self.assertGreater(self.controlArray['ra'][ix], 100.0)
+                self.assertLess(self.controlArray['ra'][ix], 260.0)
+                self.assertGreater(self.controlArray['dec'][ix], -25.0)
+                self.assertLess(self.controlArray['dec'][ix], 25.0)
+                self.assertGreater(self.controlArray['mag'][ix], 15.0)
 
         bad_rows = [ii for ii in range(self.controlArray.shape[0]) if ii not in good_rows]
 
@@ -742,9 +744,9 @@ class CompoundWithObsMetaData(unittest.TestCase):
                                              self.controlArray['dec'][bad_rows],
                                              self.controlArray['mag'][bad_rows])]
 
-        self.assertFalse(True in in_bounds)
-        self.assertTrue(len(good_rows) > 0)
-        self.assertTrue(len(bad_rows) > 0)
+        self.assertNotIn(True, in_bounds, msg='failed to build bad_rows')
+        self.assertGreater(len(good_rows), 0)
+        self.assertGreater(len(bad_rows), 0)
         self.assertEqual(len(good_rows)+len(bad_rows), self.controlArray.shape[0])
 
 
