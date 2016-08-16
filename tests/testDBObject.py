@@ -95,8 +95,8 @@ class DBObjectTestCase(unittest.TestCase):
         dbobj = DBObject(driver=self.driver, database=self.database)
         names = dbobj.get_table_names()
         self.assertEqual(len(names), 3)
-        self.assertTrue('doubleTable' in names)
-        self.assertTrue('intTable' in names)
+        self.assertIn('doubleTable', names)
+        self.assertIn('intTable', names)
 
     def testReadOnlyFilter(self):
         """
@@ -152,29 +152,29 @@ class DBObjectTestCase(unittest.TestCase):
         dbobj = DBObject(driver=self.driver, database=self.database)
         names = dbobj.get_column_names('doubleTable')
         self.assertEqual(len(names), 3)
-        self.assertTrue('id' in names)
-        self.assertTrue('sqrt' in names)
-        self.assertTrue('log' in names)
+        self.assertIn('id', names)
+        self.assertIn('sqrt', names)
+        self.assertIn('log', names)
 
         names = dbobj.get_column_names('intTable')
         self.assertEqual(len(names), 3)
-        self.assertTrue('id' in names)
-        self.assertTrue('twice' in names)
-        self.assertTrue('thrice' in names)
+        self.assertIn('id', names)
+        self.assertIn('twice', names)
+        self.assertIn('thrice', names)
 
         names = dbobj.get_column_names()
         keys = ['doubleTable', 'intTable', 'junkTable']
         for kk in names:
-            self.assertTrue(kk in keys)
+            self.assertIn(kk, keys)
 
         self.assertEqual(len(names['doubleTable']), 3)
         self.assertEqual(len(names['intTable']), 3)
-        self.assertTrue('id' in names['doubleTable'])
-        self.assertTrue('sqrt' in names['doubleTable'])
-        self.assertTrue('log' in names['doubleTable'])
-        self.assertTrue('id' in names['intTable'])
-        self.assertTrue('twice' in names['intTable'])
-        self.assertTrue('thrice' in names['intTable'])
+        self.assertIn('id', names['doubleTable'])
+        self.assertIn('sqrt', names['doubleTable'])
+        self.assertIn('log', names['doubleTable'])
+        self.assertIn('id', names['intTable'])
+        self.assertIn('twice', names['intTable'])
+        self.assertIn('thrice', names['intTable'])
 
     def testSingleTableQuery(self):
         """
