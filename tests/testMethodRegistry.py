@@ -53,7 +53,7 @@ class MethodRegistryTestCase(unittest.TestCase):
         """
 
         aa = ClassA()
-        self.assertTrue(aa.call('a')=='a')
+        self.assertEqual(aa.call('a'), 'a')
 
         # below, we test to make sure that methods which
         # should not be in ClassA's _methodRegistry are not
@@ -63,20 +63,20 @@ class MethodRegistryTestCase(unittest.TestCase):
         self.assertRaises(KeyError, aa.call, 'd')
 
         bb = ClassB()
-        self.assertTrue(bb.call('a')=='a')
-        self.assertTrue(bb.call('b')=='b')
+        self.assertEqual(bb.call('a'), 'a')
+        self.assertEqual(bb.call('b'), 'b')
         self.assertRaises(KeyError, bb.call, 'c')
         self.assertRaises(KeyError, bb.call, 'd')
 
         cc = ClassC()
-        self.assertTrue(cc.call('a')=='a')
-        self.assertTrue(cc.call('b')=='b')
-        self.assertTrue(cc.call('c')=='c')
+        self.assertEqual(cc.call('a'), 'a')
+        self.assertEqual(cc.call('b'), 'b')
+        self.assertEqual(cc.call('c'), 'c')
         self.assertRaises(KeyError, cc.call, 'd')
 
         dd = ClassD()
-        self.assertTrue(dd.call('a')=='a')
-        self.assertTrue(dd.call('d')=='d')
+        self.assertEqual(dd.call('a'), 'a')
+        self.assertEqual(dd.call('d'), 'd')
         self.assertRaises(KeyError, dd.call, 'b')
         self.assertRaises(KeyError, dd.call, 'c')
 
