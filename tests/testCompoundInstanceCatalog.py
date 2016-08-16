@@ -2,11 +2,16 @@ from __future__ import with_statement
 import os
 import numpy
 import unittest
-import lsst.utils.tests as utilsTests
+import lsst.utils.tests
 from lsst.utils import getPackageDir
 from lsst.sims.utils import ObservationMetaData
 from lsst.sims.catalogs.db import fileDBObject, CatalogDBObject, CompoundCatalogDBObject
 from lsst.sims.catalogs.definitions import InstanceCatalog, CompoundInstanceCatalog
+
+
+def setup_module(module):
+    lsst.utils.tests.init()
+
 
 class negativeRaCompound(CompoundCatalogDBObject):
 
@@ -703,17 +708,9 @@ class CompoundCatalogTest(unittest.TestCase):
             os.unlink(fileName)
 
 
-def suite():
-    """Returns a suite containing all the test cases in this module."""
-    utilsTests.init()
-    suites = []
-    suites += unittest.makeSuite(CompoundCatalogTest)
-
-    return unittest.TestSuite(suites)
-
-def run(shouldExit=False):
-    """Run the tests"""
-    utilsTests.run(suite(), shouldExit)
+class MemoryTestClass(lsst.utils.tests.MemoryTestCase):
+    pass
 
 if __name__ == "__main__":
-    run(True)
+    lsst.utils.tests.init()
+    unittest.main()
