@@ -474,7 +474,8 @@ class CatalogDBObjectTestCase(unittest.TestCase):
         self.assertEqual(mystars.database, 'testCatalogDBObjectDatabase.db')
         self.assertEqual(mystars.appendint, 1023)
         self.assertEqual(mystars.tableid, 'stars')
-        self.assertFalse(hasattr(mystars, 'spatialModel'))
+        self.assertFalse(hasattr(mystars, 'spatialModel'),
+                         msg="mystars has attr 'spatialModel', which it should not")
         self.assertEqual(mystars.objid, 'testCatalogDBObjectTeststars')
 
         self.assertEqual(mygalaxies.raColName, 'ra')
@@ -485,7 +486,7 @@ class CatalogDBObjectTestCase(unittest.TestCase):
         self.assertEqual(mygalaxies.appendint, 1022)
         self.assertEqual(mygalaxies.tableid, 'galaxies')
         self.assertTrue(hasattr(mygalaxies, 'spatialModel'),
-                        msg="mygalaxies does not have attr 'spatialModel'")
+                        msg="mygalaxies does not have attr 'spatialModel', which it should")
         self.assertEqual(mygalaxies.spatialModel, 'SERSIC2D')
         self.assertEqual(mygalaxies.objid, 'testCatalogDBObjectTestgals')
 
@@ -494,9 +495,11 @@ class CatalogDBObjectTestCase(unittest.TestCase):
         self.assertEqual(myNonsense.idColKey, 'NonsenseId')
         self.assertEqual(myNonsense.driver, 'sqlite')
         self.assertEqual(myNonsense.database, 'testCatalogDBObjectNonsenseDB.db')
-        self.assertFalse(hasattr(myNonsense, 'appendint'))
+        self.assertFalse(hasattr(myNonsense, 'appendint'),
+                         msg="myNonsense has attr 'appendint', which it should not")
         self.assertEqual(myNonsense.tableid, 'test')
-        self.assertFalse(hasattr(myNonsense, 'spatialModel'))
+        self.assertFalse(hasattr(myNonsense, 'spatialModel'),
+                         msg="myNonsense has attr 'spatialModel', which it should not")
         self.assertEqual(myNonsense.objid, 'Nonsense')
 
         self.assertIn('teststars', CatalogDBObject.registry)
