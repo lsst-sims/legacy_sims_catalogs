@@ -1,7 +1,12 @@
 from __future__ import with_statement
 import unittest
-import lsst.utils.tests as utilsTests
+import lsst.utils.tests
 from lsst.sims.catalogs.decorators import register_class, register_method
+
+
+def setup_module(module):
+    lsst.utils.tests.init()
+
 
 @register_class
 class ClassA(object):
@@ -77,18 +82,9 @@ class MethodRegistryTestCase(unittest.TestCase):
 
 
 
-
-def suite():
-    """Returns a suite containing all the test cases in this module."""
-    utilsTests.init()
-    suites = []
-    suites += unittest.makeSuite(MethodRegistryTestCase)
-
-    return unittest.TestSuite(suites)
-
-def run(shouldExit=False):
-    """Run the tests"""
-    utilsTests.run(suite(), shouldExit)
+class MemoryTestClass(lsst.utils.tests.MemoryTestCase):
+    pass
 
 if __name__ == "__main__":
-    run(True)
+    lsst.utils.tests.init()
+    unittest.main()
