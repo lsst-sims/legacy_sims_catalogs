@@ -28,7 +28,7 @@ def createCannotBeNullTestDB(filename=None, add_nans=True):
     else:
         dbName = filename
 
-    np.random.seed(32)
+    rng = np.random.RandomState(32)
     dtype = np.dtype([('id',int),('n1',np.float64),('n2',np.float64),('n3',np.float64),
                          ('n4',(str,40)), ('n5',(unicode,40))])
     output = None
@@ -46,19 +46,19 @@ def createCannotBeNullTestDB(filename=None, add_nans=True):
 
     for ii in range(100):
 
-        values = np.random.sample(3);
+        values = rng.random_sample(3);
         for i in range(len(values)):
-            draw = np.random.sample(1)
+            draw = rng.random_sample(1)
             if draw[0]<0.5 and add_nans:
                 values[i] = None
 
-        draw = np.random.sample(1)
+        draw = rng.random_sample(1)
         if draw[0]<0.5:
             w1 = 'None'
         else:
             w1 = 'word'
 
-        draw = np.random.sample(1)
+        draw = rng.random_sample(1)
         if draw[0]<0.5:
             w2 = unicode('None')
         else:
