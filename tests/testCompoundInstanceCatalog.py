@@ -143,6 +143,8 @@ class Cat4(Cat3):
 
 class CompoundCatalogTest(unittest.TestCase):
 
+    longMessage = True
+
     @classmethod
     def setUpClass(cls):
         cls.baseDir = os.path.join(getPackageDir('sims_catalogs'),
@@ -248,12 +250,12 @@ class CompoundCatalogTest(unittest.TestCase):
 
         compoundCat.write_catalog(fileName)
 
-        self.assertTrue(len(compoundCat._dbObjectGroupList) == 2)
-        self.assertTrue(len(compoundCat._dbObjectGroupList[0]) == 2)
-        self.assertTrue(len(compoundCat._dbObjectGroupList[1]) == 1)
-        self.assertTrue(0 in compoundCat._dbObjectGroupList[0])
-        self.assertTrue(1 in compoundCat._dbObjectGroupList[0])
-        self.assertTrue(2 in compoundCat._dbObjectGroupList[1])
+        self.assertEqual(len(compoundCat._dbObjectGroupList), 2)
+        self.assertEqual(len(compoundCat._dbObjectGroupList[0]), 2)
+        self.assertEqual(len(compoundCat._dbObjectGroupList[1]), 1)
+        self.assertIn(0, compoundCat._dbObjectGroupList[0])
+        self.assertIn(1, compoundCat._dbObjectGroupList[0])
+        self.assertIn(2, compoundCat._dbObjectGroupList[1])
 
         dtype = np.dtype([('id', np.int),
                           ('raObs', np.float),
@@ -320,10 +322,10 @@ class CompoundCatalogTest(unittest.TestCase):
                 self.assertAlmostEqual(line[2], self.table1Control['dec'][ix], 6)
                 self.assertAlmostEqual(self.table1Control['mag'][ix]+self.table1Control['dmag'][ix],
                                        line[3], 6)
-                self.assertTrue(self.table1Control['ra'][ix] > 100.0 and
-                                self.table1Control['ra'][ix] < 260.0)
-                self.assertTrue(self.table1Control['dec'][ix] > -25.0 and
-                                self.table1Control['dec'][ix] < 25.0)
+                self.assertGreater(self.table1Control['ra'][ix], 100.0)
+                self.assertLess(self.table1Control['ra'][ix], 260.0)
+                self.assertGreater(self.table1Control['dec'][ix], -25.0)
+                self.assertLess(self.table1Control['dec'][ix], 25.0)
             elif line[0] < 3000:
                 ix = line[0] - 2000
                 if ix not in table1_good_rows:
@@ -334,10 +336,10 @@ class CompoundCatalogTest(unittest.TestCase):
                                        line[2], 6)
                 self.assertAlmostEqual(self.table1Control['mag'][ix]+self.table1Control['dmag'][ix],
                                        line[3], 6)
-                self.assertTrue(self.table1Control['ra'][ix] > 100.0 and
-                                self.table1Control['ra'][ix] < 260.0)
-                self.assertTrue(self.table1Control['dec'][ix] > -25.0 and
-                                self.table1Control['dec'][ix] < 25.0)
+                self.assertGreater(self.table1Control['ra'][ix], 100.0)
+                self.assertLess(self.table1Control['ra'][ix], 260.0)
+                self.assertGreater(self.table1Control['dec'][ix], -25.0)
+                self.assertLess(self.table1Control['dec'][ix], 25.0)
             else:
                 ix = line[0]-3000
                 if ix not in table2_good_rows:
@@ -345,10 +347,10 @@ class CompoundCatalogTest(unittest.TestCase):
                 self.assertAlmostEqual(line[1], self.table2Control['ra'][ix], 6)
                 self.assertAlmostEqual(line[2], self.table2Control['dec'][ix], 6)
                 self.assertAlmostEqual(line[3], self.table2Control['mag'][ix], 6)
-                self.assertTrue(self.table2Control['ra'][ix] > 100.0 and
-                                self.table2Control['ra'][ix] < 260.0)
-                self.assertTrue(self.table2Control['dec'][ix] > -25.0 and
-                                self.table2Control['dec'][ix] < 25.0)
+                self.assertGreater(self.table2Control['ra'][ix], 100.0)
+                self.assertLess(self.table2Control['ra'][ix], 260.0)
+                self.assertGreater(self.table2Control['dec'][ix], -25.0)
+                self.assertLess(self.table2Control['dec'][ix], 25.0)
 
         table1_bad_rows = [ii for ii in range(self.table1Control.shape[0]) if ii not in table1_good_rows]
         table2_bad_rows = [ii for ii in range(self.table2Control.shape[0]) if ii not in table2_good_rows]
@@ -357,18 +359,18 @@ class CompoundCatalogTest(unittest.TestCase):
                      for rr, dd in zip(self.table1Control['ra'][table1_bad_rows],
                                        self.table1Control['dec'][table1_bad_rows])]
 
-        self.assertFalse(True in in_bounds)
+        self.assertNotIn(True, in_bounds, msg='failed to assemble table1_bad_rows')
 
         in_bounds = [rr > 100.0 and rr < 260.0 and dd > -25.0 and dd < 25.0
                      for rr, dd in zip(self.table2Control['ra'][table2_bad_rows],
                                        self.table2Control['dec'][table2_bad_rows])]
 
-        self.assertFalse(True in in_bounds)
+        self.assertNotIn(True, in_bounds, msg='failed to assemble table2_bad_rows')
 
-        self.assertTrue(len(table1_good_rows) > 0)
-        self.assertTrue(len(table2_good_rows) > 0)
-        self.assertTrue(len(table1_bad_rows) > 0)
-        self.assertTrue(len(table2_bad_rows) > 0)
+        self.assertGreater(len(table1_good_rows), 0)
+        self.assertGreater(len(table2_good_rows), 0)
+        self.assertGreater(len(table1_bad_rows), 0)
+        self.assertGreater(len(table2_bad_rows), 0)
         self.assertEqual(len(table1_good_rows)+len(table1_bad_rows), self.table1Control.shape[0])
         self.assertEqual(len(table2_good_rows)+len(table2_bad_rows), self.table2Control.shape[0])
 
@@ -404,7 +406,7 @@ class CompoundCatalogTest(unittest.TestCase):
                 self.assertAlmostEqual(line[2], self.table1Control['dec'][ix], 6)
                 self.assertAlmostEqual(self.table1Control['mag'][ix]+self.table1Control['dmag'][ix],
                                        line[3], 6)
-                self.assertTrue(self.table1Control['mag'][ix] > 20.0)
+                self.assertGreater(self.table1Control['mag'][ix], 20.0)
             elif line[0] < 3000:
                 ix = line[0] - 2000
                 if ix not in table1_good_rows:
@@ -415,7 +417,7 @@ class CompoundCatalogTest(unittest.TestCase):
                                        line[2], 6)
                 self.assertAlmostEqual(self.table1Control['mag'][ix]+self.table1Control['dmag'][ix],
                                        line[3], 6)
-                self.assertTrue(self.table1Control['mag'][ix] > 20.0)
+                self.assertGreater(self.table1Control['mag'][ix], 20.0)
             else:
                 ix = line[0]-3000
                 if ix not in table2_good_rows:
@@ -423,23 +425,23 @@ class CompoundCatalogTest(unittest.TestCase):
                 self.assertAlmostEqual(line[1], self.table2Control['ra'][ix], 6)
                 self.assertAlmostEqual(line[2], self.table2Control['dec'][ix], 6)
                 self.assertAlmostEqual(line[3], self.table2Control['mag'][ix], 6)
-                self.assertTrue(self.table2Control['mag'][ix] > 20.0)
+                self.assertGreater(self.table2Control['mag'][ix], 20.0)
 
         table1_bad_rows = [ii for ii in range(self.table1Control.shape[0]) if ii not in table1_good_rows]
         table2_bad_rows = [ii for ii in range(self.table2Control.shape[0]) if ii not in table2_good_rows]
 
         in_bounds = [mm > 20.0 for mm in self.table1Control['mag'][table1_bad_rows]]
 
-        self.assertFalse(True in in_bounds)
+        self.assertNotIn(True, in_bounds, msg='failed to assemble table1_bad_rows')
 
         in_bounds = [mm > 20.0 for mm in self.table2Control['mag'][table2_bad_rows]]
 
-        self.assertFalse(True in in_bounds)
+        self.assertNotIn(True, in_bounds, msg='failed to assemble table2_bad_rows')
 
-        self.assertTrue(len(table1_good_rows) > 0)
-        self.assertTrue(len(table2_good_rows) > 0)
-        self.assertTrue(len(table1_bad_rows) > 0)
-        self.assertTrue(len(table2_bad_rows) > 0)
+        self.assertGreater(len(table1_good_rows), 0)
+        self.assertGreater(len(table2_good_rows), 0)
+        self.assertGreater(len(table1_bad_rows), 0)
+        self.assertGreater(len(table2_bad_rows), 0)
         self.assertEqual(len(table1_good_rows)+len(table1_bad_rows), self.table1Control.shape[0])
         self.assertEqual(len(table2_good_rows)+len(table2_bad_rows), self.table2Control.shape[0])
 
@@ -481,10 +483,11 @@ class CompoundCatalogTest(unittest.TestCase):
                 self.assertAlmostEqual(line[2], self.table1Control['dec'][ix], 6)
                 self.assertAlmostEqual(self.table1Control['mag'][ix]+self.table1Control['dmag'][ix],
                                        line[3], 6)
-                self.assertTrue(self.table1Control['ra'][ix] > 100.0 and self.table1Control['ra'][ix] < 260.0)
-                self.assertTrue(self.table1Control['dec'][ix] > -25.0 and
-                                self.table1Control['dec'][ix] < 25.0)
-                self.assertTrue(self.table1Control['mag'][ix] > 20.0)
+                self.assertGreater(self.table1Control['ra'][ix], 100.0)
+                self.assertLess(self.table1Control['ra'][ix], 260.0)
+                self.assertGreater(self.table1Control['dec'][ix], -25.0)
+                self.assertLess(self.table1Control['dec'][ix], 25.0)
+                self.assertGreater(self.table1Control['mag'][ix], 20.0)
             elif line[0] < 3000:
                 ix = line[0] - 2000
                 if ix not in table1_good_rows:
@@ -495,11 +498,11 @@ class CompoundCatalogTest(unittest.TestCase):
                                        line[2], 6)
                 self.assertAlmostEqual(self.table1Control['mag'][ix]+self.table1Control['dmag'][ix],
                                        line[3], 6)
-                self.assertTrue(self.table1Control['ra'][ix] > 100.0 and
-                                self.table1Control['ra'][ix] < 260.0)
-                self.assertTrue(self.table1Control['dec'][ix] > -25.0 and
-                                self.table1Control['dec'][ix] < 25.0)
-                self.assertTrue(self.table1Control['mag'][ix] > 20.0)
+                self.assertGreater(self.table1Control['ra'][ix], 100.0)
+                self.assertLess(self.table1Control['ra'][ix], 260.0)
+                self.assertGreater(self.table1Control['dec'][ix], -25.0)
+                self.assertLess(self.table1Control['dec'][ix], 25.0)
+                self.assertGreater(self.table1Control['mag'][ix], 20.0)
             else:
                 ix = line[0]-3000
                 if ix not in table2_good_rows:
@@ -507,11 +510,11 @@ class CompoundCatalogTest(unittest.TestCase):
                 self.assertAlmostEqual(line[1], self.table2Control['ra'][ix], 6)
                 self.assertAlmostEqual(line[2], self.table2Control['dec'][ix], 6)
                 self.assertAlmostEqual(line[3], self.table2Control['mag'][ix], 6)
-                self.assertTrue(self.table2Control['ra'][ix] > 100.0 and
-                                self.table2Control['ra'][ix] < 260.0)
-                self.assertTrue(self.table2Control['dec'][ix] > -25.0 and
-                                self.table2Control['dec'][ix] < 25.0)
-                self.assertTrue(self.table2Control['mag'][ix] > 20.0)
+                self.assertGreater(self.table2Control['ra'][ix], 100.0)
+                self.assertLess(self.table2Control['ra'][ix], 260.0)
+                self.assertGreater(self.table2Control['dec'][ix], -25.0)
+                self.assertLess(self.table2Control['dec'][ix], 25.0)
+                self.assertGreater(self.table2Control['mag'][ix], 20.0)
 
         table1_bad_rows = [ii for ii in range(self.table1Control.shape[0]) if ii not in table1_good_rows]
         table2_bad_rows = [ii for ii in range(self.table2Control.shape[0]) if ii not in table2_good_rows]
@@ -521,19 +524,19 @@ class CompoundCatalogTest(unittest.TestCase):
                                            self.table1Control['dec'][table1_bad_rows],
                                            self.table1Control['mag'][table1_bad_rows])]
 
-        self.assertFalse(True in in_bounds)
+        self.assertNotIn(True, in_bounds, msg='failed to assemble table1_bad_rows')
 
         in_bounds = [rr > 100.0 and rr < 260.0 and dd > -25.0 and dd < 25.0 and mm > 20.0
                      for rr, dd, mm in zip(self.table2Control['ra'][table2_bad_rows],
                                            self.table2Control['dec'][table2_bad_rows],
                                            self.table2Control['mag'][table2_bad_rows])]
 
-        self.assertFalse(True in in_bounds)
+        self.assertNotIn(True, in_bounds, msg='failed to assemble table2_bad_rows')
 
-        self.assertTrue(len(table1_good_rows) > 0)
-        self.assertTrue(len(table2_good_rows) > 0)
-        self.assertTrue(len(table1_bad_rows) > 0)
-        self.assertTrue(len(table2_bad_rows) > 0)
+        self.assertGreater(len(table1_good_rows), 0)
+        self.assertGreater(len(table2_good_rows), 0)
+        self.assertGreater(len(table1_bad_rows), 0)
+        self.assertGreater(len(table2_bad_rows), 0)
         self.assertEqual(len(table1_good_rows)+len(table1_bad_rows), self.table1Control.shape[0])
         self.assertEqual(len(table2_good_rows)+len(table2_bad_rows), self.table2Control.shape[0])
 
@@ -552,12 +555,12 @@ class CompoundCatalogTest(unittest.TestCase):
 
         compoundCat.write_catalog(fileName)
 
-        self.assertTrue(len(compoundCat._dbObjectGroupList) == 2)
-        self.assertTrue(len(compoundCat._dbObjectGroupList[0]) == 2)
-        self.assertTrue(len(compoundCat._dbObjectGroupList[1]) == 1)
-        self.assertTrue(0 in compoundCat._dbObjectGroupList[0])
-        self.assertTrue(1 in compoundCat._dbObjectGroupList[0])
-        self.assertTrue(2 in compoundCat._dbObjectGroupList[1])
+        self.assertEqual(len(compoundCat._dbObjectGroupList), 2)
+        self.assertEqual(len(compoundCat._dbObjectGroupList[0]), 2)
+        self.assertEqual(len(compoundCat._dbObjectGroupList[1]), 1)
+        self.assertIn(0, compoundCat._dbObjectGroupList[0])
+        self.assertIn(1, compoundCat._dbObjectGroupList[0])
+        self.assertIn(2, compoundCat._dbObjectGroupList[1])
 
         dtype = np.dtype([('id', np.int),
                           ('raObs', np.float),
@@ -605,12 +608,12 @@ class CompoundCatalogTest(unittest.TestCase):
 
         compoundCat.write_catalog(fileName)
 
-        self.assertTrue(len(compoundCat._dbObjectGroupList) == 2)
-        self.assertTrue(len(compoundCat._dbObjectGroupList[0]) == 2)
-        self.assertTrue(len(compoundCat._dbObjectGroupList[1]) == 1)
-        self.assertTrue(0 in compoundCat._dbObjectGroupList[0])
-        self.assertTrue(1 in compoundCat._dbObjectGroupList[0])
-        self.assertTrue(2 in compoundCat._dbObjectGroupList[1])
+        self.assertEqual(len(compoundCat._dbObjectGroupList), 2)
+        self.assertEqual(len(compoundCat._dbObjectGroupList[0]), 2)
+        self.assertEqual(len(compoundCat._dbObjectGroupList[1]), 1)
+        self.assertIn(0, compoundCat._dbObjectGroupList[0])
+        self.assertIn(1, compoundCat._dbObjectGroupList[0])
+        self.assertIn(2, compoundCat._dbObjectGroupList[1])
 
         dtype = np.dtype([('id', np.int),
                           ('raObs', np.float),
@@ -657,13 +660,13 @@ class CompoundCatalogTest(unittest.TestCase):
 
         compoundCat.write_catalog(fileName)
 
-        self.assertTrue(len(compoundCat._dbObjectGroupList) == 2)
-        self.assertTrue(len(compoundCat._dbObjectGroupList[0]) == 2)
-        self.assertTrue(len(compoundCat._dbObjectGroupList[1]) == 2)
-        self.assertTrue(0 in compoundCat._dbObjectGroupList[0])
-        self.assertTrue(1 in compoundCat._dbObjectGroupList[0])
-        self.assertTrue(2 in compoundCat._dbObjectGroupList[1])
-        self.assertTrue(3 in compoundCat._dbObjectGroupList[1])
+        self.assertEqual(len(compoundCat._dbObjectGroupList), 2)
+        self.assertEqual(len(compoundCat._dbObjectGroupList[0]), 2)
+        self.assertEqual(len(compoundCat._dbObjectGroupList[1]), 2)
+        self.assertIn(0, compoundCat._dbObjectGroupList[0])
+        self.assertIn(1, compoundCat._dbObjectGroupList[0])
+        self.assertIn(2, compoundCat._dbObjectGroupList[1])
+        self.assertIn(3, compoundCat._dbObjectGroupList[1])
 
         dtype = np.dtype([('id', np.int),
                           ('raObs', np.float),
