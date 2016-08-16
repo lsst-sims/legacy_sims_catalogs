@@ -30,8 +30,8 @@ class ConnectionPassingTest(unittest.TestCase):
         cls.star_gmag = np.random.random_sample(cls.n_stars)*10.0 + 15.0
 
         cls.star_txt_name = os.path.join(getPackageDir('sims_catalogs'),
-                                          'tests', 'scratchSpace',
-                                          'ConnectionPassingTestStars.txt')
+                                         'tests', 'scratchSpace',
+                                         'ConnectionPassingTestStars.txt')
 
         if os.path.exists(cls.star_txt_name):
             os.unlink(cls.star_txt_name)
@@ -54,8 +54,8 @@ class ConnectionPassingTest(unittest.TestCase):
         cls.gal_gmag = np.random.random_sample(cls.n_galaxies)*10.0+21.0
 
         cls.gal_txt_name = os.path.join(getPackageDir('sims_catalogs'),
-                                         'tests', 'scratchSpace',
-                                         'ConnectionPassingTestGal.txt')
+                                        'tests', 'scratchSpace',
+                                        'ConnectionPassingTestGal.txt')
 
         if os.path.exists(cls.gal_txt_name):
             os.unlink(cls.gal_txt_name)
@@ -67,7 +67,6 @@ class ConnectionPassingTest(unittest.TestCase):
                                   % (ix, cls.gal_ra[ix], cls.gal_dec[ix],
                                      cls.gal_redshift[ix],
                                      cls.gal_umag[ix], cls.gal_gmag[ix]))
-
 
     @classmethod
     def setUpClass(cls):
@@ -90,18 +89,15 @@ class ConnectionPassingTest(unittest.TestCase):
                               ('decJ2000', np.float), ('umag', np.float),
                               ('gmag', np.float)])
 
+        fileDBObject(cls.star_txt_name,
+                     database=cls.dbName, driver='sqlite',
+                     runtable='stars', idColKey='id',
+                     dtype=starDtype)
 
-        dbo = fileDBObject(cls.star_txt_name,
-                           database=cls.dbName, driver='sqlite',
-                           runtable='stars', idColKey='id',
-                           dtype=starDtype)
-
-        dbo = fileDBObject(cls.gal_txt_name,
-                           database=cls.dbName, driver='sqlite',
-                           runtable='galaxies', idColKey='id',
-                           dtype=galDtype)
-
-
+        fileDBObject(cls.gal_txt_name,
+                     database=cls.dbName, driver='sqlite',
+                     runtable='galaxies', idColKey='id',
+                     dtype=galDtype)
 
     @classmethod
     def tearDownClass(cls):
@@ -113,7 +109,6 @@ class ConnectionPassingTest(unittest.TestCase):
 
         if os.path.exists(cls.gal_txt_name):
             os.unlink(cls.gal_txt_name)
-
 
     def test_passing(self):
         """
@@ -138,8 +133,7 @@ class ConnectionPassingTest(unittest.TestCase):
             column_outputs = ['id', 'raJ2000', 'decJ2000',
                               'gmag', 'umag']
 
-            default_formats = {'f':'%.4f'}
-
+            default_formats = {'f': '%.4f'}
 
         class galCatalog(InstanceCatalog):
             column_outputs = ['id', 'decJ2000', 'raJ2000',
