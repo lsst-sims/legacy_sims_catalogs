@@ -2,13 +2,18 @@ import os
 import numpy
 import sqlite3
 import unittest
-import lsst.utils.tests as utilsTests
+import lsst.utils.tests
 from collections import OrderedDict
 from lsst.sims.utils import ObservationMetaData
 from lsst.sims.catalogs.db import CatalogDBObject
 from lsst.sims.catalogs.utils import myTestStars, makeStarTestDB
 from lsst.sims.catalogs.definitions import InstanceCatalog, is_null
 from lsst.sims.utils import Site
+
+
+def setup_module(module):
+    lsst.utils.tests.init()
+
 
 def createCannotBeNullTestDB(filename=None, add_nans=True):
     """
@@ -400,18 +405,10 @@ class InstanceCatalogCannotBeNullTest(unittest.TestCase):
             if os.path.exists(fileName):
                 os.unlink(fileName)
 
-def suite():
-    """Returns a suite containing all the test cases in this module."""
-    utilsTests.init()
-    suites = []
-    suites += unittest.makeSuite(InstanceCatalogMetaDataTest)
-    suites += unittest.makeSuite(InstanceCatalogCannotBeNullTest)
 
-    return unittest.TestSuite(suites)
-
-def run(shouldExit=False):
-    """Run the tests"""
-    utilsTests.run(suite(), shouldExit)
+class MemoryTestClass(lsst.utils.tests.MemoryTestCase):
+    pass
 
 if __name__ == "__main__":
-    run(True)
+    lsst.utils.tests.init()
+    unittest.main()
