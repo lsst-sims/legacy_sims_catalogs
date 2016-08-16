@@ -2,8 +2,13 @@ import os
 import sqlite3
 
 import unittest, numpy, warnings
-import lsst.utils.tests as utilsTests
+import lsst.utils.tests
 from lsst.sims.catalogs.db import DBObject
+
+
+def setup_module(module):
+    lsst.utils.tests.init()
+
 
 def createDB():
     """
@@ -332,16 +337,10 @@ class DBObjectTestCase(unittest.TestCase):
         self.assertRaises(AttributeError, DBObject, driver='mssql+pymssql', host='localhost')
 
 
-def suite():
-    """Returns a suite containing all the test cases in this module."""
-    utilsTests.init()
-    suites = []
-    suites += unittest.makeSuite(DBObjectTestCase)
-    return unittest.TestSuite(suites)
 
-def run(shouldExit=False):
-    """Run the tests"""
-    utilsTests.run(suite(), shouldExit)
+class MemoryTestClass(lsst.utils.tests.MemoryTestCase):
+    pass
 
 if __name__ == "__main__":
-    run(True)
+    lsst.utils.tests.init()
+    unittest.main()
