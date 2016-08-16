@@ -1,5 +1,5 @@
 import os
-import numpy
+import numpy as np
 import sqlite3
 import unittest
 import lsst.utils.tests
@@ -28,8 +28,8 @@ def createCannotBeNullTestDB(filename=None, add_nans=True):
     else:
         dbName = filename
 
-    numpy.random.seed(32)
-    dtype = numpy.dtype([('id',int),('n1',numpy.float64),('n2',numpy.float64),('n3',numpy.float64),
+    np.random.seed(32)
+    dtype = np.dtype([('id',int),('n1',np.float64),('n2',np.float64),('n3',np.float64),
                          ('n4',(str,40)), ('n5',(unicode,40))])
     output = None
 
@@ -46,42 +46,42 @@ def createCannotBeNullTestDB(filename=None, add_nans=True):
 
     for ii in range(100):
 
-        values = numpy.random.sample(3);
+        values = np.random.sample(3);
         for i in range(len(values)):
-            draw = numpy.random.sample(1)
+            draw = np.random.sample(1)
             if draw[0]<0.5 and add_nans:
                 values[i] = None
 
-        draw = numpy.random.sample(1)
+        draw = np.random.sample(1)
         if draw[0]<0.5:
             w1 = 'None'
         else:
             w1 = 'word'
 
-        draw = numpy.random.sample(1)
+        draw = np.random.sample(1)
         if draw[0]<0.5:
             w2 = unicode('None')
         else:
             w2 = unicode('word')
 
         if output is None:
-            output=numpy.array([(ii,values[0],values[1],values[2],w1,w2)], dtype = dtype)
+            output=np.array([(ii,values[0],values[1],values[2],w1,w2)], dtype = dtype)
         else:
             size = output.size
             output.resize(size+1)
             output[size] = (ii, values[0], values[1], values[2], w1, w2)
 
-        if numpy.isnan(values[0]) and add_nans:
+        if np.isnan(values[0]) and add_nans:
             v0 = 'NULL'
         else:
             v0 = str(values[0])
 
-        if numpy.isnan(values[1]) and add_nans:
+        if np.isnan(values[1]) and add_nans:
             v1 = 'NULL'
         else:
             v1 = str(values[1])
 
-        if numpy.isnan(values[2]) and add_nans:
+        if np.isnan(values[2]) and add_nans:
             v2 = 'NULL'
         else:
             v2 = str(values[2])
@@ -262,7 +262,7 @@ class InstanceCatalogMetaDataTest(unittest.TestCase):
         dbName = 'valueTestDB.db'
         baselineData = createCannotBeNullTestDB(filename=dbName, add_nans=False)
         db = myCannotBeNullDBObject(driver='sqlite', database=dbName)
-        dtype = numpy.dtype([('n1',float), ('n2',float), ('n3',float), ('difference', float)])
+        dtype = np.dtype([('n1',float), ('n2',float), ('n3',float), ('difference', float)])
         cat = cartoonValueCatalog(db, column_outputs = ['n3','difference'])
 
         columns = ['n1', 'n2', 'n3', 'difference']
@@ -270,7 +270,7 @@ class InstanceCatalogMetaDataTest(unittest.TestCase):
             self.assertTrue(col in cat._actually_calculated_columns)
 
         cat.write_catalog('cartoonValCat.txt')
-        testData = numpy.genfromtxt('cartoonValCat.txt', dtype=dtype, delimiter=',')
+        testData = np.genfromtxt('cartoonValCat.txt', dtype=dtype, delimiter=',')
         for testLine, controlLine in zip(testData, baselineData):
             self.assertAlmostEqual(testLine[0], controlLine['n1'], 6)
             self.assertAlmostEqual(testLine[1], controlLine['n2'], 6)
@@ -328,9 +328,9 @@ class InstanceCatalogCannotBeNullTest(unittest.TestCase):
                 cat = catClass(dbobj)
                 fileName = 'cannotBeNullTestFile.txt'
                 cat.write_catalog(fileName)
-                dtype = numpy.dtype([('id',int),('n1',numpy.float64),('n2',numpy.float64),('n3',numpy.float64),
+                dtype = np.dtype([('id',int),('n1',np.float64),('n2',np.float64),('n3',np.float64),
                                      ('n4',(str,40)), ('n5',(unicode,40))])
-                testData = numpy.genfromtxt(fileName,dtype=dtype,delimiter=',')
+                testData = np.genfromtxt(fileName,dtype=dtype,delimiter=',')
 
                 j = 0 #a counter to keep track of the rows read in from the catalog
 
@@ -346,7 +346,7 @@ class InstanceCatalogCannotBeNullTest(unittest.TestCase):
                         if self.baselineOutput[cat.cannot_be_null[0]][i].strip().lower() == 'none':
                             validLine = False
                     else:
-                        if numpy.isnan(self.baselineOutput[cat.cannot_be_null[0]][i]):
+                        if np.isnan(self.baselineOutput[cat.cannot_be_null[0]][i]):
                             validLine = False
 
                     if validLine:
@@ -355,11 +355,11 @@ class InstanceCatalogCannotBeNullTest(unittest.TestCase):
                         #here because you cannot do an == on NaN's
                         for (k,xx) in enumerate(self.baselineOutput[i]):
                             if k<4:
-                                if not numpy.isnan(xx):
+                                if not np.isnan(xx):
                                     msg = 'k: %d -- %s %s -- %s' % (k,str(xx),str(testData[j][k]),cat.cannot_be_null)
                                     self.assertAlmostEqual(xx, testData[j][k],3, msg=msg)
                                 else:
-                                    self.assertTrue(numpy.isnan(testData[j][k]))
+                                    self.assertTrue(np.isnan(testData[j][k]))
                             else:
                                 msg = '%s (%s) is not %s (%s)' % (xx,type(xx),testData[j][k],type(testData[j][k]))
                                 self.assertEqual(xx.strip(),testData[j][k].strip(), msg=msg)
@@ -382,19 +382,19 @@ class InstanceCatalogCannotBeNullTest(unittest.TestCase):
             cat = dbobj.getCatalog('canBeNull')
             fileName = 'canBeNullTestFile.txt'
             cat.write_catalog(fileName)
-            dtype = numpy.dtype([('id',int),('n1',numpy.float64),('n2',numpy.float64),('n3',numpy.float64),
+            dtype = np.dtype([('id',int),('n1',np.float64),('n2',np.float64),('n3',np.float64),
                                  ('n4',(str,40)), ('n5',(unicode,40))])
-            testData = numpy.genfromtxt(fileName,dtype=dtype,delimiter=',')
+            testData = np.genfromtxt(fileName,dtype=dtype,delimiter=',')
 
             for i in range(len(self.baselineOutput)):
                 #make sure that all of the rows in self.baselineOutput are represented in
                 #testData
                 for (k,xx) in enumerate(self.baselineOutput[i]):
                     if k<4:
-                        if not numpy.isnan(xx):
+                        if not np.isnan(xx):
                             self.assertAlmostEqual(xx,testData[i][k], 3)
                         else:
-                            self.assertTrue(numpy.isnan(testData[i][k]))
+                            self.assertTrue(np.isnan(testData[i][k]))
                     else:
                         msg = '%s is not %s' % (xx,testData[i][k])
                         self.assertEqual(xx.strip(),testData[i][k].strip(),msg=msg)
