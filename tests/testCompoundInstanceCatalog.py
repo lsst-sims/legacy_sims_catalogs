@@ -1,6 +1,6 @@
 from __future__ import with_statement
 import os
-import numpy
+import numpy as np
 import unittest
 import lsst.utils.tests
 from lsst.utils import getPackageDir
@@ -51,10 +51,10 @@ class table1DB1(CatalogDBObject, cartoonDBbase):
 
     columns = [('raJ2000', 'ra'),
                ('decJ2000', 'dec'),
-               ('mag', None, numpy.float),
-               ('dmag', None, numpy.float),
-               ('dra', None, numpy.float),
-               ('ddec', None, numpy.float)]
+               ('mag', None, np.float),
+               ('dmag', None, np.float),
+               ('dra', None, np.float),
+               ('ddec', None, np.float)]
 
 
 class table1DB2(CatalogDBObject, cartoonDBbase):
@@ -66,10 +66,10 @@ class table1DB2(CatalogDBObject, cartoonDBbase):
 
     columns = [('raJ2000', '2.0*ra'),
                ('decJ2000', '2.0*dec'),
-               ('mag', None, numpy.float),
-               ('dmag', None, numpy.float),
-               ('dra', None, numpy.float),
-               ('ddec', None, numpy.float)]
+               ('mag', None, np.float),
+               ('dmag', None, np.float),
+               ('dra', None, np.float),
+               ('ddec', None, np.float)]
 
 
 class table2DB1(CatalogDBObject, cartoonDBbase):
@@ -81,7 +81,7 @@ class table2DB1(CatalogDBObject, cartoonDBbase):
 
     columns = [('raJ2000', 'ra'),
                ('decJ2000', 'dec'),
-               ('mag', None, numpy.float)]
+               ('mag', None, np.float)]
 
 
 class table2DB2(CatalogDBObject, cartoonDBbase):
@@ -93,7 +93,7 @@ class table2DB2(CatalogDBObject, cartoonDBbase):
 
     columns = [('raJ2000', '2.0*ra'),
                ('decJ2000', '2.0*dec'),
-               ('mag', None, numpy.float)]
+               ('mag', None, np.float)]
 
 
 class Cat1(InstanceCatalog):
@@ -156,36 +156,36 @@ class CompoundCatalogTest(unittest.TestCase):
         if os.path.exists(cls.table2FileName):
             os.unlink(cls.table2FileName)
 
-        dtype1 = numpy.dtype([('ra', numpy.float),
-                              ('dec', numpy.float),
-                              ('mag', numpy.float),
-                              ('dmag', numpy.float),
-                              ('dra', numpy.float),
-                              ('ddec', numpy.float)])
+        dtype1 = np.dtype([('ra', np.float),
+                           ('dec', np.float),
+                           ('mag', np.float),
+                           ('dmag', np.float),
+                           ('dra', np.float),
+                           ('ddec', np.float)])
 
-        dbDtype1 = numpy.dtype([('id', numpy.int),
-                                ('ra', numpy.float),
-                                ('dec', numpy.float),
-                                ('mag', numpy.float),
-                                ('dmag', numpy.float),
-                                ('dra', numpy.float),
-                                ('ddec', numpy.float)])
+        dbDtype1 = np.dtype([('id', np.int),
+                             ('ra', np.float),
+                             ('dec', np.float),
+                             ('mag', np.float),
+                             ('dmag', np.float),
+                             ('dra', np.float),
+                             ('ddec', np.float)])
 
         nPts = 100
-        numpy.random.seed(42)
-        raList = numpy.random.random_sample(nPts)*360.0
-        decList = numpy.random.random_sample(nPts)*180.0-90.0
-        magList = numpy.random.random_sample(nPts)*10.0+15.0
-        dmagList = numpy.random.random_sample(nPts)*10.0 - 5.0
-        draList = numpy.random.random_sample(nPts)*5.0 - 2.5
-        ddecList = numpy.random.random_sample(nPts)*(-2.0) - 4.0
+        np.random.seed(42)
+        raList = np.random.random_sample(nPts)*360.0
+        decList = np.random.random_sample(nPts)*180.0-90.0
+        magList = np.random.random_sample(nPts)*10.0+15.0
+        dmagList = np.random.random_sample(nPts)*10.0 - 5.0
+        draList = np.random.random_sample(nPts)*5.0 - 2.5
+        ddecList = np.random.random_sample(nPts)*(-2.0) - 4.0
 
-        cls.table1Control = numpy.rec.fromrecords([(r, d, mm, dm, dr, dd)
-                                                   for r, d, mm, dm, dr, dd
-                                                   in zip(raList, decList,
-                                                          magList, dmagList,
-                                                          draList, ddecList)],
-                                                  dtype=dtype1)
+        cls.table1Control = np.rec.fromrecords([(r, d, mm, dm, dr, dd)
+                                                for r, d, mm, dm, dr, dd
+                                                in zip(raList, decList,
+                                                       magList, dmagList,
+                                                       draList, ddecList)],
+                                               dtype=dtype1)
 
         with open(cls.table1FileName, 'w') as output:
             output.write("# id ra dec mag dmag dra ddec\n")
@@ -195,22 +195,22 @@ class CompoundCatalogTest(unittest.TestCase):
                 output.write('%d %.12f %.12f %.12f %.12f %.12f %.12f\n'
                              % (ix, r, d, mm, dm, dr, dd))
 
-        dtype2 = numpy.dtype([('ra', numpy.float),
-                              ('dec', numpy.float),
-                              ('mag', numpy.float)])
+        dtype2 = np.dtype([('ra', np.float),
+                           ('dec', np.float),
+                           ('mag', np.float)])
 
-        dbDtype2 = numpy.dtype([('id', numpy.int),
-                                ('ra', numpy.float),
-                                ('dec', numpy.float),
-                                ('mag', numpy.float)])
+        dbDtype2 = np.dtype([('id', np.int),
+                             ('ra', np.float),
+                             ('dec', np.float),
+                             ('mag', np.float)])
 
-        ra2List = numpy.random.random_sample(nPts)*360.0
-        dec2List = numpy.random.random_sample(nPts)*180.0-90.0
-        mag2List = numpy.random.random_sample(nPts)*10+18.0
+        ra2List = np.random.random_sample(nPts)*360.0
+        dec2List = np.random.random_sample(nPts)*180.0-90.0
+        mag2List = np.random.random_sample(nPts)*10+18.0
 
-        cls.table2Control = numpy.rec.fromrecords([(r, d, m)
-                                                   for r, d, m in
-                                                   zip(ra2List, dec2List, mag2List)], dtype=dtype2)
+        cls.table2Control = np.rec.fromrecords([(r, d, m)
+                                                for r, d, m in
+                                                zip(ra2List, dec2List, mag2List)], dtype=dtype2)
 
         with open(cls.table2FileName, 'w') as output:
             output.write('# id ra dec mag\n')
@@ -255,12 +255,12 @@ class CompoundCatalogTest(unittest.TestCase):
         self.assertTrue(1 in compoundCat._dbObjectGroupList[0])
         self.assertTrue(2 in compoundCat._dbObjectGroupList[1])
 
-        dtype = numpy.dtype([('id', numpy.int),
-                             ('raObs', numpy.float),
-                             ('decObs', numpy.float),
-                             ('final_mag', numpy.float)])
+        dtype = np.dtype([('id', np.int),
+                          ('raObs', np.float),
+                          ('decObs', np.float),
+                          ('final_mag', np.float)])
 
-        testData = numpy.genfromtxt(fileName, dtype=dtype)
+        testData = np.genfromtxt(fileName, dtype=dtype)
 
         for line in testData:
             if line[0] < 2000:
@@ -302,12 +302,12 @@ class CompoundCatalogTest(unittest.TestCase):
                                               obs_metadata=obs)
 
         compoundCat.write_catalog(fileName)
-        dtype = numpy.dtype([('id', numpy.int),
-                             ('raObs', numpy.float),
-                             ('decObs', numpy.float),
-                             ('final_mag', numpy.float)])
+        dtype = np.dtype([('id', np.int),
+                          ('raObs', np.float),
+                          ('decObs', np.float),
+                          ('final_mag', np.float)])
 
-        testData = numpy.genfromtxt(fileName, dtype=dtype)
+        testData = np.genfromtxt(fileName, dtype=dtype)
 
         table1_good_rows = []
         table2_good_rows = []
@@ -386,12 +386,12 @@ class CompoundCatalogTest(unittest.TestCase):
                                               constraint='mag>20.0')
 
         compoundCat.write_catalog(fileName)
-        dtype = numpy.dtype([('id', numpy.int),
-                             ('raObs', numpy.float),
-                             ('decObs', numpy.float),
-                             ('final_mag', numpy.float)])
+        dtype = np.dtype([('id', np.int),
+                          ('raObs', np.float),
+                          ('decObs', np.float),
+                          ('final_mag', np.float)])
 
-        testData = numpy.genfromtxt(fileName, dtype=dtype)
+        testData = np.genfromtxt(fileName, dtype=dtype)
 
         table1_good_rows = []
         table2_good_rows = []
@@ -463,12 +463,12 @@ class CompoundCatalogTest(unittest.TestCase):
                                               constraint='mag>20.0')
 
         compoundCat.write_catalog(fileName)
-        dtype = numpy.dtype([('id', numpy.int),
-                            ('raObs', numpy.float),
-                            ('decObs', numpy.float),
-                            ('final_mag', numpy.float)])
+        dtype = np.dtype([('id', np.int),
+                          ('raObs', np.float),
+                          ('decObs', np.float),
+                          ('final_mag', np.float)])
 
-        testData = numpy.genfromtxt(fileName, dtype=dtype)
+        testData = np.genfromtxt(fileName, dtype=dtype)
 
         table1_good_rows = []
         table2_good_rows = []
@@ -559,12 +559,12 @@ class CompoundCatalogTest(unittest.TestCase):
         self.assertTrue(1 in compoundCat._dbObjectGroupList[0])
         self.assertTrue(2 in compoundCat._dbObjectGroupList[1])
 
-        dtype = numpy.dtype([('id', numpy.int),
-                            ('raObs', numpy.float),
-                            ('decObs', numpy.float),
-                            ('final_mag', numpy.float)])
+        dtype = np.dtype([('id', np.int),
+                          ('raObs', np.float),
+                          ('decObs', np.float),
+                          ('final_mag', np.float)])
 
-        testData = numpy.genfromtxt(fileName, dtype=dtype)
+        testData = np.genfromtxt(fileName, dtype=dtype)
 
         for line in testData:
             if line[0] < 2000:
@@ -612,12 +612,12 @@ class CompoundCatalogTest(unittest.TestCase):
         self.assertTrue(1 in compoundCat._dbObjectGroupList[0])
         self.assertTrue(2 in compoundCat._dbObjectGroupList[1])
 
-        dtype = numpy.dtype([('id', numpy.int),
-                            ('raObs', numpy.float),
-                            ('decObs', numpy.float),
-                            ('final_mag', numpy.float)])
+        dtype = np.dtype([('id', np.int),
+                          ('raObs', np.float),
+                          ('decObs', np.float),
+                          ('final_mag', np.float)])
 
-        testData = numpy.genfromtxt(fileName, dtype=dtype)
+        testData = np.genfromtxt(fileName, dtype=dtype)
 
         for line in testData:
             if line[0] < 2000:
@@ -665,12 +665,12 @@ class CompoundCatalogTest(unittest.TestCase):
         self.assertTrue(2 in compoundCat._dbObjectGroupList[1])
         self.assertTrue(3 in compoundCat._dbObjectGroupList[1])
 
-        dtype = numpy.dtype([('id', numpy.int),
-                            ('raObs', numpy.float),
-                            ('decObs', numpy.float),
-                            ('final_mag', numpy.float)])
+        dtype = np.dtype([('id', np.int),
+                          ('raObs', np.float),
+                          ('decObs', np.float),
+                          ('final_mag', np.float)])
 
-        testData = numpy.genfromtxt(fileName, dtype=dtype)
+        testData = np.genfromtxt(fileName, dtype=dtype)
 
         for line in testData:
             if line[0] < 2000:
