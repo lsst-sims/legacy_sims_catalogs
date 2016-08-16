@@ -1,7 +1,8 @@
 import os
 import sqlite3
 
-import unittest, numpy, warnings
+import numpy as np
+import unittest, warnings
 import lsst.utils.tests
 from lsst.sims.catalogs.db import DBObject
 
@@ -43,8 +44,8 @@ def createDB():
         raise RuntimeError("Error creating database (double).")
     for ii in range(200):
         ll=ii+1
-        nn = numpy.sqrt(float(ll))
-        mm = numpy.log(float(ll))
+        nn = np.sqrt(float(ll))
+        mm = np.log(float(ll))
 
         cmd = '''INSERT INTO doubleTable VALUES (%s, %s, %s)''' % (ll, nn, mm)
         c.execute(cmd)
@@ -57,8 +58,8 @@ def createDB():
         raise RuntimeError("Error creating database (double).")
     for ii in range(200):
         ll=ii+1
-        nn = numpy.sqrt(float(ll))
-        mm = numpy.log(float(ll))
+        nn = np.sqrt(float(ll))
+        mm = np.log(float(ll))
 
         cmd = '''INSERT INTO junkTable VALUES (%s, %s, %s)''' % (ll, nn, mm)
         c.execute(cmd)
@@ -191,7 +192,7 @@ class DBObjectTestCase(unittest.TestCase):
         for chunk in results:
             for row in chunk:
                 self.assertEqual(row[0], i)
-                self.assertAlmostEqual(row[1], numpy.sqrt(i))
+                self.assertAlmostEqual(row[1], np.sqrt(i))
                 self.assertEqual(dtype, row.dtype)
                 i += 1
 
@@ -210,7 +211,7 @@ class DBObjectTestCase(unittest.TestCase):
 
         self.assertEqual(results.dtype, dtype)
         for xx in results:
-            self.assertAlmostEqual(numpy.log(xx[0]), xx[1], 6)
+            self.assertAlmostEqual(np.log(xx[0]), xx[1], 6)
 
         self.assertEqual(len(results), 200)
 
@@ -241,7 +242,7 @@ class DBObjectTestCase(unittest.TestCase):
             for row in chunk:
                 self.assertEqual(2*(i+1), row[0])
                 self.assertEqual(row[0], row[1])
-                self.assertAlmostEqual(numpy.log(row[0]), row[2], 6)
+                self.assertAlmostEqual(np.log(row[0]), row[2], 6)
                 self.assertEqual(3*row[0], row[3])
                 self.assertEqual(dtype, row.dtype)
                 i += 1
@@ -254,7 +255,7 @@ class DBObjectTestCase(unittest.TestCase):
         for row in results:
             self.assertEqual(2*(i+1), row[0])
             self.assertEqual(row[0], row[1])
-            self.assertAlmostEqual(numpy.log(row[0]), row[2], 6)
+            self.assertAlmostEqual(np.log(row[0]), row[2], 6)
             self.assertEqual(3*row[0], row[3])
             i += 1
         self.assertEqual(i, 99)
@@ -298,7 +299,7 @@ class DBObjectTestCase(unittest.TestCase):
             for row in chunk:
                 self.assertEqual(2*(i+1), row[0])
                 self.assertEqual(row[0], row[1])
-                self.assertAlmostEqual(numpy.log(row[0]), row[2], 6)
+                self.assertAlmostEqual(np.log(row[0]), row[2], 6)
                 self.assertEqual(3*row[0], row[3])
                 self.assertEqual(dtype, row.dtype)
                 i += 1
@@ -311,7 +312,7 @@ class DBObjectTestCase(unittest.TestCase):
         for row in results:
             self.assertEqual(2*(i+1), row[0])
             self.assertEqual(row[0], row[1])
-            self.assertAlmostEqual(numpy.log(row[0]), row[2], 6)
+            self.assertAlmostEqual(np.log(row[0]), row[2], 6)
             self.assertEqual(3*row[0], row[3])
             i += 1
         self.assertEqual(i, 99)
