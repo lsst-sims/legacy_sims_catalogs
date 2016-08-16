@@ -3,49 +3,55 @@ import os
 import numpy as np
 import unittest
 from lsst.utils import getPackageDir
-import lsst.utils.tests as utilsTests
+import lsst.utils.tests
 from lsst.sims.utils import ObservationMetaData
-from lsst.sims.catalogs.db import CatalogDBObject, fileDBObject
+from lsst.sims.catalogs.db import fileDBObject
 from lsst.sims.catalogs.definitions import InstanceCatalog
 from lsst.sims.catalogs.decorators import compound
-from lsst.sims.utils import haversine, observedFromICRS
+from lsst.sims.utils import haversine
 
-#a class of catalog that outputs all the significant figures in
-#ra and dec so that it can be read back in to make sure that our
-#Haversine-based query actually returns all of the points that
-#are inside the circular bound desired
+
+def setup_module(module):
+    lsst.utils.tests.init()
+
+
+# a class of catalog that outputs all the significant figures in
+# ra and dec so that it can be read back in to make sure that our
+# Haversine-based query actually returns all of the points that
+# are inside the circular bound desired
 class BoundsCatalog(InstanceCatalog):
     catalog_type = 'bounds_catalog'
     refIdCol = 'id'
     column_outputs = ['id', 'raJ2000', 'decJ2000']
 
-    default_formats = {'f':'%.20f'}
+    default_formats = {'f': '%.20f'}
 
 
 def twice_fn(x):
     return 2.0*x
 
+
 class TransformationCatalog(InstanceCatalog):
     catalog_type = 'transformation_catalog'
     refIdCol = 'id'
     column_outputs = ['id', 'raJ2000', 'decJ2000']
-    default_formats = {'f':'%.12f'}
-    transformations = {'raJ2000':twice_fn}
+    default_formats = {'f': '%.12f'}
+    transformations = {'raJ2000': twice_fn}
 
 
 class BasicCatalog(InstanceCatalog):
     catalog_type = 'basic_catalog'
     refIdCol = 'id'
     column_outputs = ['id', 'raJ2000', 'decJ2000', 'umag', 'gmag', 'rmag', 'imag',
-                       'zmag', 'ymag']
+                      'zmag', 'ymag']
 
-    default_formats = {'f':'%.12f'}
+    default_formats = {'f': '%.12f'}
 
 
 class TestAstMixin(object):
     @compound('ra_corr', 'dec_corr')
     def get_points_corrected(self):
-        #Fake astrometric correction
+        # Fake astrometric correction
         ra_corr = self.column_by_name('raJ2000')+0.001
         dec_corr = self.column_by_name('decJ2000')+0.001
         return ra_corr, dec_corr
@@ -55,7 +61,7 @@ class CustomCatalog(BasicCatalog, TestAstMixin):
     catalog_type = 'custom_catalog'
     refIdCol = 'id'
     column_outputs = ['id', 'raJ2000', 'decJ2000', 'umag', 'gmag', 'rmag', 'imag',
-                       'zmag', 'ymag', 'ra_corr', 'dec_corr']
+                      'zmag', 'ymag', 'ra_corr', 'dec_corr']
 
 
 def compareFiles(file1, file2):
@@ -86,8 +92,7 @@ def write_star_file_db(file_name):
             output_file.write('%d %.12f %.12f %.12f %.12f %.12f %.12f %.12f %.12f\n' %
                               (ix, rr, dd, um, gm, rm, im, zm, ym))
 
-    starDtype = np.dtype([
-                          ('id', np.int),
+    starDtype = np.dtype([('id', np.int),
                           ('raJ2000', np.float),
                           ('decJ2000', np.float),
                           ('umag', np.float),
@@ -95,9 +100,7 @@ def write_star_file_db(file_name):
                           ('rmag', np.float),
                           ('imag', np.float),
                           ('zmag', np.float),
-                          ('ymag', np.float)
-                        ])
-
+                          ('ymag', np.float)])
 
     starDB = fileDBObject(file_name, runtable='stars', dtype=starDtype, idColKey='id')
     starDB.raColName = 'raJ2000'
@@ -121,22 +124,21 @@ class InstanceCatalogTestCase(unittest.TestCase):
 
         cls.starDB, cls.starControlData = write_star_file_db(cls.starTextName)
 
-
     @classmethod
     def tearDownClass(cls):
 
         if os.path.exists(cls.starTextName):
             os.unlink(cls.starTextName)
 
-
     def setUp(self):
         self.obsMd = ObservationMetaData(boundType = 'circle', pointingRA = 210.0, pointingDec = -60.0,
-                     boundLength=20.0, mjd=52000.,bandpassName='r')
+                                         boundLength=20.0, mjd=52000., bandpassName='r')
 
     def testStarLike(self):
         """
-        Write a couple of catalogs.  Verify that the objects that end up in the catalog fall within the pointing
-        and that the objects that do not end up in the catalog fall outside of the pointing
+        Write a couple of catalogs.  Verify that the objects that end up in the catalog fall
+        within the pointing and that the objects that do not end up in the catalog fall
+        outside of the pointing
         """
 
         catName = os.path.join(getPackageDir('sims_catalogs'), 'tests', 'scratchSpace', '_starLikeCat.txt')
@@ -145,8 +147,7 @@ class InstanceCatalogTestCase(unittest.TestCase):
             os.unlink(catName)
 
         # this dtype corresponds to the outputs of the catalog
-        dtype = np.dtype([
-                          ('id', np.int),
+        dtype = np.dtype([('id', np.int),
                           ('raJ2000', np.float),
                           ('decJ2000', np.float),
                           ('umag', np.float),
@@ -156,8 +157,7 @@ class InstanceCatalogTestCase(unittest.TestCase):
                           ('zmag', np.float),
                           ('ymag', np.float),
                           ('ra_corr', np.float),
-                          ('dec_corr', np.float)
-                        ])
+                          ('dec_corr', np.float)])
 
         t = self.starDB.getCatalog('custom_catalog', obs_metadata=self.obsMd)
         t.write_catalog(catName)
@@ -171,7 +171,7 @@ class InstanceCatalogTestCase(unittest.TestCase):
         # verify that those line exist in the control data
         # also verify that those lines fall within the requested field of view
         for line in testData:
-            ic = np.where(self.starControlData['id']==line['id'])[0][0]
+            ic = np.where(self.starControlData['id'] == line['id'])[0][0]
             self.assertAlmostEqual(line['umag'], self.starControlData['umag'][ic], 6)
             self.assertAlmostEqual(line['gmag'], self.starControlData['gmag'][ic], 6)
             self.assertAlmostEqual(line['rmag'], self.starControlData['rmag'][ic], 6)
@@ -200,14 +200,12 @@ class InstanceCatalogTestCase(unittest.TestCase):
 
             self.assertGreater(np.degrees(dl), self.obsMd.boundLength)
 
-
         if os.path.exists(catName):
             os.unlink(catName)
 
         # now do the same thing for the basic catalog class
 
-        dtype = np.dtype([
-                          ('id', np.int),
+        dtype = np.dtype([('id', np.int),
                           ('raJ2000', np.float),
                           ('decJ2000', np.float),
                           ('umag', np.float),
@@ -215,8 +213,7 @@ class InstanceCatalogTestCase(unittest.TestCase):
                           ('rmag', np.float),
                           ('imag', np.float),
                           ('zmag', np.float),
-                          ('ymag', np.float)
-                        ])
+                          ('ymag', np.float)])
 
         t = self.starDB.getCatalog('basic_catalog', obs_metadata=self.obsMd)
         t.write_catalog(catName)
@@ -230,7 +227,7 @@ class InstanceCatalogTestCase(unittest.TestCase):
         # verify that those line exist in the control data
         # also verify that those lines fall within the requested field of view
         for line in testData:
-            ic = np.where(self.starControlData['id']==line['id'])[0][0]
+            ic = np.where(self.starControlData['id'] == line['id'])[0][0]
             self.assertAlmostEqual(line['umag'], self.starControlData['umag'][ic], 6)
             self.assertAlmostEqual(line['gmag'], self.starControlData['gmag'][ic], 6)
             self.assertAlmostEqual(line['rmag'], self.starControlData['rmag'][ic], 6)
@@ -260,7 +257,6 @@ class InstanceCatalogTestCase(unittest.TestCase):
         if os.path.exists(catName):
             os.unlink(catName)
 
-
     def test_transformation(self):
         """
         Test that transformations are applied to columns in an InstanceCatalog
@@ -274,16 +270,14 @@ class InstanceCatalogTestCase(unittest.TestCase):
         t = self.starDB.getCatalog('transformation_catalog', obs_metadata=self.obsMd)
         t.write_catalog(catName)
 
-        dtype = np.dtype([
-                         ('id', np.int),
-                         ('raJ2000', np.float),
-                         ('decJ2000', np.float)
-                        ])
+        dtype = np.dtype([('id', np.int),
+                          ('raJ2000', np.float),
+                          ('decJ2000', np.float)])
 
         testData = np.genfromtxt(catName, delimiter=', ', dtype=dtype)
         self.assertGreater(len(testData), 0)
         for line in testData:
-            ic = np.where(self.starControlData['id']==line['id'])[0][0]
+            ic = np.where(self.starControlData['id'] == line['id'])[0][0]
             self.assertAlmostEqual(line['decJ2000'], self.starControlData['decJ2000'][ic], 5)
             self.assertAlmostEqual(line['raJ2000'], 2.0*self.starControlData['raJ2000'][ic], 5)
 
@@ -305,7 +299,6 @@ class boundingBoxTest(unittest.TestCase):
         if os.path.exists(cls.starTextName):
             os.unlink(cls.starTextName)
 
-
     def setUp(self):
 
         self.RAmin = 190.
@@ -317,15 +310,16 @@ class boundingBoxTest(unittest.TestCase):
         self.DECcenter = -60.
         self.radius = 10.0
 
-        self.obsMdCirc = ObservationMetaData(boundType='circle',pointingRA=self.RAcenter,pointingDec=self.DECcenter,
-                         boundLength=self.radius,mjd=52000., bandpassName='r')
+        self.obsMdCirc = ObservationMetaData(boundType='circle',
+                                             pointingRA=self.RAcenter,
+                                             pointingDec=self.DECcenter,
+                                             boundLength=self.radius, mjd=52000., bandpassName='r')
 
         self.obsMdBox = ObservationMetaData(boundType='box', pointingRA=0.5*(self.RAmax+self.RAmin),
-                        pointingDec=0.5*(self.DECmin+self.DECmax),
-                        boundLength=np.array([0.5*(self.RAmax-self.RAmin),0.5*(self.DECmax-self.DECmin)]),
-                        mjd=52000., bandpassName='r')
-
-
+                                            pointingDec=0.5*(self.DECmin+self.DECmax),
+                                            boundLength=np.array([0.5*(self.RAmax-self.RAmin),
+                                                                  0.5*(self.DECmax-self.DECmin)]),
+                                            mjd=52000., bandpassName='r')
 
     def testBoxBounds(self):
         """
@@ -336,7 +330,7 @@ class boundingBoxTest(unittest.TestCase):
         catName = os.path.join(getPackageDir('sims_catalogs'), 'tests',
                                'scratchSpace', 'box_test_catalog.txt')
 
-        myCatalog = self.starDB.getCatalog('bounds_catalog',obs_metadata = self.obsMdBox)
+        myCatalog = self.starDB.getCatalog('bounds_catalog', obs_metadata = self.obsMdBox)
 
         myIterator = myCatalog.iter_catalog(chunk_size=10)
 
@@ -348,7 +342,7 @@ class boundingBoxTest(unittest.TestCase):
 
         myCatalog.write_catalog(catName)
 
-        #now we will test for the completeness of the box bounds
+        # now we will test for the completeness of the box bounds
 
         dtype = np.dtype([('id', np.int),
                           ('raJ2000', np.float),
@@ -366,13 +360,12 @@ class boundingBoxTest(unittest.TestCase):
         for line in self.starControlData:
             if line['id'] not in testData['id']:
                 ct += 1
-                in_bounds = (line['raJ2000']<self.RAmax) and (line['raJ2000']>self.RAmin) \
-                            and (line['decJ2000']<self.DECmax) and (line['decJ2000']>self.DECmin)
+                in_bounds = ((line['raJ2000'] < self.RAmax) and (line['raJ2000'] > self.RAmin) and
+                             (line['decJ2000'] < self.DECmax) and (line['decJ2000'] > self.DECmin))
 
                 msg = 'violates bounds\nRA: %e < %e <%e\nDec: %e < %e < %e\n' % \
-                       (self.RAmin, line['raJ2000'], self.RAmax,
-                        self.DECmin, line['decJ2000'], self.DECmax)
-
+                      (self.RAmin, line['raJ2000'], self.RAmax,
+                       self.DECmin, line['decJ2000'], self.DECmax)
 
                 self.assertFalse(in_bounds, msg=msg)
 
@@ -380,7 +373,6 @@ class boundingBoxTest(unittest.TestCase):
 
         if os.path.exists(catName):
             os.unlink(catName)
-
 
     def testCircBounds(self):
 
@@ -395,7 +387,7 @@ class boundingBoxTest(unittest.TestCase):
         if os.path.exists(catName):
             os.unlink(catName)
 
-        myCatalog = self.starDB.getCatalog('bounds_catalog',obs_metadata = self.obsMdCirc)
+        myCatalog = self.starDB.getCatalog('bounds_catalog', obs_metadata = self.obsMdCirc)
         myIterator = myCatalog.iter_catalog(chunk_size=10)
 
         for line in myIterator:
@@ -406,7 +398,7 @@ class boundingBoxTest(unittest.TestCase):
 
         myCatalog.write_catalog(catName)
 
-        #now we will test for the completeness of the circular bounds
+        # now we will test for the completeness of the circular bounds
 
         dtype = np.dtype([('id', np.int),
                           ('raJ2000', np.float),
@@ -437,20 +429,10 @@ class boundingBoxTest(unittest.TestCase):
             os.unlink(catName)
 
 
+class MemoryTestClass(lsst.utils.tests.MemoryTestCase):
+    pass
 
-def suite():
-    """Returns a suite containing all the test cases in this module."""
-    utilsTests.init()
-    suites = []
-    suites += unittest.makeSuite(InstanceCatalogTestCase)
-    suites += unittest.makeSuite(utilsTests.MemoryTestCase)
-    suites += unittest.makeSuite(boundingBoxTest)
-
-    return unittest.TestSuite(suites)
-
-def run(shouldExit=False):
-    """Run the tests"""
-    utilsTests.run(suite(), shouldExit)
 
 if __name__ == "__main__":
-    run(True)
+    lsst.utils.tests.init()
+    unittest.main()

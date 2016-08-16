@@ -2,13 +2,16 @@ from __future__ import with_statement
 import unittest
 import numpy
 import os
-import lsst.utils.tests as utilsTests
+import lsst.utils.tests
 from lsst.utils import getPackageDir
 
 from lsst.sims.utils import ObservationMetaData
-from lsst.sims.catalogs.db import fileDBObject, \
-                                  CompoundCatalogDBObject, \
-                                  CatalogDBObject
+from lsst.sims.catalogs.db import fileDBObject, CompoundCatalogDBObject, CatalogDBObject
+
+
+def setup_module(module):
+    lsst.utils.tests.init()
+
 
 class dbClass1(CatalogDBObject):
     objid = 'class1'
@@ -68,7 +71,7 @@ class dbClass6(CatalogDBObject):
     idColKey = 'id'
     tableid = 'test'
     columns = [('a', None),
-               ('b',None)]
+               ('b', None)]
 
 
 class specificCompoundObj_otherTest(CompoundCatalogDBObject):
@@ -88,14 +91,12 @@ class CompoundCatalogDBObjectTestCase(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         numpy.random.seed(42)
-        dtype = numpy.dtype([
-                            ('a', numpy.float),
-                            ('b', numpy.float),
-                            ('c', numpy.float),
-                            ('d', str, 20)
-                            ])
+        dtype = numpy.dtype([('a', numpy.float),
+                             ('b', numpy.float),
+                             ('c', numpy.float),
+                             ('d', str, 20)])
 
-        nSamples=100
+        nSamples = 100
         aList = numpy.random.random_sample(nSamples)*10.0
         bList = numpy.random.random_sample(nSamples)*(-1.0)
         cList = numpy.random.random_sample(nSamples)*10.0-5.0
@@ -105,12 +106,9 @@ class CompoundCatalogDBObjectTestCase(unittest.TestCase):
             ww += 'b'
             dList.append(ww)
 
-        cls.controlArray = numpy.rec.fromrecords([
-                                                 (aa, bb, cc, dd) \
-                                                 for aa, bb, cc ,dd in \
-                                                 zip(aList, bList, cList, dList)
-                                                 ], dtype=dtype)
-
+        cls.controlArray = numpy.rec.fromrecords([(aa, bb, cc, dd)
+                                                  for aa, bb, cc, dd in zip(aList, bList, cList, dList)],
+                                                 dtype=dtype)
 
         baseDir = os.path.join(getPackageDir('sims_catalogs'),
                                'tests', 'scratchSpace')
@@ -124,9 +122,7 @@ class CompoundCatalogDBObjectTestCase(unittest.TestCase):
             for ix, (aa, bb, cc, dd) in enumerate(zip(aList, bList, cList, dList)):
                 output.write('%d %e %e %e %s\n' % (ix, aa, bb, cc, dd))
 
-
-
-        cls.dbName =  os.path.join(baseDir, 'compoundCatalogTestDB.db')
+        cls.dbName = os.path.join(baseDir, 'compoundCatalogTestDB.db')
         if os.path.exists(cls.dbName):
             os.unlink(cls.dbName)
 
@@ -142,17 +138,17 @@ class CompoundCatalogDBObjectTestCase(unittest.TestCase):
                             ('d', str, 20)
                             ])
 
-        fdbo = fileDBObject(cls.textFileName, runtable='test',
-                            database=cls.dbName, dtype=dtype,
-                            idColKey='id')
+        fileDBObject(cls.textFileName, runtable='test',
+                     database=cls.dbName, dtype=dtype,
+                     idColKey='id')
 
-        fdbo = fileDBObject(cls.textFileName, runtable='test',
-                            database=cls.otherDbName, dtype=dtype,
-                            idColKey='id')
+        fileDBObject(cls.textFileName, runtable='test',
+                     database=cls.otherDbName, dtype=dtype,
+                     idColKey='id')
 
-        fdbo = fileDBObject(cls.textFileName, runtable='otherTest',
-                            database=cls.dbName, dtype=dtype,
-                            idColKey='id')
+        fileDBObject(cls.textFileName, runtable='otherTest',
+                     database=cls.dbName, dtype=dtype,
+                     idColKey='id')
 
     @classmethod
     def tearDownClass(cls):
@@ -162,7 +158,6 @@ class CompoundCatalogDBObjectTestCase(unittest.TestCase):
             os.unlink(cls.dbName)
         if os.path.exists(cls.otherDbName):
             os.unlink(cls.otherDbName)
-
 
     def testExceptions(self):
         """
@@ -184,10 +179,10 @@ class CompoundCatalogDBObjectTestCase(unittest.TestCase):
         db2 = testDbClass2()
 
         with self.assertRaises(RuntimeError) as context:
-            compound = CompoundCatalogDBObject([db1, db2])
+            CompoundCatalogDBObject([db1, db2])
 
-        self.assertTrue("['%s', '%s']" % (self.otherDbName, self.dbName) \
-                        in context.exception.message)
+        self.assertIn("['%s', '%s']" % (self.otherDbName, self.dbName),
+                      context.exception.message)
 
         # test case where they are querying the same database, but different
         # tables
@@ -201,9 +196,9 @@ class CompoundCatalogDBObjectTestCase(unittest.TestCase):
             driver = 'sqlite'
 
         with self.assertRaises(RuntimeError) as context:
-            compound = CompoundCatalogDBObject([testDbClass3, testDbClass4])
+            CompoundCatalogDBObject([testDbClass3, testDbClass4])
 
-        self.assertTrue("['otherTest', 'test']" in context.exception.message)
+        self.assertIn("['otherTest', 'test']", context.exception.message)
 
         # test case where the CatalogDBObjects have the same objid
         class testDbClass5(dbClass4):
@@ -217,9 +212,9 @@ class CompoundCatalogDBObjectTestCase(unittest.TestCase):
             objid = 'dummy'
 
         with self.assertRaises(RuntimeError) as context:
-            compound = CompoundCatalogDBObject([testDbClass5, testDbClass6])
+            CompoundCatalogDBObject([testDbClass5, testDbClass6])
 
-        self.assertTrue("objid dummy is duplicated" in context.exception.message)
+        self.assertIn("objid dummy is duplicated", context.exception.message)
 
         # test case where CompoundCatalogDBObject does not support the
         # tables being queried
@@ -229,15 +224,13 @@ class CompoundCatalogDBObjectTestCase(unittest.TestCase):
 
         class testDbClass8(dbClass2):
             database = self.dbName
-            driver ='sqlite'
+            driver = 'sqlite'
 
         with self.assertRaises(RuntimeError) as context:
-            compound = specificCompoundObj_otherTest([testDbClass7, testDbClass8])
+            specificCompoundObj_otherTest([testDbClass7, testDbClass8])
 
         msg = "This CompoundCatalogDBObject does not support the table 'test'"
-        self.assertTrue(msg in context.exception.message)
-
-
+        self.assertIn(msg, context.exception.message)
 
     def testCompoundCatalogDBObject(self):
         """
@@ -287,11 +280,9 @@ class CompoundCatalogDBObjectTestCase(unittest.TestCase):
                                                     self.controlArray['a'],
                                                     decimal=6)
 
-
             numpy.testing.assert_array_almost_equal(chunk['%s_aa' % db3.objid],
                                                     self.controlArray['c']-3.0,
                                                     decimal=6)
-
 
             numpy.testing.assert_array_almost_equal(chunk['%s_bb' % db3.objid],
                                                     self.controlArray['a'],
@@ -340,7 +331,6 @@ class CompoundCatalogDBObjectTestCase(unittest.TestCase):
                                                     self.controlArray['a'],
                                                     decimal=6)
 
-
     def testUniversalTableRestriction(self):
         """
         Verify that _table_restriction with multiple tables also works
@@ -387,11 +377,9 @@ class CompoundCatalogDBObjectTestCase(unittest.TestCase):
                                                     self.controlArray['a'],
                                                     decimal=6)
 
-
             numpy.testing.assert_array_almost_equal(chunk['%s_aa' % db3.objid],
                                                     self.controlArray['c']-3.0,
                                                     decimal=6)
-
 
             numpy.testing.assert_array_almost_equal(chunk['%s_bb' % db3.objid],
                                                     self.controlArray['a'],
@@ -400,8 +388,6 @@ class CompoundCatalogDBObjectTestCase(unittest.TestCase):
             numpy.testing.assert_array_almost_equal(chunk['%s_cc' % db3.objid],
                                                     3.0*self.controlArray['b'],
                                                     decimal=6)
-
-
 
     def testChunks(self):
         """
@@ -439,7 +425,7 @@ class CompoundCatalogDBObjectTestCase(unittest.TestCase):
         for chunk in results:
             ct += len(chunk['%s_aa' % db1.objid])
             rows = chunk['id']
-            self.assertTrue(len(rows)<=10)
+            self.assertLessEqual(len(rows), 10)
 
             numpy.testing.assert_array_almost_equal(chunk['%s_aa' % db1.objid],
                                                     self.controlArray['a'][rows],
@@ -456,11 +442,9 @@ class CompoundCatalogDBObjectTestCase(unittest.TestCase):
                                                     self.controlArray['a'][rows],
                                                     decimal=6)
 
-
             numpy.testing.assert_array_almost_equal(chunk['%s_aa' % db3.objid],
                                                     self.controlArray['c'][rows]-3.0,
                                                     decimal=6)
-
 
             numpy.testing.assert_array_almost_equal(chunk['%s_bb' % db3.objid],
                                                     self.controlArray['a'][rows],
@@ -471,7 +455,6 @@ class CompoundCatalogDBObjectTestCase(unittest.TestCase):
                                                     decimal=6)
 
         self.assertEqual(ct, 100)
-
 
     def testNoneMapping(self):
         """
@@ -538,11 +521,12 @@ class testStarDB2(CatalogDBObject):
 
 class CompoundWithObsMetaData(unittest.TestCase):
 
+    longMessage = True
+
     @classmethod
     def setUpClass(cls):
         cls.baseDir = os.path.join(getPackageDir('sims_catalogs'),
                                    'tests', 'scratchSpace')
-
 
         cls.textFileName = os.path.join(cls.baseDir, 'compound_obs_metadata_text_data.txt')
 
@@ -558,11 +542,8 @@ class CompoundWithObsMetaData(unittest.TestCase):
                             ('mag', numpy.float)
                             ])
 
-        cls.controlArray = numpy.rec.fromrecords([
-                                                  (r, d, m) \
-                                                  for r, d, m in \
-                                                  zip(raList, decList, magList)
-                                                  ], dtype=dtype)
+        cls.controlArray = numpy.rec.fromrecords([(r, d, m) for r, d, m in zip(raList, decList, magList)],
+                                                 dtype=dtype)
 
         dbDtype = numpy.dtype([
                               ('id', numpy.int),
@@ -584,9 +565,9 @@ class CompoundWithObsMetaData(unittest.TestCase):
         if os.path.exists(cls.dbName):
             os.unlink(cls.dbName)
 
-        fdbo = fileDBObject(cls.textFileName, runtable='test',
-                            database=cls.dbName, dtype=dbDtype,
-                            idColKey='id')
+        fileDBObject(cls.textFileName, runtable='test',
+                     database=cls.dbName, dtype=dbDtype,
+                     idColKey='id')
 
     @classmethod
     def tearDownClass(cls):
@@ -595,7 +576,6 @@ class CompoundWithObsMetaData(unittest.TestCase):
 
         if os.path.exists(cls.dbName):
             os.unlink(cls.dbName)
-
 
     def testObsMetaData(self):
         """
@@ -608,7 +588,6 @@ class CompoundWithObsMetaData(unittest.TestCase):
                                   boundType = 'box',
                                   boundLength = (80.0, 25.0),
                                   mjd=53580.0)
-
 
         class testDbClass22(testStarDB1):
             database = self.dbName
@@ -643,21 +622,20 @@ class CompoundWithObsMetaData(unittest.TestCase):
                 self.assertAlmostEqual(line['%s_raJ2000' % db2.objid], 2.0*self.controlArray['ra'][ix], 10)
                 self.assertAlmostEqual(line['%s_decJ2000' % db2.objid], 2.0*self.controlArray['dec'][ix], 10)
                 self.assertAlmostEqual(line['%s_magMod' % db2.objid], 2.0*self.controlArray['mag'][ix], 10)
-                self.assertTrue(self.controlArray['ra'][ix]>100.0)
-                self.assertTrue(self.controlArray['ra'][ix]<260.0)
-                self.assertTrue(self.controlArray['dec'][ix]>-25.0)
-                self.assertTrue(self.controlArray['dec'][ix]<25.0)
+                self.assertGreater(self.controlArray['ra'][ix], 100.0)
+                self.assertLess(self.controlArray['ra'][ix], 260.0)
+                self.assertGreater(self.controlArray['dec'][ix], -25.0)
+                self.assertLess(self.controlArray['dec'][ix], 25.0)
 
-        bad_rows = [ix for ix in range(self.controlArray.shape[0]) if ix not in good_rows]
+        bad_rows = [ii for ii in range(self.controlArray.shape[0]) if ii not in good_rows]
 
-        in_bounds = [rr>100.0 and rr<260.0 and dd>-25.0 and dd<25.0 \
-                      for (rr, dd) in \
-                      zip(self.controlArray['ra'][bad_rows], self.controlArray['dec'][bad_rows])]
+        in_bounds = [rr > 100.0 and rr < 260.0 and dd > -25.0 and dd < 25.0
+                     for (rr, dd) in zip(self.controlArray['ra'][bad_rows],
+                                         self.controlArray['dec'][bad_rows])]
 
-        self.assertFalse(True in in_bounds)
-        self.assertTrue(len(good_rows)>0)
-        self.assertTrue(len(bad_rows)>0)
-
+        self.assertNotIn(True, in_bounds, msg='failed to build bad_rows')
+        self.assertGreater(len(good_rows), 0)
+        self.assertGreater(len(bad_rows), 0)
 
     def testContraint(self):
         """
@@ -697,18 +675,16 @@ class CompoundWithObsMetaData(unittest.TestCase):
                 self.assertAlmostEqual(line['%s_raJ2000' % db2.objid], 2.0*self.controlArray['ra'][ix], 10)
                 self.assertAlmostEqual(line['%s_decJ2000' % db2.objid], 2.0*self.controlArray['dec'][ix], 10)
                 self.assertAlmostEqual(line['%s_magMod' % db2.objid], 2.0*self.controlArray['mag'][ix], 10)
-                self.assertTrue(self.controlArray['mag'][ix]<11.0)
+                self.assertLess(self.controlArray['mag'][ix], 11.0)
 
+        bad_rows = [ii for ii in range(self.controlArray.shape[0]) if ii not in good_rows]
 
-        bad_rows = [ix for ix in range(self.controlArray.shape[0]) if ix not in good_rows]
+        in_bounds = [mm < 11.0 for mm in self.controlArray['mag'][bad_rows]]
 
-        in_bounds = [mm<11.0 for mm in self.controlArray['mag'][bad_rows]]
-
-        self.assertFalse(True in in_bounds)
-        self.assertTrue(len(good_rows)>0)
-        self.assertTrue(len(bad_rows)>0)
+        self.assertNotIn(True, in_bounds, msg='failed to build bad_rows')
+        self.assertGreater(len(good_rows), 0)
+        self.assertGreater(len(bad_rows), 0)
         self.assertEqual(len(good_rows)+len(bad_rows), self.controlArray.shape[0])
-
 
     def testObsMetadataAndConstraint(self):
         """
@@ -755,39 +731,28 @@ class CompoundWithObsMetaData(unittest.TestCase):
                 self.assertAlmostEqual(line['%s_raJ2000' % db2.objid], 2.0*self.controlArray['ra'][ix], 10)
                 self.assertAlmostEqual(line['%s_decJ2000' % db2.objid], 2.0*self.controlArray['dec'][ix], 10)
                 self.assertAlmostEqual(line['%s_magMod' % db2.objid], 2.0*self.controlArray['mag'][ix], 10)
-                self.assertTrue(self.controlArray['ra'][ix]>100.0)
-                self.assertTrue(self.controlArray['ra'][ix]<260.0)
-                self.assertTrue(self.controlArray['dec'][ix]>-25.0)
-                self.assertTrue(self.controlArray['dec'][ix]<25.0)
-                self.assertTrue(self.controlArray['mag'][ix]>15.0)
+                self.assertGreater(self.controlArray['ra'][ix], 100.0)
+                self.assertLess(self.controlArray['ra'][ix], 260.0)
+                self.assertGreater(self.controlArray['dec'][ix], -25.0)
+                self.assertLess(self.controlArray['dec'][ix], 25.0)
+                self.assertGreater(self.controlArray['mag'][ix], 15.0)
 
-        bad_rows = [ix for ix in range(self.controlArray.shape[0]) if ix not in good_rows]
+        bad_rows = [ii for ii in range(self.controlArray.shape[0]) if ii not in good_rows]
 
-        in_bounds = [rr>100.0 and rr<260.0 and dd>-25.0 and dd<25.0 and mm>150.0 \
-                      for (rr, dd, mm) in \
-                      zip(self.controlArray['ra'][bad_rows], self.controlArray['dec'][bad_rows], \
-                          self.controlArray['mag'][bad_rows])]
+        in_bounds = [rr > 100.0 and rr < 260.0 and dd > -25.0 and dd < 25.0 and mm > 150.0
+                     for (rr, dd, mm) in zip(self.controlArray['ra'][bad_rows],
+                                             self.controlArray['dec'][bad_rows],
+                                             self.controlArray['mag'][bad_rows])]
 
-        self.assertFalse(True in in_bounds)
-        self.assertTrue(len(good_rows)>0)
-        self.assertTrue(len(bad_rows)>0)
+        self.assertNotIn(True, in_bounds, msg='failed to build bad_rows')
+        self.assertGreater(len(good_rows), 0)
+        self.assertGreater(len(bad_rows), 0)
         self.assertEqual(len(good_rows)+len(bad_rows), self.controlArray.shape[0])
 
 
-
-def suite():
-    """Returns a suite containing all the test cases in this module."""
-    utilsTests.init()
-    suites = []
-    suites += unittest.makeSuite(CompoundCatalogDBObjectTestCase)
-    suites += unittest.makeSuite(CompoundWithObsMetaData)
-
-
-    return unittest.TestSuite(suites)
-
-def run(shouldExit=False):
-    """Run the tests"""
-    utilsTests.run(suite(), shouldExit)
+class MemoryTestClass(lsst.utils.tests.MemoryTestCase):
+    pass
 
 if __name__ == "__main__":
-    run(True)
+    lsst.utils.tests.init()
+    unittest.main()

@@ -1,9 +1,16 @@
 import os
 import sqlite3
 
-import unittest, numpy, warnings
-import lsst.utils.tests as utilsTests
+import numpy as np
+import unittest
+import warnings
+import lsst.utils.tests
 from lsst.sims.catalogs.db import DBObject
+
+
+def setup_module(module):
+    lsst.utils.tests.init()
+
 
 def createDB():
     """
@@ -22,9 +29,9 @@ def createDB():
         raise RuntimeError("Error creating database.")
 
     for ii in range(100):
-        ll=2*ii
-        jj=2*ll
-        kk=3*ll
+        ll = 2*ii
+        jj = 2*ll
+        kk = 3*ll
         cmd = '''INSERT INTO intTable VALUES (%s, %s, %s)''' % (ll, jj, kk)
         c.execute(cmd)
 
@@ -37,9 +44,9 @@ def createDB():
     except:
         raise RuntimeError("Error creating database (double).")
     for ii in range(200):
-        ll=ii+1
-        nn = numpy.sqrt(float(ll))
-        mm = numpy.log(float(ll))
+        ll = ii + 1
+        nn = np.sqrt(float(ll))
+        mm = np.log(float(ll))
 
         cmd = '''INSERT INTO doubleTable VALUES (%s, %s, %s)''' % (ll, nn, mm)
         c.execute(cmd)
@@ -51,16 +58,15 @@ def createDB():
     except:
         raise RuntimeError("Error creating database (double).")
     for ii in range(200):
-        ll=ii+1
-        nn = numpy.sqrt(float(ll))
-        mm = numpy.log(float(ll))
+        ll = ii + 1
+        nn = np.sqrt(float(ll))
+        mm = np.log(float(ll))
 
         cmd = '''INSERT INTO junkTable VALUES (%s, %s, %s)''' % (ll, nn, mm)
         c.execute(cmd)
 
     conn.commit()
     conn.close()
-
 
 
 class DBObjectTestCase(unittest.TestCase):
@@ -75,12 +81,12 @@ class DBObjectTestCase(unittest.TestCase):
             os.unlink('testDBObjectDB.db')
 
     def setUp(self):
-       self.driver = 'sqlite'
-       self.database = 'testDBObjectDB.db'
+        self.driver = 'sqlite'
+        self.database = 'testDBObjectDB.db'
 
     def tearDown(self):
-       self.driver = 'sqlite'
-       self.database = 'testDBObjectDB.db'
+        self.driver = 'sqlite'
+        self.database = 'testDBObjectDB.db'
 
     def testTableNames(self):
         """
@@ -89,8 +95,8 @@ class DBObjectTestCase(unittest.TestCase):
         dbobj = DBObject(driver=self.driver, database=self.database)
         names = dbobj.get_table_names()
         self.assertEqual(len(names), 3)
-        self.assertTrue('doubleTable' in names)
-        self.assertTrue('intTable' in names)
+        self.assertIn('doubleTable', names)
+        self.assertIn('intTable', names)
 
     def testReadOnlyFilter(self):
         """
@@ -100,14 +106,14 @@ class DBObjectTestCase(unittest.TestCase):
         dbobj = DBObject(driver=self.driver, database=self.database)
         controlQuery = 'SELECT doubleTable.id, intTable.id, doubleTable.log, intTable.thrice '
         controlQuery += 'FROM doubleTable, intTable WHERE doubleTable.id = intTable.id'
-        controlResults = dbobj.execute_arbitrary(controlQuery)
+        dbobj.execute_arbitrary(controlQuery)
 
-        #make sure that execute_arbitrary only accepts strings
+        # make sure that execute_arbitrary only accepts strings
         query = ['a', 'list']
         self.assertRaises(RuntimeError, dbobj.execute_arbitrary, query)
 
-        #check that our filter catches different capitalization permutations of the
-        #verboten commands
+        # check that our filter catches different capitalization permutations of the
+        # verboten commands
         query = 'DROP TABLE junkTable'
         self.assertRaises(RuntimeError, dbobj.execute_arbitrary, query)
         self.assertRaises(RuntimeError, dbobj.execute_arbitrary, query.lower())
@@ -146,29 +152,29 @@ class DBObjectTestCase(unittest.TestCase):
         dbobj = DBObject(driver=self.driver, database=self.database)
         names = dbobj.get_column_names('doubleTable')
         self.assertEqual(len(names), 3)
-        self.assertTrue('id' in names)
-        self.assertTrue('sqrt' in names)
-        self.assertTrue('log' in names)
+        self.assertIn('id', names)
+        self.assertIn('sqrt', names)
+        self.assertIn('log', names)
 
         names = dbobj.get_column_names('intTable')
         self.assertEqual(len(names), 3)
-        self.assertTrue('id' in names)
-        self.assertTrue('twice' in names)
-        self.assertTrue('thrice' in names)
+        self.assertIn('id', names)
+        self.assertIn('twice', names)
+        self.assertIn('thrice', names)
 
         names = dbobj.get_column_names()
         keys = ['doubleTable', 'intTable', 'junkTable']
         for kk in names:
-            self.assertTrue(kk in keys)
+            self.assertIn(kk, keys)
 
         self.assertEqual(len(names['doubleTable']), 3)
         self.assertEqual(len(names['intTable']), 3)
-        self.assertTrue('id' in names['doubleTable'])
-        self.assertTrue('sqrt' in names['doubleTable'])
-        self.assertTrue('log' in names['doubleTable'])
-        self.assertTrue('id' in names['intTable'])
-        self.assertTrue('twice' in names['intTable'])
-        self.assertTrue('thrice' in names['intTable'])
+        self.assertIn('id', names['doubleTable'])
+        self.assertIn('sqrt', names['doubleTable'])
+        self.assertIn('log', names['doubleTable'])
+        self.assertIn('id', names['intTable'])
+        self.assertIn('twice', names['intTable'])
+        self.assertIn('thrice', names['intTable'])
 
     def testSingleTableQuery(self):
         """
@@ -178,15 +184,14 @@ class DBObjectTestCase(unittest.TestCase):
         query = 'SELECT id, sqrt FROM doubleTable'
         results = dbobj.get_chunk_iterator(query)
 
-        dtype = [
-                ('id', int),
-                ('sqrt', float)]
+        dtype = [('id', int),
+                 ('sqrt', float)]
 
         i = 1
         for chunk in results:
             for row in chunk:
                 self.assertEqual(row[0], i)
-                self.assertAlmostEqual(row[1], numpy.sqrt(i))
+                self.assertAlmostEqual(row[1], np.sqrt(i))
                 self.assertEqual(dtype, row.dtype)
                 i += 1
 
@@ -205,7 +210,7 @@ class DBObjectTestCase(unittest.TestCase):
 
         self.assertEqual(results.dtype, dtype)
         for xx in results:
-            self.assertAlmostEqual(numpy.log(xx[0]), xx[1], 6)
+            self.assertAlmostEqual(np.log(xx[0]), xx[1], 6)
 
         self.assertEqual(len(results), 200)
 
@@ -231,17 +236,17 @@ class DBObjectTestCase(unittest.TestCase):
 
         i = 0
         for chunk in results:
-            if i<90:
+            if i < 90:
                 self.assertEqual(len(chunk), 10)
             for row in chunk:
                 self.assertEqual(2*(i+1), row[0])
                 self.assertEqual(row[0], row[1])
-                self.assertAlmostEqual(numpy.log(row[0]), row[2], 6)
+                self.assertAlmostEqual(np.log(row[0]), row[2], 6)
                 self.assertEqual(3*row[0], row[3])
                 self.assertEqual(dtype, row.dtype)
                 i += 1
         self.assertEqual(i, 99)
-        #make sure that we found all the matches whe should have
+        # make sure that we found all the matches whe should have
 
         results = dbobj.execute_arbitrary(query)
         self.assertEqual(dtype, results.dtype)
@@ -249,11 +254,11 @@ class DBObjectTestCase(unittest.TestCase):
         for row in results:
             self.assertEqual(2*(i+1), row[0])
             self.assertEqual(row[0], row[1])
-            self.assertAlmostEqual(numpy.log(row[0]), row[2], 6)
+            self.assertAlmostEqual(np.log(row[0]), row[2], 6)
             self.assertEqual(3*row[0], row[3])
             i += 1
         self.assertEqual(i, 99)
-        #make sure we found all the matches we should have
+        # make sure we found all the matches we should have
 
     def testMinMax(self):
         """
@@ -267,7 +272,6 @@ class DBObjectTestCase(unittest.TestCase):
 
         dtype = [('MAXthrice', int), ('MINthrice', int)]
         self.assertEqual(results.dtype, dtype)
-
 
     def testPassingConnection(self):
         """
@@ -288,17 +292,17 @@ class DBObjectTestCase(unittest.TestCase):
 
         i = 0
         for chunk in results:
-            if i<90:
+            if i < 90:
                 self.assertEqual(len(chunk), 10)
             for row in chunk:
                 self.assertEqual(2*(i+1), row[0])
                 self.assertEqual(row[0], row[1])
-                self.assertAlmostEqual(numpy.log(row[0]), row[2], 6)
+                self.assertAlmostEqual(np.log(row[0]), row[2], 6)
                 self.assertEqual(3*row[0], row[3])
                 self.assertEqual(dtype, row.dtype)
                 i += 1
         self.assertEqual(i, 99)
-        #make sure that we found all the matches whe should have
+        # make sure that we found all the matches whe should have
 
         results = dbobj.execute_arbitrary(query)
         self.assertEqual(dtype, results.dtype)
@@ -306,12 +310,11 @@ class DBObjectTestCase(unittest.TestCase):
         for row in results:
             self.assertEqual(2*(i+1), row[0])
             self.assertEqual(row[0], row[1])
-            self.assertAlmostEqual(numpy.log(row[0]), row[2], 6)
+            self.assertAlmostEqual(np.log(row[0]), row[2], 6)
             self.assertEqual(3*row[0], row[3])
             i += 1
         self.assertEqual(i, 99)
-        #make sure we found all the matches we should have
-
+        # make sure we found all the matches we should have
 
     def testValidationErrors(self):
         """ Test that appropriate errors and warnings are thrown when connecting
@@ -322,26 +325,19 @@ class DBObjectTestCase(unittest.TestCase):
             DBObject('sqlite:///' + self.database)
             assert len(w) == 1
 
-        #missing database
+        # missing database
         self.assertRaises(AttributeError, DBObject, driver=self.driver)
-        #missing driver
+        # missing driver
         self.assertRaises(AttributeError, DBObject, database=self.database)
-        #missing host
+        # missing host
         self.assertRaises(AttributeError, DBObject, driver='mssql+pymssql')
-        #missing port
+        # missing port
         self.assertRaises(AttributeError, DBObject, driver='mssql+pymssql', host='localhost')
 
 
-def suite():
-    """Returns a suite containing all the test cases in this module."""
-    utilsTests.init()
-    suites = []
-    suites += unittest.makeSuite(DBObjectTestCase)
-    return unittest.TestSuite(suites)
-
-def run(shouldExit=False):
-    """Run the tests"""
-    utilsTests.run(suite(), shouldExit)
+class MemoryTestClass(lsst.utils.tests.MemoryTestCase):
+    pass
 
 if __name__ == "__main__":
-    run(True)
+    lsst.utils.tests.init()
+    unittest.main()

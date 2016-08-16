@@ -1,11 +1,16 @@
 import os
-import numpy
+import numpy as np
 import unittest
-import sqlite3, json
-import lsst.utils.tests as utilsTests
+import sqlite3
+import lsst.utils.tests
 from lsst.sims.catalogs.definitions import InstanceCatalog
 from lsst.sims.catalogs.decorators import cached, compound
 from lsst.sims.catalogs.db import CatalogDBObject
+
+
+def setup_module(module):
+    lsst.utils.tests.init()
+
 
 def makeTestDB(name, size=10, **kwargs):
     """
@@ -28,57 +33,61 @@ def makeTestDB(name, size=10, **kwargs):
 
     for i in xrange(size):
 
-        ra = numpy.random.sample()*360.0
-        dec = (numpy.random.sample()-0.5)*180.0
+        ra = np.random.sample()*360.0
+        dec = (np.random.sample()-0.5)*180.0
 
-        #insert the row into the data base
-        qstr = '''INSERT INTO testTable VALUES (%i, '%f', '%f', '%f', '%f')''' % (i, 2.0*i,3.0*i,ra,dec)
+        # insert the row into the data base
+        qstr = '''INSERT INTO testTable VALUES (%i, '%f', '%f', '%f', '%f')''' % (i, 2.0*i, 3.0*i, ra, dec)
         c.execute(qstr)
 
     conn.commit()
     conn.close()
 
+
 class testDBObject(CatalogDBObject):
     objid = 'testDBObject'
     tableid = 'testTable'
     idColKey = 'id'
-    #Make this implausibly large?
+    # Make this implausibly large?
     appendint = 1023
     database = 'colOriginsTestDatabase.db'
     driver = 'sqlite'
     raColName = 'ra'
     decColName = 'decl'
     columns = [('objid', 'id', int),
-               ('raJ2000', 'ra*%f'%(numpy.pi/180.)),
-               ('decJ2000', 'decl*%f'%(numpy.pi/180.)),
+               ('raJ2000', 'ra*%f'%(np.pi/180.)),
+               ('decJ2000', 'decl*%f'%(np.pi/180.)),
                ('aa', None),
                ('bb', None)]
 
-#Below we define mixins which calculate the variables 'cc' and 'dd in different
-#ways.  The idea is to see if InstanceCatalog correctly identifies where
-#the columns come from in those cases
+
+# Below we define mixins which calculate the variables 'cc' and 'dd in different
+# ways.  The idea is to see if InstanceCatalog correctly identifies where
+# the columns come from in those cases
 class mixin1(object):
     @cached
     def get_cc(self):
         aa = self.column_by_name('aa')
         bb = self.column_by_name('bb')
 
-        return numpy.array(aa-bb)
+        return np.array(aa-bb)
 
     @cached
     def get_dd(self):
         aa = self.column_by_name('aa')
         bb = self.column_by_name('bb')
 
-        return numpy.array(aa+bb)
+        return np.array(aa+bb)
+
 
 class mixin2(object):
-    @compound('cc','dd')
+    @compound('cc', 'dd')
     def get_both(self):
         aa = self.column_by_name('aa')
         bb = self.column_by_name('bb')
 
-        return numpy.array([aa-bb,aa+bb])
+        return np.array([aa-bb, aa+bb])
+
 
 class mixin3(object):
     @cached
@@ -86,33 +95,40 @@ class mixin3(object):
         aa = self.column_by_name('aa')
         bb = self.column_by_name('bb')
 
-        return numpy.array(aa-bb)
+        return np.array(aa-bb)
 
-#Below we define catalog classes that use different combinations
-#of the mixins above to calculate the columns 'cc' and 'dd'
+
+# Below we define catalog classes that use different combinations
+# of the mixins above to calculate the columns 'cc' and 'dd'
 class testCatalogDefaults(InstanceCatalog):
-    column_outputs = ['objid','aa','bb','cc','dd','raJ2000','decJ2000']
-    default_columns = [('cc',0.0,float),('dd',1.0,float)]
+    column_outputs = ['objid', 'aa', 'bb', 'cc', 'dd', 'raJ2000', 'decJ2000']
+    default_columns = [('cc', 0.0, float), ('dd', 1.0, float)]
 
-class testCatalogMixin1(InstanceCatalog,mixin1):
-    column_outputs = ['objid','aa','bb','cc','dd','raJ2000','decJ2000']
-    default_columns = [('cc',0.0,float),('dd',1.0,float)]
 
-class testCatalogMixin2(InstanceCatalog,mixin2):
-    column_outputs = ['objid','aa','bb','cc','dd','raJ2000','decJ2000']
-    default_columns = [('cc',0.0,float),('dd',1.0,float)]
+class testCatalogMixin1(InstanceCatalog, mixin1):
+    column_outputs = ['objid', 'aa', 'bb', 'cc', 'dd', 'raJ2000', 'decJ2000']
+    default_columns = [('cc', 0.0, float), ('dd', 1.0, float)]
 
-class testCatalogMixin3(InstanceCatalog,mixin3):
-    column_outputs = ['objid','aa','bb','cc','dd','raJ2000','decJ2000']
-    default_columns = [('cc',0.0,float),('dd',1.0,float)]
 
-class testCatalogMixin3Mixin1(InstanceCatalog,mixin3,mixin1):
-    column_outputs = ['objid','aa','bb','cc','dd','raJ2000','decJ2000']
-    default_columns = [('cc',0.0,float),('dd',1.0,float)]
+class testCatalogMixin2(InstanceCatalog, mixin2):
+    column_outputs = ['objid', 'aa', 'bb', 'cc', 'dd', 'raJ2000', 'decJ2000']
+    default_columns = [('cc', 0.0, float), ('dd', 1.0, float)]
 
-class testCatalogAunspecified(InstanceCatalog,mixin3,mixin1):
-    column_outputs = ['objid','bb','cc','dd','raJ2000','decJ2000']
-    default_columns = [('aa',-1.0,float),('cc',0.0,float),('dd',1.0,float)]
+
+class testCatalogMixin3(InstanceCatalog, mixin3):
+    column_outputs = ['objid', 'aa', 'bb', 'cc', 'dd', 'raJ2000', 'decJ2000']
+    default_columns = [('cc', 0.0, float), ('dd', 1.0, float)]
+
+
+class testCatalogMixin3Mixin1(InstanceCatalog, mixin3, mixin1):
+    column_outputs = ['objid', 'aa', 'bb', 'cc', 'dd', 'raJ2000', 'decJ2000']
+    default_columns = [('cc', 0.0, float), ('dd', 1.0, float)]
+
+
+class testCatalogAunspecified(InstanceCatalog, mixin3, mixin1):
+    column_outputs = ['objid', 'bb', 'cc', 'dd', 'raJ2000', 'decJ2000']
+    default_columns = [('aa', -1.0, float), ('cc', 0.0, float), ('dd', 1.0, float)]
+
 
 class testColumnOrigins(unittest.TestCase):
 
@@ -131,15 +147,9 @@ class testColumnOrigins(unittest.TestCase):
 
     def setUp(self):
         self.myDBobject = testDBObject(database=self.dbName)
-        self.mixin1Name = '<class \'__main__.mixin1\'>'
-        self.mixin2Name = '<class \'__main__.mixin2\'>'
-        self.mixin3Name = '<class \'__main__.mixin3\'>'
 
     def tearDown(self):
         del self.myDBobject
-        del self.mixin1Name
-        del self.mixin2Name
-        del self.mixin3Name
 
     def testDefaults(self):
         """
@@ -147,13 +157,13 @@ class testColumnOrigins(unittest.TestCase):
         """
         myCatalog = testCatalogDefaults(self.myDBobject)
 
-        self.assertEqual(myCatalog._column_origins['objid'],'the database')
-        self.assertEqual(myCatalog._column_origins['raJ2000'],'the database')
-        self.assertEqual(myCatalog._column_origins['decJ2000'],'the database')
-        self.assertEqual(myCatalog._column_origins['aa'],'the database')
-        self.assertEqual(myCatalog._column_origins['bb'],'the database')
-        self.assertEqual(myCatalog._column_origins['cc'],'default column')
-        self.assertEqual(myCatalog._column_origins['dd'],'default column')
+        self.assertEqual(myCatalog._column_origins['objid'], 'the database')
+        self.assertEqual(myCatalog._column_origins['raJ2000'], 'the database')
+        self.assertEqual(myCatalog._column_origins['decJ2000'], 'the database')
+        self.assertEqual(myCatalog._column_origins['aa'], 'the database')
+        self.assertEqual(myCatalog._column_origins['bb'], 'the database')
+        self.assertEqual(myCatalog._column_origins['cc'], 'default column')
+        self.assertEqual(myCatalog._column_origins['dd'], 'default column')
 
     def testMixin1(self):
         """
@@ -161,13 +171,15 @@ class testColumnOrigins(unittest.TestCase):
         """
         myCatalog = testCatalogMixin1(self.myDBobject)
 
-        self.assertEqual(myCatalog._column_origins['objid'],'the database')
-        self.assertEqual(myCatalog._column_origins['raJ2000'],'the database')
-        self.assertEqual(myCatalog._column_origins['decJ2000'],'the database')
-        self.assertEqual(myCatalog._column_origins['aa'],'the database')
-        self.assertEqual(myCatalog._column_origins['bb'],'the database')
-        self.assertEqual(str(myCatalog._column_origins['cc']),self.mixin1Name)
-        self.assertEqual(str(myCatalog._column_origins['dd']),self.mixin1Name)
+        self.assertEqual(myCatalog._column_origins['objid'], 'the database')
+        self.assertEqual(myCatalog._column_origins['raJ2000'], 'the database')
+        self.assertEqual(myCatalog._column_origins['decJ2000'], 'the database')
+        self.assertEqual(myCatalog._column_origins['aa'], 'the database')
+        self.assertEqual(myCatalog._column_origins['bb'], 'the database')
+
+        # test that the last string in the column origin name refers to the correct mixin
+        self.assertEqual(str(myCatalog._column_origins['cc']).replace("'>", '').split('.')[-1], 'mixin1')
+        self.assertEqual(str(myCatalog._column_origins['dd']).replace("'>", '').split('.')[-1], 'mixin1')
 
     def testMixin2(self):
         """
@@ -175,13 +187,15 @@ class testColumnOrigins(unittest.TestCase):
         """
         myCatalog = testCatalogMixin2(self.myDBobject)
 
-        self.assertEqual(myCatalog._column_origins['objid'],'the database')
-        self.assertEqual(myCatalog._column_origins['raJ2000'],'the database')
-        self.assertEqual(myCatalog._column_origins['decJ2000'],'the database')
-        self.assertEqual(myCatalog._column_origins['aa'],'the database')
-        self.assertEqual(myCatalog._column_origins['bb'],'the database')
-        self.assertEqual(str(myCatalog._column_origins['cc']),self.mixin2Name)
-        self.assertEqual(str(myCatalog._column_origins['dd']),self.mixin2Name)
+        self.assertEqual(myCatalog._column_origins['objid'], 'the database')
+        self.assertEqual(myCatalog._column_origins['raJ2000'], 'the database')
+        self.assertEqual(myCatalog._column_origins['decJ2000'], 'the database')
+        self.assertEqual(myCatalog._column_origins['aa'], 'the database')
+        self.assertEqual(myCatalog._column_origins['bb'], 'the database')
+
+        # test that the final string in the column origins name refers to the mixin
+        self.assertEqual(str(myCatalog._column_origins['cc']).replace("'>", '').split('.')[-1], 'mixin2')
+        self.assertEqual(str(myCatalog._column_origins['dd']).replace("'>", '').split('.')[-1], 'mixin2')
 
     def testMixin3(self):
         """
@@ -189,13 +203,15 @@ class testColumnOrigins(unittest.TestCase):
         """
         myCatalog = testCatalogMixin3(self.myDBobject)
 
-        self.assertEqual(myCatalog._column_origins['objid'],'the database')
-        self.assertEqual(myCatalog._column_origins['raJ2000'],'the database')
-        self.assertEqual(myCatalog._column_origins['decJ2000'],'the database')
-        self.assertEqual(myCatalog._column_origins['aa'],'the database')
-        self.assertEqual(myCatalog._column_origins['bb'],'the database')
-        self.assertEqual(str(myCatalog._column_origins['cc']),self.mixin3Name)
-        self.assertEqual(str(myCatalog._column_origins['dd']),'default column')
+        self.assertEqual(myCatalog._column_origins['objid'], 'the database')
+        self.assertEqual(myCatalog._column_origins['raJ2000'], 'the database')
+        self.assertEqual(myCatalog._column_origins['decJ2000'], 'the database')
+        self.assertEqual(myCatalog._column_origins['aa'], 'the database')
+        self.assertEqual(myCatalog._column_origins['bb'], 'the database')
+
+        # test that the final string in the column origins name refers to the correct origin
+        self.assertEqual(str(myCatalog._column_origins['cc']).replace("'>", '').split('.')[-1], 'mixin3')
+        self.assertEqual(str(myCatalog._column_origins['dd']), 'default column')
 
     def testMixin3Mixin1(self):
         """
@@ -203,13 +219,13 @@ class testColumnOrigins(unittest.TestCase):
         """
         myCatalog = testCatalogMixin3Mixin1(self.myDBobject)
 
-        self.assertEqual(myCatalog._column_origins['objid'],'the database')
-        self.assertEqual(myCatalog._column_origins['raJ2000'],'the database')
-        self.assertEqual(myCatalog._column_origins['decJ2000'],'the database')
-        self.assertEqual(myCatalog._column_origins['aa'],'the database')
-        self.assertEqual(myCatalog._column_origins['bb'],'the database')
-        self.assertEqual(str(myCatalog._column_origins['cc']),self.mixin3Name)
-        self.assertEqual(str(myCatalog._column_origins['dd']),self.mixin1Name)
+        self.assertEqual(myCatalog._column_origins['objid'], 'the database')
+        self.assertEqual(myCatalog._column_origins['raJ2000'], 'the database')
+        self.assertEqual(myCatalog._column_origins['decJ2000'], 'the database')
+        self.assertEqual(myCatalog._column_origins['aa'], 'the database')
+        self.assertEqual(myCatalog._column_origins['bb'], 'the database')
+        self.assertEqual(str(myCatalog._column_origins['cc']).replace("'>", '').split('.')[-1], 'mixin3')
+        self.assertEqual(str(myCatalog._column_origins['dd']).replace("'>", '').split('.')[-1], 'mixin1')
 
     def testAunspecified(self):
         """
@@ -217,13 +233,15 @@ class testColumnOrigins(unittest.TestCase):
         """
         myCatalog = testCatalogAunspecified(self.myDBobject)
 
-        self.assertEqual(myCatalog._column_origins['objid'],'the database')
-        self.assertEqual(myCatalog._column_origins['raJ2000'],'the database')
-        self.assertEqual(myCatalog._column_origins['decJ2000'],'the database')
-        self.assertEqual(myCatalog._column_origins['aa'],'the database')
-        self.assertEqual(myCatalog._column_origins['bb'],'the database')
-        self.assertEqual(str(myCatalog._column_origins['cc']),self.mixin3Name)
-        self.assertEqual(str(myCatalog._column_origins['dd']),self.mixin1Name)
+        self.assertEqual(myCatalog._column_origins['objid'], 'the database')
+        self.assertEqual(myCatalog._column_origins['raJ2000'], 'the database')
+        self.assertEqual(myCatalog._column_origins['decJ2000'], 'the database')
+        self.assertEqual(myCatalog._column_origins['aa'], 'the database')
+        self.assertEqual(myCatalog._column_origins['bb'], 'the database')
+
+        # test that the last string in the column origin name points to the correct mixin
+        self.assertEqual(str(myCatalog._column_origins['cc']).replace("'>", '').split('.')[-1], 'mixin3')
+        self.assertEqual(str(myCatalog._column_origins['dd']).replace("'>", '').split('.')[-1], 'mixin1')
 
 
 class myDummyCatalogClass(InstanceCatalog):
@@ -233,14 +251,12 @@ class myDummyCatalogClass(InstanceCatalog):
     def get_cc(self):
         return self.column_by_name('aa')+1.0
 
-    @compound('dd','ee','ff')
+    @compound('dd', 'ee', 'ff')
     def get_compound(self):
 
-        return numpy.array([
-                           self.column_by_name('aa')+2.0,
-                           self.column_by_name('aa')+3.0,
-                           self.column_by_name('aa')+4.0
-                           ])
+        return np.array([self.column_by_name('aa')+2.0,
+                         self.column_by_name('aa')+3.0,
+                         self.column_by_name('aa')+4.0])
 
 
 class myDependentColumnsClass_shouldPass(InstanceCatalog):
@@ -254,10 +270,11 @@ class myDependentColumnsClass_shouldPass(InstanceCatalog):
 
         return self.column_by_name('aa') + delta
 
+
 class myDependentColumnsClass_shouldFail(InstanceCatalog):
 
     def get_cc(self):
-       return self.column_by_name('aa')+1.0
+        return self.column_by_name('aa')+1.0
 
     def get_dd(self):
 
@@ -270,6 +287,7 @@ class myDependentColumnsClass_shouldFail(InstanceCatalog):
 
     def get_ee(self):
         return self.column_by_name('aa')+self.column_by_name('doesNotExist')
+
 
 class AllAvailableColumns(unittest.TestCase):
     """
@@ -293,28 +311,26 @@ class AllAvailableColumns(unittest.TestCase):
     def setUp(self):
         self.db = testDBObject(database=self.dbName)
 
-
     def testAllGetters(self):
         """
         test that the self._all_available_columns list contains all of the columns
         definedin an InstanceCatalog and its CatalogDBObject
         """
         cat = myDummyCatalogClass(self.db, column_outputs=['aa'])
-        self.assertTrue('cc' in cat._all_available_columns)
-        self.assertTrue('dd' in cat._all_available_columns)
-        self.assertTrue('ee' in cat._all_available_columns)
-        self.assertTrue('ff' in cat._all_available_columns)
-        self.assertTrue('compound' in cat._all_available_columns)
-        self.assertTrue('id' in cat._all_available_columns)
-        self.assertTrue('aa' in cat._all_available_columns)
-        self.assertTrue('bb' in cat._all_available_columns)
-        self.assertTrue('ra' in cat._all_available_columns)
-        self.assertTrue('decl' in cat._all_available_columns)
-        self.assertTrue('decJ2000' in cat._all_available_columns)
-        self.assertTrue('raJ2000' in cat._all_available_columns)
-        self.assertTrue('objid' in cat._all_available_columns)
-        self.assertTrue('sillyDefault' in cat._all_available_columns)
-
+        self.assertIn('cc', cat._all_available_columns)
+        self.assertIn('dd', cat._all_available_columns)
+        self.assertIn('ee', cat._all_available_columns)
+        self.assertIn('ff', cat._all_available_columns)
+        self.assertIn('compound', cat._all_available_columns)
+        self.assertIn('id', cat._all_available_columns)
+        self.assertIn('aa', cat._all_available_columns)
+        self.assertIn('bb', cat._all_available_columns)
+        self.assertIn('ra', cat._all_available_columns)
+        self.assertIn('decl', cat._all_available_columns)
+        self.assertIn('decJ2000', cat._all_available_columns)
+        self.assertIn('raJ2000', cat._all_available_columns)
+        self.assertIn('objid', cat._all_available_columns)
+        self.assertIn('sillyDefault', cat._all_available_columns)
 
     def testDependentColumns(self):
         """
@@ -331,25 +347,20 @@ class AllAvailableColumns(unittest.TestCase):
         so any catalog that requests the column 'dd' should fail to construct.
         """
 
-        cat = myDependentColumnsClass_shouldPass(self.db, column_outputs=['dd'])
+        myDependentColumnsClass_shouldPass(self.db, column_outputs=['dd'])
 
-        #as long as we do not request the column 'dd', this should work
-        cat = myDependentColumnsClass_shouldFail(self.db, column_outputs=['cc'])
+        # as long as we do not request the column 'dd', this should work
+        myDependentColumnsClass_shouldFail(self.db, column_outputs=['cc'])
 
-        #because we are requesting the column 'dd', which depends on the fictitious column
-        #'doesNotExist', this should raise an exception
+        # because we are requesting the column 'dd', which depends on the fictitious column
+        # 'doesNotExist', this should raise an exception
         self.assertRaises(ValueError, myDependentColumnsClass_shouldFail, self.db, column_outputs=['dd'])
 
 
-def suite():
-    utilsTests.init()
-    suites = []
-    suites += unittest.makeSuite(testColumnOrigins)
-    suites += unittest.makeSuite(AllAvailableColumns)
-    return unittest.TestSuite(suites)
+class MemoryTestClass(lsst.utils.tests.MemoryTestCase):
+    pass
 
-def run(shouldExit = False):
-    utilsTests.run(suite(),shouldExit)
 
 if __name__ == "__main__":
-    run(True)
+    lsst.utils.tests.init()
+    unittest.main()
