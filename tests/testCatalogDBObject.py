@@ -343,7 +343,7 @@ class CatalogDBObjectTestCase(unittest.TestCase):
             # box bound
 
             switch = (entry[1] > raMax or entry[1] < raMin or entry[2] > decMax or entry[2] < decMin)
-            self.assertTrue(switch)
+            self.assertTrue(switch, msg='query failed to find a star that was within bounds')
             ct += 1
         self.assertGreater(ct, 0)
 
@@ -407,7 +407,7 @@ class CatalogDBObjectTestCase(unittest.TestCase):
             switch = (entry[1] > raMax or entry[1] < raMin or
                       entry[2] > decMax or entry[2] < decMin or entry[3] < 11.0)
 
-            self.assertTrue(switch)
+            self.assertTrue(switch, msg='query failed to find a star that was within bounds')
             ct += 1
         self.assertGreater(ct, 0)
 
@@ -484,7 +484,8 @@ class CatalogDBObjectTestCase(unittest.TestCase):
         self.assertEqual(mygalaxies.database, 'testCatalogDBObjectDatabase.db')
         self.assertEqual(mygalaxies.appendint, 1022)
         self.assertEqual(mygalaxies.tableid, 'galaxies')
-        self.assertTrue(hasattr(mygalaxies, 'spatialModel'))
+        self.assertTrue(hasattr(mygalaxies, 'spatialModel'),
+                        msg="mygalaxies does not have attr 'spatialModel'")
         self.assertEqual(mygalaxies.spatialModel, 'SERSIC2D')
         self.assertEqual(mygalaxies.objid, 'testCatalogDBObjectTestgals')
 
@@ -718,7 +719,7 @@ class CatalogDBObjectTestCase(unittest.TestCase):
             # box bound
 
             switch = (entry[1] > raMax or entry[1] < raMin or entry[2] > decMax or entry[2] < decMin)
-            self.assertTrue(switch)
+            self.assertTrue(switch, msg='query failed to find a star that was within bounds')
             ct += 1
         self.assertGreater(ct, 0)
 
@@ -784,7 +785,7 @@ class CatalogDBObjectTestCase(unittest.TestCase):
             switch = (entry[1] > raMax or entry[1] < raMin or
                       entry[2] > decMax or entry[2] < decMin or entry[3] < 11.0)
 
-            self.assertTrue(switch)
+            self.assertTrue(switch, msg='query failed to find a star that was within bounds')
             ct += 1
         self.assertGreater(ct, 0)
 
@@ -1063,7 +1064,7 @@ class fileDBObjectTestCase(unittest.TestCase):
             # box bound
 
             switch = (entry[1] > raMax or entry[1] < raMin or entry[2] > decMax or entry[2] < decMin)
-            self.assertTrue(switch)
+            self.assertTrue(switch, msg='query failed to find a star that was within bounds')
             ct += 1
         self.assertGreater(ct, 0)
 
@@ -1140,7 +1141,7 @@ class fileDBObjectTestCase(unittest.TestCase):
                       entry[2] > decMax or entry[2] < decMin or
                       entry[3] < 11.0)
 
-            self.assertTrue(switch)
+            self.assertTrue(switch, msg='query failed to find a star that was within bounds')
             ct += 1
         self.assertGreater(ct, 0)
 
