@@ -2,11 +2,16 @@ from __future__ import with_statement
 import unittest
 import os
 import numpy as np
-import lsst.utils.tests as utilsTests
+import lsst.utils.tests
 
 from lsst.utils import getPackageDir
 from lsst.sims.catalogs.db import fileDBObject, CatalogDBObject
 from lsst.sims.catalogs.definitions import InstanceCatalog
+
+
+def setup_module(module):
+    lsst.utils.tests.init()
+
 
 class ConnectionPassingTest(unittest.TestCase):
     """
@@ -181,14 +186,9 @@ class ConnectionPassingTest(unittest.TestCase):
             os.unlink(catName)
 
 
-def suite():
-    utilsTests.init()
-    suites = []
-    suites += unittest.makeSuite(ConnectionPassingTest)
+class MemoryTestClass(lsst.utils.tests.MemoryTestCase):
+    pass
 
-    return unittest.TestSuite(suites)
-
-def run(shouldExit = False):
-    utilsTests.run(suite(), shouldExit)
 if __name__ == "__main__":
-    run(True)
+    lsst.utils.tests.init()
+    unittest.main()
