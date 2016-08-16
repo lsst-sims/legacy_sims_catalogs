@@ -43,7 +43,6 @@ class ClassD(ClassA):
         return 'd'
 
 
-
 class MethodRegistryTestCase(unittest.TestCase):
 
     def testMethodInheritance(self):
@@ -79,7 +78,6 @@ class MethodRegistryTestCase(unittest.TestCase):
         self.assertEqual(dd.call('d'), 'd')
         self.assertRaises(KeyError, dd.call, 'b')
         self.assertRaises(KeyError, dd.call, 'c')
-
 
 
 class MemoryTestClass(lsst.utils.tests.MemoryTestCase):
