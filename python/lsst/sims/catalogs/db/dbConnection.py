@@ -414,14 +414,15 @@ class CatalogDBObjectMeta(type):
         if not hasattr(cls, 'registry'):
             cls.registry = {}
         else:
-            # add this class to the registry
-            if cls.objid in cls.registry:
-                srcfile = inspect.getsourcefile(cls.registry[cls.objid])
-                srcline = inspect.getsourcelines(cls.registry[cls.objid])[1]
-                warnings.warn('duplicate object identifier %s specified. '%(cls.objid)+\
-                              'This will override previous definition on line %i of %s'%
-                              (srcline, srcfile))
-            cls.registry[cls.objid] = cls
+            if not cls.skipRegistration:
+                # add this class to the registry
+                if cls.objid in cls.registry:
+                    srcfile = inspect.getsourcefile(cls.registry[cls.objid])
+                    srcline = inspect.getsourcelines(cls.registry[cls.objid])[1]
+                    warnings.warn('duplicate object identifier %s specified. '%(cls.objid)+\
+                                  'This will override previous definition on line %i of %s'%
+                                  (srcline, srcfile))
+                cls.registry[cls.objid] = cls
 
         # check if the list of unique ids is specified
         # if not, then this is the base class: add the list
