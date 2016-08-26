@@ -341,12 +341,12 @@ def makePhoSimTestDB(filename='PhoSimTestDatabase.db', size=1000, seedVal=32, ra
     dist2moon = haversine(numpy.radians(moon_ra), numpy.radians(moon_dec),
                           obs_metadata._pointingRA, obs_metadata._pointingDec)
 
-    obs_metadata.phoSimMetaData = {'moonra': moon_ra,
-                                   'moondec': moon_dec,
-                                   'moonalt': moon_alt,
-                                   'sunalt': sun_alt,
-                                   'dist2moon': dist2moon,
-                                   'rottelpos': numpy.degrees(rotTel)}
+    obs_metadata.OpsimMetaData = {'moonra': moon_ra,
+                                  'moondec': moon_dec,
+                                  'moonalt': moon_alt,
+                                  'sunalt': sun_alt,
+                                  'dist2moon': dist2moon,
+                                  'rottelpos': numpy.degrees(rotTel)}
 
     #Now begin building the database.
     #First create the tables.
