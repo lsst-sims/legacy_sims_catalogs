@@ -15,6 +15,12 @@ class CompoundInstanceCatalog(object):
 
     The write_catalog method then writes all of the InstanceCatalogs to one
     ASCII file using the same API as InstanceCatalog.write_catalog.
+
+    Note: any member variables of the CompoundInstanceCatalog whose names
+    do not begin with '_' will be assigned to the InstanceCatalog created
+    by the CompoundInstanceCatalog.  This allows you to, for example, format
+    the outputs of every InstanceCatalog in the CompoundInstanceCatalog by
+    setting override_formats in just the CompoundInstanceCatalog.
     """
 
     def __init__(self, instanceCatalogClassList, catalogDBObjectClassList,
@@ -211,6 +217,17 @@ class CompoundInstanceCatalog(object):
                 dbo = dboClass(connection=best_connection)
 
             ic = icClass(dbo, obs_metadata=self._obs_metadata)
+
+            # assign all non-private member variables of the CompoundInstanceCatalog
+            # to the instantiated InstanceCatalogs
+            for kk in self.__dict__:
+                if kk[0] != '_' and not hasattr(self.__dict__[kk], '__call__'):
+                    setattr(ic, kk, self.__dict__[kk])
+
+            for kk in self.__class__.__dict__:
+                if kk[0] != '_' and not hasattr(self.__class__.__dict__[kk], '__call__'):
+                    setattr(ic, kk, self.__class__.__dict__[kk])
+
             ic._write_pre_process()
             instantiated_ic_list[ix] = ic
 
