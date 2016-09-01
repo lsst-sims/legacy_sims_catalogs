@@ -288,6 +288,60 @@ class CompoundCatalogTest(unittest.TestCase):
         if os.path.exists(fileName):
             os.unlink(fileName)
 
+    def testSharedVariables(self):
+        """
+        Test that, if I set a transformations dict in the CompoundInstanceCatalog, that
+        gets propagated to all of the InstanceCatalogs inside it.
+        """
+        fileName = os.path.join(self.baseDir, 'transformed_compound_catalog.txt')
+
+        class TransformedCompoundCatalog(CompoundInstanceCatalog):
+            transformations = {'raObs': np.degrees, 'decObs': np.degrees}
+
+        compoundCat = TransformedCompoundCatalog([Cat1, Cat2, Cat3], [table1DB1, table1DB2, table2DB1])
+
+        compoundCat.write_catalog(fileName)
+
+        self.assertEqual(len(compoundCat._dbObjectGroupList), 2)
+        self.assertEqual(len(compoundCat._dbObjectGroupList[0]), 2)
+        self.assertEqual(len(compoundCat._dbObjectGroupList[1]), 1)
+        self.assertIn(0, compoundCat._dbObjectGroupList[0])
+        self.assertIn(1, compoundCat._dbObjectGroupList[0])
+        self.assertIn(2, compoundCat._dbObjectGroupList[1])
+
+        dtype = np.dtype([('id', np.int),
+                          ('raObs', np.float),
+                          ('decObs', np.float),
+                          ('final_mag', np.float)])
+
+        testData = np.genfromtxt(fileName, dtype=dtype)
+
+        for line in testData:
+            if line[0] < 2000:
+                ix = line[0]-1000
+                self.assertAlmostEqual(line[1], np.degrees(self.table1Control['ra'][ix]), 6)
+                self.assertAlmostEqual(line[2], np.degrees(self.table1Control['dec'][ix]), 6)
+                self.assertAlmostEqual(self.table1Control['mag'][ix]+self.table1Control['dmag'][ix],
+                                       line[3], 6)
+            elif line[0] < 3000:
+                ix = line[0] - 2000
+                self.assertAlmostEqual(line[1],
+                                       np.degrees(2.0*self.table1Control['ra'][ix] +
+                                                  self.table1Control['dra'][ix]), 6)
+                self.assertAlmostEqual(line[2],
+                                       np.degrees(2.0*self.table1Control['dec'][ix] +
+                                                  self.table1Control['ddec'][ix]), 6)
+                self.assertAlmostEqual(self.table1Control['mag'][ix] + self.table1Control['dmag'][ix],
+                                       line[3], 6)
+            else:
+                ix = line[0]-3000
+                self.assertAlmostEqual(line[1], np.degrees(self.table2Control['ra'][ix]), 6)
+                self.assertAlmostEqual(line[2], np.degrees(self.table2Control['dec'][ix]), 6)
+                self.assertAlmostEqual(line[3], self.table2Control['mag'][ix], 6)
+
+        if os.path.exists(fileName):
+            os.unlink(fileName)
+
     def testObservationMetaData(self):
         """
         Test that CompoundInstanceCatalog handles ObservationMetaData
