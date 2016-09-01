@@ -16,10 +16,19 @@ class CompoundInstanceCatalog(object):
     ASCII file using the same API as InstanceCatalog.write_catalog.
 
     Note: any member variables of the CompoundInstanceCatalog whose names
-    do not begin with '_' will be assigned to the InstanceCatalog created
-    by the CompoundInstanceCatalog.  This allows you to, for example, format
-    the outputs of every InstanceCatalog in the CompoundInstanceCatalog by
-    setting override_formats in just the CompoundInstanceCatalog.
+    do not begin with '_' will be assigned to the InstanceCatalogs iterated
+    over by the CompoundInstanceCatalog.  This allows you to, for example,
+    format the outputs of every InstanceCatalog in the CompoundInstanceCatalog
+    by setting override_formats in just the CompoundInstanceCatalog, e.g.
+
+    class myCompoundInstanceCatalog(CompoundInstanceCatalog):
+        transformations = {'raJ2000': np.degrees, 'decJ2000': np.degrees}
+
+    comCat = myCompoundInstanceCatalog([catClass1, catClass2],
+                                       [dbClass1, dbClass2])
+
+    will write raJ2000 and decJ2000 in degrees without having to define
+    transformations in catClass1 and catClass2.
     """
 
     def __init__(self, instanceCatalogClassList, catalogDBObjectClassList,
