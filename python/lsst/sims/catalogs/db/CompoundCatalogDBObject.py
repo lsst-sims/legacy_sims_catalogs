@@ -60,6 +60,8 @@ class CompoundCatalogDBObject(CatalogDBObject):
         from opening a redundant connection)
         """
 
+        self._master_column_name_map = {}
+
         self._dbObjectClassList = catalogDbObjectClassList
         self._validate_input()
 
@@ -112,14 +114,51 @@ class CompoundCatalogDBObject(CatalogDBObject):
         """
         column_names = []
         self.columns= []
+        root_and_transform_dict = {}
+        master_name_list = []
         for dbo, dbName in zip(self._dbObjectClassList, self._nameList):
             for row in dbo.columns:
-                new_row=[ww for ww in row]
-                new_row[0]=str('%s_%s' % (dbName, row[0]))
-                if new_row[1] is None:
-                    new_row[1] = row[0]
-                self.columns.append(tuple(new_row))
-                column_names.append(new_row[0])
+
+                # find the base column (on the database), and the transform
+                # to be applied to that columns
+                new_root_and_transform = row[1:]
+
+                # check if there is, in fact, no transform being applied to the column
+                if len(new_root_and_transform)==1:
+                        new_root_and_transform = (row[1], None)
+
+                if new_root_and_transform[0] is None:
+                    new_root_and_transform = (row[0], None)
+
+                if row[0] == row[1]:
+                    new_root_and_transform = (row[1], None)
+
+                # If that combination of transform and base column has already been discovered,
+                # do nothing.  If not, create a new entry in self.columns.  This way, we only
+                # query each column and transform combination once, no matter how many times
+                # they are needed.
+                if new_root_and_transform not in root_and_transform_dict:
+                    master_name = None
+                    i_name = 0
+                    while master_name is None or master_name in master_name_list:
+                        i_name += 1
+                        master_name = str('master_%d_%s' % (i_name, row[0]))
+
+                    new_row=[ww for ww in row]  # create a new row for self.columns
+                    new_row[0]=master_name
+                    if new_row[1] is None:
+                        new_row[1] = row[0]
+
+                    self.columns.append(tuple(new_row))
+                    column_names.append(new_row[0])
+                    master_name_list.append(master_name)
+                    root_and_transform_dict[new_root_and_transform] = master_name
+                else:
+                    master_name = root_and_transform_dict[new_root_and_transform]
+
+                # keep track of how individual CatalodDBObject columns map to
+                # columns as returned by this CompoundCatalogDbObject
+                self._master_column_name_map['%s_%s' % (str(dbName), row[0])] = master_name
 
                 # 25 August 2015
                 # This is a modification that needs to be made in order for this
@@ -238,3 +277,14 @@ class CompoundCatalogDBObject(CatalogDBObject):
             if tableList[0] not in self._table_restriction:
                 raise RuntimeError("This CompoundCatalogDBObject does not support " \
                                    + "the table '%s' " % tableList[0])
+
+    @property
+    def master_column_name_map(self):
+        """
+        This is a dict keyed on the names of columns from the individual
+        CatalogDBObjects making up this CompoundCatalogDBObject (mangled to
+        look like '%s_%s' % (db.objid, colname), returning the names of the
+        columns as stored in the recarray returned by this CompoundCatalogDBObject
+        (something like 'master_1_raJ2000').
+        """
+        return self._master_column_name_map
