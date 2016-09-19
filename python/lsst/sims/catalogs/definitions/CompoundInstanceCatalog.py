@@ -260,6 +260,8 @@ class CompoundInstanceCatalog(object):
             if len(row) > 1:
                 dbObjClassList = [self._dbo_list[ix] for ix in row]
                 catList = [instantiated_ic_list[ix] for ix in row]
+                for cat in catList:
+                    cat._pre_screen = True
 
                 # if a connection is already open to the database, use
                 # it rather than opening a new connection
