@@ -126,6 +126,14 @@ class unicodeCannotBeNullCatalog(InstanceCatalog):
     cannot_be_null = ['n5']
 
 
+class severalCannotBeNullCatalog(InstanceCatalog):
+    """
+    This catalog class will not write rows with a null value in the n2 column
+    """
+    column_outputs = ['id', 'n1', 'n2', 'n3', 'n4', 'n5']
+    cannot_be_null = ['n2', 'n4']
+
+
 class CanBeNullCatalog(InstanceCatalog):
     """
     This catalog class will write all rows to the catalog
@@ -394,7 +402,8 @@ class InstanceCatalogCannotBeNullTest(unittest.TestCase):
             """
 
             # each of these classes flags a different column with a different datatype as cannot_be_null
-            availableCatalogs = [floatCannotBeNullCatalog, strCannotBeNullCatalog, unicodeCannotBeNullCatalog]
+            availableCatalogs = [floatCannotBeNullCatalog, strCannotBeNullCatalog, unicodeCannotBeNullCatalog,
+                                 severalCannotBeNullCatalog]
             dbobj = CatalogDBObject.from_objid('cannotBeNull')
 
             for catClass in availableCatalogs:
@@ -414,14 +423,22 @@ class InstanceCatalogCannotBeNullTest(unittest.TestCase):
                     # first, we must assess whether or not the row we are currently
                     # testing would, in fact, pass the cannot_be_null test
                     validLine = True
-                    if (isinstance(self.baselineOutput[cat.cannot_be_null[0]][i], str) or
-                        isinstance(self.baselineOutput[cat.cannot_be_null[0]][i], unicode)):
 
-                        if self.baselineOutput[cat.cannot_be_null[0]][i].strip().lower() == 'none':
+                    for col_name in cat.cannot_be_null:
+                        if self.baselineOutput[col_name][i] is None:
                             validLine = False
-                    else:
-                        if np.isnan(self.baselineOutput[cat.cannot_be_null[0]][i]):
-                            validLine = False
+                            break
+
+                        if (isinstance(self.baselineOutput[col_name][i], np.string_) or
+                            isinstance(self.baselineOutput[col_name][i], unicode)):
+
+                            if self.baselineOutput[col_name][i].strip().lower() == 'none':
+                                validLine = False
+                                break
+                        else:
+                            if np.isnan(self.baselineOutput[col_name][i]):
+                                validLine = False
+                                break
 
                     if validLine:
                         # if the row in self.baslineOutput should be in the catalog, we now check
@@ -445,6 +462,7 @@ class InstanceCatalogCannotBeNullTest(unittest.TestCase):
                 self.assertEqual(j, len(testData))  # make sure that we tested all of the testData rows
                 msg = '%d >= %d' % (j, i)
                 self.assertLess(j, i, msg=msg)  # make sure that some rows did not make it into the catalog
+                self.assertGreater(j, 0) # makesure that some rows did make it into the catalog
 
             if os.path.exists(fileName):
                 os.unlink(fileName)
