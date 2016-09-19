@@ -385,6 +385,70 @@ class InstanceCatalogCannotBeNullTest(unittest.TestCase):
             if os.path.exists(fileName):
                 os.unlink(fileName)
 
+        def testCannotBeNull_pre_screen(self):
+            """
+            Test to make sure that the code for filtering out rows with null values
+            in key rowss works.  This time, check that the code works when we set
+            InstanceCatalog._pre_screen = True, causing write_catalog to screen
+            the database query results before calculating getter columns.
+            """
+
+            # each of these classes flags a different column with a different datatype as cannot_be_null
+            availableCatalogs = [floatCannotBeNullCatalog, strCannotBeNullCatalog, unicodeCannotBeNullCatalog]
+            dbobj = CatalogDBObject.from_objid('cannotBeNull')
+
+            for catClass in availableCatalogs:
+                cat = catClass(dbobj)
+                cat._pre_screen = True
+                fileName = 'cannotBeNullTestFile.txt'
+                cat.write_catalog(fileName)
+                dtype = np.dtype([('id', int), ('n1', np.float64), ('n2', np.float64), ('n3', np.float64),
+                                  ('n4', (str, 40)), ('n5', (unicode, 40))])
+                testData = np.genfromtxt(fileName, dtype=dtype, delimiter=',')
+
+                j = 0  # a counter to keep track of the rows read in from the catalog
+
+                for i in range(len(self.baselineOutput)):
+
+                    # self.baselineOutput contains all of the rows from the dbobj
+                    # first, we must assess whether or not the row we are currently
+                    # testing would, in fact, pass the cannot_be_null test
+                    validLine = True
+                    if (isinstance(self.baselineOutput[cat.cannot_be_null[0]][i], str) or
+                        isinstance(self.baselineOutput[cat.cannot_be_null[0]][i], unicode)):
+
+                        if self.baselineOutput[cat.cannot_be_null[0]][i].strip().lower() == 'none':
+                            validLine = False
+                    else:
+                        if np.isnan(self.baselineOutput[cat.cannot_be_null[0]][i]):
+                            validLine = False
+
+                    if validLine:
+                        # if the row in self.baslineOutput should be in the catalog, we now check
+                        # that baseline and testData agree on column values (there are some gymnastics
+                        # here because you cannot do an == on NaN's
+                        for (k, xx) in enumerate(self.baselineOutput[i]):
+                            if k < 4:
+                                if not np.isnan(xx):
+                                    msg = ('k: %d -- %s %s -- %s' %
+                                           (k, str(xx), str(testData[j][k]), cat.cannot_be_null))
+                                    self.assertAlmostEqual(xx, testData[j][k], 3, msg=msg)
+                                else:
+                                    np.testing.assert_equal(testData[j][k], np.NaN)
+                            else:
+                                msg = ('%s (%s) is not %s (%s)' %
+                                       (xx, type(xx), testData[j][k], type(testData[j][k])))
+                                self.assertEqual(xx.strip(), testData[j][k].strip(), msg=msg)
+                        j += 1
+
+                self.assertEqual(i, 99)  # make sure that we tested all of the baseline rows
+                self.assertEqual(j, len(testData))  # make sure that we tested all of the testData rows
+                msg = '%d >= %d' % (j, i)
+                self.assertLess(j, i, msg=msg)  # make sure that some rows did not make it into the catalog
+
+            if os.path.exists(fileName):
+                os.unlink(fileName)
+
         def testCanBeNull(self):
             """
             Test to make sure that we can still write all rows to catalogs,

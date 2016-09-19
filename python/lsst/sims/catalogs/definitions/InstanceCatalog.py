@@ -163,6 +163,8 @@ class InstanceCatalog(object):
     delimiter = ", "
     comment_char = "#"
     endline = "\n"
+    _pre_screen = False  # if true, write_catalog() will check database query resutls against
+                         # cannot_be_null before calculating getter columns
 
     @classmethod
     def new_catalog(cls, catalog_type, *args, **kwargs):
@@ -532,6 +534,16 @@ class InstanceCatalog(object):
         @param [in] file_handle is a file handle pointing to the file where
         the catalog is being written.
         """
+
+        if self._pre_screen:
+            # go through the database query results and remove all of those
+            # rows that have already run afoul of self.cannot_be_null
+            for col_name in self.cannot_be_null:
+                if col_name in chunk.dtype.names:
+                    str_vec = numpy.char.lower(chunk[col_name].astype('str'))
+                    good_dexes = numpy.where(numpy.logical_and(str_vec!='none',
+                                             numpy.logical_and(str_vec!='nan', str_vec!='null')))
+                    chunk = chunk[good_dexes]
 
         self._set_current_chunk(chunk)
         chunk_cols = [self.transformations[col](self.column_by_name(col))
