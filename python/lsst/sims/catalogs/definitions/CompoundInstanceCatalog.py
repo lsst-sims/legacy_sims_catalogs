@@ -321,21 +321,25 @@ class CompoundInstanceCatalog(object):
         'a' if you want to append to an existing output file (default: 'w')
         """
 
-        colnames = []
-        master_colnames = []
-        name_map = []
+        query_colnames = []  # names to pass to query_columns()
+        master_result_colnames = []  # list of lists containing column names as returned by query_columns
+        name_map = []  # list of dicts mapping column name as returned by query_columns to column names
+                       # needed by individual InstanceCatalogs
+
         dbObjNameList = [db.objid for db in compound_dbo._dbObjectClassList]
-        for name, cat in zip(dbObjNameList, catList):
-            localNames = []
+        for catName, cat in zip(dbObjNameList, catList):
+            local_result_names = []
             local_map = {}
             for colName in cat._active_columns:
-                colnames.append('%s_%s' % (name, colName))
-                localNames.append('%s_%s' % (name, colName))
-                local_map['%s_%s' % (name, colName)] = colName
-            master_colnames.append(localNames)
+                master_name = compound_dbo.master_column_name_map[str('%s_%s' % (catName, colName))]
+                if master_name not in query_colnames:
+                    query_colnames.append(master_name)
+                local_result_names.append(master_name)
+                local_map[master_name] = colName
+            master_result_colnames.append(local_result_names)
             name_map.append(local_map)
 
-        master_results = compound_dbo.query_columns(colnames=colnames,
+        master_results = compound_dbo.query_columns(colnames=query_colnames,
                                                     obs_metadata=self._obs_metadata,
                                                     constraint=self._constraint,
                                                     chunk_size=chunk_size)
@@ -351,19 +355,25 @@ class CompoundInstanceCatalog(object):
                 for ix, (catName, cat) in enumerate(zip(dbObjNameList, catList)):
 
                     if first_chunk:
-                        for iy, name in enumerate(master_colnames[ix]):
+                        for iy, name in enumerate(master_result_colnames[ix]):
                             if name not in chunk.dtype.fields:
-                                master_colnames[ix][iy] = name_map[ix][name]
+                                # It is possible that the column name did not get mangled
+                                # by the CompoundCatalogDBObject.  In that case, replace
+                                # the mangled name in master_result_colnames with the un-mangled
+                                # name
+                                master_result_colnames[ix][iy] = name_map[ix][name]
+                                unmangled_name = name_map[ix][name]
+                                name_map[ix][unmangled_name] = unmangled_name
 
-                    local_recarray = chunk[master_colnames[ix]].view(numpy.recarray)
+                    local_recarray = chunk[master_result_colnames[ix]].view(numpy.recarray)
 
                     local_recarray.flags['WRITEABLE'] = False  # so numpy does not raise a warning
                                                                # because it thinks we may accidentally
                                                                # write to this array
                     if new_dtype_list[ix] is None:
-                        new_dtype = numpy.dtype([tuple([dd.replace(catName+'_', '')] +
+                        new_dtype = numpy.dtype([tuple([name_map[ix][dd]] +
                                                        [local_recarray.dtype[dd]])
-                                                for dd in master_colnames[ix]])
+                                                for dd in master_result_colnames[ix]])
                         new_dtype_list[ix] = new_dtype
 
                     local_recarray.dtype = new_dtype_list[ix]
