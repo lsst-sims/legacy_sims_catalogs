@@ -350,7 +350,8 @@ class InstanceCatalogCannotBeNullTest(unittest.TestCase):
                                   ('n4', (str, 40)), ('n5', (unicode, 40))])
                 testData = np.genfromtxt(fileName, dtype=dtype, delimiter=',')
 
-                j = 0  # a counter to keep track of the rows read in from the catalog
+                ct_good = 0  # a counter to keep track of the rows read in from the catalog
+                ct_total = len(self.baselineOutput)
 
                 for i in range(len(self.baselineOutput)):
 
@@ -375,20 +376,19 @@ class InstanceCatalogCannotBeNullTest(unittest.TestCase):
                             if k < 4:
                                 if not np.isnan(xx):
                                     msg = ('k: %d -- %s %s -- %s' %
-                                           (k, str(xx), str(testData[j][k]), cat.cannot_be_null))
-                                    self.assertAlmostEqual(xx, testData[j][k], 3, msg=msg)
+                                           (k, str(xx), str(testData[ct_good][k]), cat.cannot_be_null))
+                                    self.assertAlmostEqual(xx, testData[ct_good][k], 3, msg=msg)
                                 else:
-                                    np.testing.assert_equal(testData[j][k], np.NaN)
+                                    np.testing.assert_equal(testData[ct_good][k], np.NaN)
                             else:
                                 msg = ('%s (%s) is not %s (%s)' %
-                                       (xx, type(xx), testData[j][k], type(testData[j][k])))
-                                self.assertEqual(xx.strip(), testData[j][k].strip(), msg=msg)
-                        j += 1
+                                       (xx, type(xx), testData[ct_good][k], type(testData[ct_good][k])))
+                                self.assertEqual(xx.strip(), testData[ct_good][k].strip(), msg=msg)
+                        ct_good += 1
 
-                self.assertEqual(i, 99)  # make sure that we tested all of the baseline rows
-                self.assertEqual(j, len(testData))  # make sure that we tested all of the testData rows
-                msg = '%d >= %d' % (j, i)
-                self.assertLess(j, i, msg=msg)  # make sure that some rows did not make it into the catalog
+                self.assertEqual(ct_good, len(testData))  # make sure that we tested all of the testData rows
+                msg = '%d >= %d' % (ct_good, ct_total)
+                self.assertLess(ct_good, ct_total, msg=msg)  # make sure that some rows did not make it into the catalog
 
             if os.path.exists(fileName):
                 os.unlink(fileName)
@@ -415,7 +415,8 @@ class InstanceCatalogCannotBeNullTest(unittest.TestCase):
                                   ('n4', (str, 40)), ('n5', (unicode, 40))])
                 testData = np.genfromtxt(fileName, dtype=dtype, delimiter=',')
 
-                j = 0  # a counter to keep track of the rows read in from the catalog
+                ct_good = 0  # a counter to keep track of the rows read in from the catalog
+                ct_total = len(self.baselineOutput)
 
                 for i in range(len(self.baselineOutput)):
 
@@ -448,21 +449,20 @@ class InstanceCatalogCannotBeNullTest(unittest.TestCase):
                             if k < 4:
                                 if not np.isnan(xx):
                                     msg = ('k: %d -- %s %s -- %s' %
-                                           (k, str(xx), str(testData[j][k]), cat.cannot_be_null))
-                                    self.assertAlmostEqual(xx, testData[j][k], 3, msg=msg)
+                                           (k, str(xx), str(testData[ct_good][k]), cat.cannot_be_null))
+                                    self.assertAlmostEqual(xx, testData[ct_good][k], 3, msg=msg)
                                 else:
-                                    np.testing.assert_equal(testData[j][k], np.NaN)
+                                    np.testing.assert_equal(testData[ct_good][k], np.NaN)
                             else:
                                 msg = ('%s (%s) is not %s (%s)' %
-                                       (xx, type(xx), testData[j][k], type(testData[j][k])))
-                                self.assertEqual(xx.strip(), testData[j][k].strip(), msg=msg)
-                        j += 1
+                                       (xx, type(xx), testData[ct_good][k], type(testData[ct_good][k])))
+                                self.assertEqual(xx.strip(), testData[ct_good][k].strip(), msg=msg)
+                        ct_good += 1
 
-                self.assertEqual(i, 99)  # make sure that we tested all of the baseline rows
-                self.assertEqual(j, len(testData))  # make sure that we tested all of the testData rows
-                msg = '%d >= %d' % (j, i)
-                self.assertLess(j, i, msg=msg)  # make sure that some rows did not make it into the catalog
-                self.assertGreater(j, 0) # makesure that some rows did make it into the catalog
+                self.assertEqual(ct_good, len(testData))  # make sure that we tested all of the testData rows
+                msg = '%d >= %d' % (ct_good, ct_total)
+                self.assertLess(ct_good, ct_total, msg=msg)  # make sure that some rows did not make it into the catalog
+                self.assertGreater(ct_good, 0) # makesure that some rows did make it into the catalog
 
             if os.path.exists(fileName):
                 os.unlink(fileName)
