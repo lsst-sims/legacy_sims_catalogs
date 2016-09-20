@@ -422,7 +422,7 @@ class InstanceCatalogCannotBeNullTest(unittest.TestCase):
         def testCannotBeNull_pre_screen(self):
             """
             Check that writing a catalog with self._pre_screen = True produces
-            the same results as writing one with self._pre_creen = False, except
+            the same results as writing one with self._pre_screen = False, except
             with a smaller self._current_chunk.
             """
 
