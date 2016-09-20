@@ -4,6 +4,7 @@ import numpy as np
 import sqlite3
 import unittest
 import lsst.utils.tests
+from lsst.utils import getPackageDir
 from lsst.sims.utils import ObservationMetaData
 from lsst.sims.catalogs.db import CatalogDBObject
 from lsst.sims.catalogs.utils import myTestStars, makeStarTestDB
@@ -197,6 +198,7 @@ class InstanceCatalogMetaDataTest(unittest.TestCase):
         new column_outputs to an InstanceCatalog using its constructor
         works properly.
         """
+        scratch_dir = os.path.join(getPackageDir('sims_catalogs'), 'tests', 'scratchSpace')
 
         mjd = 5120.0
         RA = 1.5
@@ -257,10 +259,10 @@ class InstanceCatalogMetaDataTest(unittest.TestCase):
         self.assertEqual(len(columnsShouldBe), 0)
         self.assertEqual(len(generatedColumns), 4)
 
-        testCat.write_catalog('testArgCatalog.txt')
-        inCat = open('testArgCatalog.txt', 'r')
-        lines = inCat.readlines()
-        inCat.close()
+        cat_name = os.path.join(scratch_dir, 'testArgCatalog.txt')
+        testCat.write_catalog(cat_name)
+        with open(cat_name, 'r') as inCat:
+            lines = inCat.readlines()
         header = lines[0]
         header = header.strip('#')
         header = header.strip('\n')
@@ -269,8 +271,8 @@ class InstanceCatalogMetaDataTest(unittest.TestCase):
         self.assertIn('decJ2000', header)
         self.assertIn('properMotionRa', header)
         self.assertIn('properMotionDec', header)
-        if os.path.exists('testArgCatalog.txt'):
-            os.unlink('testArgCatalog.txt')
+        if os.path.exists(cat_name):
+            os.unlink(cat_name)
 
     def testArgValues(self):
         """
@@ -286,8 +288,10 @@ class InstanceCatalogMetaDataTest(unittest.TestCase):
         for col in columns:
             self.assertIn(col, cat._actually_calculated_columns)
 
-        cat.write_catalog('cartoonValCat.txt')
-        testData = np.genfromtxt('cartoonValCat.txt', dtype=dtype, delimiter=',')
+        scratch_dir = os.path.join(getPackageDir('sims_catalogs'), 'tests', 'scratchSpace')
+        cat_name = os.path.join(scratch_dir, 'cartoonValCat.txt')
+        cat.write_catalog(cat_name)
+        testData = np.genfromtxt(cat_name, dtype=dtype, delimiter=',')
         for testLine, controlLine in zip(testData, baselineData):
             self.assertAlmostEqual(testLine[0], controlLine['n1'], 6)
             self.assertAlmostEqual(testLine[1], controlLine['n2'], 6)
@@ -296,8 +300,8 @@ class InstanceCatalogMetaDataTest(unittest.TestCase):
 
         if os.path.exists(dbName):
             os.unlink(dbName)
-        if os.path.exists('cartoonValCat.txt'):
-            os.unlink('cartoonValCat.txt')
+        if os.path.exists(cat_name):
+            os.unlink(cat_name)
 
     def testAllCalculatedColumns(self):
         """
@@ -339,13 +343,15 @@ class InstanceCatalogCannotBeNullTest(unittest.TestCase):
             in key rows works.
             """
 
+            scratch_dir = os.path.join(getPackageDir('sims_catalogs'), 'tests', 'scratchSpace')
+
             # each of these classes flags a different column with a different datatype as cannot_be_null
             availableCatalogs = [floatCannotBeNullCatalog, strCannotBeNullCatalog, unicodeCannotBeNullCatalog]
             dbobj = CatalogDBObject.from_objid('cannotBeNull')
 
             for catClass in availableCatalogs:
                 cat = catClass(dbobj)
-                fileName = 'cannotBeNullTestFile.txt'
+                fileName = os.path.join(scratch_dir, 'cannotBeNullTestFile.txt')
                 cat.write_catalog(fileName)
                 dtype = np.dtype([('id', int), ('n1', np.float64), ('n2', np.float64), ('n3', np.float64),
                                   ('n4', (str, 40)), ('n5', (unicode, 40))])
@@ -401,6 +407,8 @@ class InstanceCatalogCannotBeNullTest(unittest.TestCase):
             with a smaller self._current_chunk.
             """
 
+            scratch_dir = os.path.join(getPackageDir('sims_catalogs'), 'tests', 'scratchSpace')
+
             # each of these classes flags a different column with a different datatype as cannot_be_null
             availableCatalogs = [floatCannotBeNullCatalog, strCannotBeNullCatalog, unicodeCannotBeNullCatalog,
                                  severalCannotBeNullCatalog]
@@ -410,8 +418,8 @@ class InstanceCatalogCannotBeNullTest(unittest.TestCase):
                 cat = catClass(dbobj)
                 cat._pre_screen = True
                 control_cat = catClass(dbobj)
-                fileName = 'cannotBeNullTestFile_prescreen.txt'
-                control_fileName = 'cannotBeNullTestFile_prescreen_control.txt'
+                fileName = os.path.join(scratch_dir, 'cannotBeNullTestFile_prescreen.txt')
+                control_fileName = os.path.join(scratch_dir, 'cannotBeNullTestFile_prescreen_control.txt')
                 cat.write_catalog(fileName)
                 control_cat.write_catalog(control_fileName)
 
@@ -438,9 +446,10 @@ class InstanceCatalogCannotBeNullTest(unittest.TestCase):
             Test to make sure that we can still write all rows to catalogs,
             even those with null values in key columns
             """
+            scratch_dir = os.path.join(getPackageDir('sims_catalogs'), 'tests', 'scratchSpace')
             dbobj = CatalogDBObject.from_objid('cannotBeNull')
             cat = dbobj.getCatalog('canBeNull')
-            fileName = 'canBeNullTestFile.txt'
+            fileName = os.path.join(scratch_dir, 'canBeNullTestFile.txt')
             cat.write_catalog(fileName)
             dtype = np.dtype([('id', int), ('n1', np.float64), ('n2', np.float64), ('n3', np.float64),
                               ('n4', (str, 40)), ('n5', (unicode, 40))])
