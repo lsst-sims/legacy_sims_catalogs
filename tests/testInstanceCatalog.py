@@ -409,8 +409,16 @@ class InstanceCatalogCannotBeNullTest(unittest.TestCase):
             for catClass in availableCatalogs:
                 cat = catClass(dbobj)
                 cat._pre_screen = True
-                fileName = 'cannotBeNullTestFile.txt'
+                control_cat = catClass(dbobj)
+                fileName = 'cannotBeNullTestFile_prescreen.txt'
+                control_fileName = 'cannotBeNullTestFile_prescreen_control.txt'
                 cat.write_catalog(fileName)
+                control_cat.write_catalog(control_fileName)
+
+                # make sure that pre-screened catalog passed fewer rows into
+                # self._current_chunk than did the non-pre-screened catalog
+                self.assertGreater(control_cat._current_chunk.size, cat._current_chunk.size)
+
                 dtype = np.dtype([('id', int), ('n1', np.float64), ('n2', np.float64), ('n3', np.float64),
                                   ('n4', (str, 40)), ('n5', (unicode, 40))])
                 testData = np.genfromtxt(fileName, dtype=dtype, delimiter=',')
@@ -466,6 +474,8 @@ class InstanceCatalogCannotBeNullTest(unittest.TestCase):
 
             if os.path.exists(fileName):
                 os.unlink(fileName)
+            if os.path.exists(control_fileName):
+                os.unlink(control_fileName)
 
         def testCanBeNull(self):
             """
