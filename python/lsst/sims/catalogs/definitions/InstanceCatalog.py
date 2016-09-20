@@ -558,10 +558,8 @@ class InstanceCatalog(object):
                                # a null value in one of the columns that cannot be null; it is ignored
                                # if no columns are specified by cannot_be_null
 
-
-
     def iter_catalog(self, chunk_size=None):
-        db_required_columns = self.db_required_columns()
+        self.db_required_columns()
 
         query_result = self.db_obj.query_columns(colnames=self._active_columns,
                                                  obs_metadata=self.obs_metadata,
@@ -577,7 +575,7 @@ class InstanceCatalog(object):
                 yield line
 
     def iter_catalog_chunks(self, chunk_size=None):
-        db_required_columns = self.db_required_columns()
+        self.db_required_columns()
 
         query_result = self.db_obj.query_columns(colnames=self._active_columns,
                                                  obs_metadata=self.obs_metadata,
