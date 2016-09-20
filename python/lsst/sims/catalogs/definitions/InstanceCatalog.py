@@ -163,7 +163,7 @@ class InstanceCatalog(object):
     delimiter = ", "
     comment_char = "#"
     endline = "\n"
-    _pre_screen = False  # if true, write_catalog() will check database query resutls against
+    _pre_screen = False  # if true, write_catalog() will check database query results against
                          # cannot_be_null before calculating getter columns
 
     @classmethod
