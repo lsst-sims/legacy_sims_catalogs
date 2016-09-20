@@ -1,6 +1,6 @@
 """Instance Catalog"""
 import warnings
-import numpy
+import numpy as np
 import inspect
 import re
 import copy
@@ -29,7 +29,7 @@ def is_null(argument):
             return True
         elif argument.strip().lower() == 'none':
             return True
-    elif numpy.isnan(argument):
+    elif np.isnan(argument):
         return True
 
     return False
@@ -80,7 +80,7 @@ class InstanceCatalogMeta(type):
         for default in cls.default_columns:
             setattr(cls, 'default_%s'%(default[0]),
                     lambda self, value=default[1], type=default[2]:
-                    numpy.array([value for i in xrange(len(self._current_chunk))], dtype=type))
+                    np.array([value for i in xrange(len(self._current_chunk))], dtype=type))
 
         # store compound columns and check for collisions
         #
@@ -130,7 +130,7 @@ class _MimicRecordArray(object):
 
     def __getitem__(self, column):
         self.referenced_columns.add(column)
-        return numpy.empty(0)
+        return np.empty(0)
 
     def __len__(self):
         return 0
@@ -534,9 +534,9 @@ class InstanceCatalog(object):
             # rows that have already run afoul of self.cannot_be_null
             for col_name in self.cannot_be_null:
                 if col_name in chunk.dtype.names:
-                    str_vec = numpy.char.lower(chunk[col_name].astype('str'))
-                    good_dexes = numpy.where(numpy.logical_and(str_vec != 'none',
-                                             numpy.logical_and(str_vec != 'nan', str_vec != 'null')))
+                    str_vec = np.char.lower(chunk[col_name].astype('str'))
+                    good_dexes = np.where(np.logical_and(str_vec != 'none',
+                                          np.logical_and(str_vec != 'nan', str_vec != 'null')))
                     chunk = chunk[good_dexes]
 
         self._set_current_chunk(chunk)
@@ -553,7 +553,7 @@ class InstanceCatalog(object):
         # for memory efficiency
         file_handle.writelines(self._template % line
                                for line in zip(*chunk_cols)
-                               if numpy.array([not is_null(line[i]) for i in self._cannotBeNullDexes]).all())
+                               if np.array([not is_null(line[i]) for i in self._cannotBeNullDexes]).all())
                                # the last boolean in this line causes a row not to be printed if it has
                                # a null value in one of the columns that cannot be null; it is ignored
                                # if no columns are specified by cannot_be_null
@@ -596,7 +596,7 @@ class InstanceCatalog(object):
     def get_uniqueId(self, nShift=10):
         arr = self.column_by_name(self.refIdCol)
         if len(arr) > 0:
-            return numpy.left_shift(self.column_by_name(self.refIdCol), nShift) + \
+            return np.left_shift(self.column_by_name(self.refIdCol), nShift) + \
                    self.db_obj.getObjectTypeId()
         else:
             return arr
