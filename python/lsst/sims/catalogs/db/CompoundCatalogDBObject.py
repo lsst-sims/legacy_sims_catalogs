@@ -80,26 +80,6 @@ class CompoundCatalogDBObject(CatalogDBObject):
         self.raColName = dbo.raColName
         self.decColName = dbo.decColName
 
-        if hasattr(dbo, 'driver'):
-            driver = dbo.driver
-        else:
-            driver = None
-
-        if hasattr(dbo, 'host'):
-            host = dbo.host
-        else:
-            host = None
-
-        if hasattr(dbo, 'port'):
-            port = dbo.port
-        else:
-            port = None
-
-        if hasattr(dbo, 'verbose'):
-            verbose = dbo.verbose
-        else:
-            verbose = False
-
         super(CompoundCatalogDBObject, self).__init__(connection=dbo.connection)
 
     def _make_columns(self):
