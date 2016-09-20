@@ -128,7 +128,7 @@ class unicodeCannotBeNullCatalog(InstanceCatalog):
 
 class severalCannotBeNullCatalog(InstanceCatalog):
     """
-    This catalog class will not write rows with a null value in the n2 column
+    This catalog class will not write rows with null values in the n2 or n4 columns
     """
     column_outputs = ['id', 'n1', 'n2', 'n3', 'n4', 'n5']
     cannot_be_null = ['n2', 'n4']
@@ -335,7 +335,7 @@ class InstanceCatalogCannotBeNullTest(unittest.TestCase):
         def testCannotBeNull(self):
             """
             Test to make sure that the code for filtering out rows with null values
-            in key rowss works.
+            in key rows works.
             """
 
             # each of these classes flags a different column with a different datatype as cannot_be_null
