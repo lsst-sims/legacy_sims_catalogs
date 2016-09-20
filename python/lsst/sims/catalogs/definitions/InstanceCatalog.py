@@ -1,6 +1,6 @@
 """Instance Catalog"""
 import warnings
-import numpy
+import numpy as np
 import inspect
 import re
 import copy
@@ -8,6 +8,7 @@ from lsst.sims.utils import defaultSpecMap
 from lsst.sims.utils import ObservationMetaData
 
 __all__ = ["InstanceCatalog", "is_null"]
+
 
 def is_null(argument):
     """
@@ -21,17 +22,18 @@ def is_null(argument):
     """
     if argument is None:
         return True
-    elif isinstance(argument,str) or isinstance(argument,unicode):
+    elif isinstance(argument, str) or isinstance(argument, unicode):
         if argument.strip().lower() == 'null':
             return True
         elif argument.strip().lower() == 'nan':
             return True
         elif argument.strip().lower() == 'none':
             return True
-    elif numpy.isnan(argument):
+    elif np.isnan(argument):
         return True
 
     return False
+
 
 class InstanceCatalogMeta(type):
     """Meta class for registering instance catalogs.
@@ -77,10 +79,8 @@ class InstanceCatalogMeta(type):
         # add methods for default columns
         for default in cls.default_columns:
             setattr(cls, 'default_%s'%(default[0]),
-                lambda self, value=default[1], type=default[2]:\
-                        numpy.array([value for i in
-                                 xrange(len(self._current_chunk))],
-                                 dtype=type))
+                    lambda self, value=default[1], type=default[2]:
+                    np.array([value for i in xrange(len(self._current_chunk))], dtype=type))
 
         # store compound columns and check for collisions
         #
@@ -130,7 +130,7 @@ class _MimicRecordArray(object):
 
     def __getitem__(self, column):
         self.referenced_columns.add(column)
-        return numpy.empty(0)
+        return np.empty(0)
 
     def __len__(self):
         return 0
@@ -156,13 +156,15 @@ class InstanceCatalog(object):
     column_outputs = None
     specFileMap = defaultSpecMap
     default_columns = []
-    cannot_be_null = [] # a list of columns which, if null, cause a row not to be printed by write_catalog()
-    default_formats = {'S':'%s', 'f':'%.4f', 'i':'%i'}
+    cannot_be_null = []  # a list of columns which, if null, cause a row not to be printed by write_catalog()
+    default_formats = {'S': '%s', 'f': '%.4f', 'i': '%i'}
     override_formats = {}
     transformations = {}
     delimiter = ", "
     comment_char = "#"
     endline = "\n"
+    _pre_screen = False  # if true, write_catalog() will check database query results against
+                         # cannot_be_null before calculating getter columns
 
     @classmethod
     def new_catalog(cls, catalog_type, *args, **kwargs):
@@ -183,7 +185,6 @@ class InstanceCatalog(object):
             if hasattr(getattr(cls, getfunc), '_compound_column'):
                 return True
         return False
-
 
     def iter_column_names(self):
         """Iterate the column names, expanding any compound columns"""
@@ -235,7 +236,7 @@ class InstanceCatalog(object):
         self._column_origins = {}
 
         if obs_metadata is not None:
-            if not isinstance(obs_metadata,ObservationMetaData):
+            if not isinstance(obs_metadata, ObservationMetaData):
                 raise ValueError("You passed InstanceCatalog something that was not ObservationMetaData")
 
             self.obs_metadata = copy.deepcopy(obs_metadata)
@@ -253,7 +254,7 @@ class InstanceCatalog(object):
                     if col not in self._column_outputs:
                         self._column_outputs.append(col)
 
-        self._actually_calculated_columns =[] # a list of all the columns referenced by self.column_by_name
+        self._actually_calculated_columns = []  # a list of all the columns referenced by self.column_by_name
         self.constraint = constraint
 
         if specFileMap is not None:
@@ -298,7 +299,7 @@ class InstanceCatalog(object):
                 if columnName not in self._all_available_columns:
                     self._all_available_columns.append(columnName)
 
-        if not hasattr(self,'_column_outputs'):
+        if not hasattr(self, '_column_outputs'):
             self._column_outputs = []
 
             # because asking for a compound_column means asking for
@@ -309,7 +310,6 @@ class InstanceCatalog(object):
                     self._column_outputs.append(name)
 
         self._check_requirements()
-
 
     def _set_current_chunk(self, chunk, column_cache=None):
         """Set the current chunk and clear the column cache"""
@@ -327,13 +327,13 @@ class InstanceCatalog(object):
 
         for col_name in self.iter_column_names():
             # just call the column: this will log queries to the database.
-            col = self.column_by_name(col_name)
+            self.column_by_name(col_name)
 
         db_required_columns = list(self._current_chunk.referenced_columns)
 
         default_columns_set = set(el[0] for el in self.default_columns)
         required_columns_set = set(db_required_columns)
-        required_columns_with_defaults = default_columns_set&required_columns_set
+        required_columns_with_defaults = default_columns_set & required_columns_set
 
         self._set_current_chunk(saved_chunk, saved_cache)
 
@@ -342,12 +342,14 @@ class InstanceCatalog(object):
     def column_by_name(self, column_name, *args, **kwargs):
         """Given a column name, return the column data"""
 
-        if isinstance(self._current_chunk, _MimicRecordArray) and column_name not in self._actually_calculated_columns:
+        if (isinstance(self._current_chunk, _MimicRecordArray) and
+            column_name not in self._actually_calculated_columns):
+
             self._actually_calculated_columns.append(column_name)
 
         getfunc = "get_%s" % column_name
         if hasattr(self, getfunc):
-            function = getattr(self,getfunc)
+            function = getattr(self, getfunc)
 
             if self._column_origins_switch:
                 self._column_origins[column_name] = self._get_class_that_defined_method(function)
@@ -355,17 +357,18 @@ class InstanceCatalog(object):
             return function(*args, **kwargs)
         elif column_name in self._compound_column_names:
             getfunc = self._compound_column_names[column_name]
-            function = getattr(self,getfunc)
+            function = getattr(self, getfunc)
 
             if self._column_origins_switch and column_name:
                 self._column_origins[column_name] = self._get_class_that_defined_method(function)
 
             compound_column = function(*args, **kwargs)
             return compound_column[column_name]
-        elif isinstance(self._current_chunk, _MimicRecordArray) or column_name in self._current_chunk.dtype.names:
+        elif (isinstance(self._current_chunk, _MimicRecordArray) or
+              column_name in self._current_chunk.dtype.names):
 
             if self._column_origins_switch:
-                 self._column_origins[column_name] = 'the database'
+                self._column_origins[column_name] = 'the database'
 
             return self._current_chunk[column_name]
         else:
@@ -388,7 +391,7 @@ class InstanceCatalog(object):
             else:
                 self._active_columns.append(col)
 
-        self._column_origins_switch = False # do not want to log column origins any more
+        self._column_origins_switch = False  # do not want to log column origins any more
 
         if len(missing_cols) > 0:
             nodefault = []
@@ -429,12 +432,10 @@ class InstanceCatalog(object):
 
     def write_header(self, file_handle):
         column_names = list(self.iter_column_names())
-        templ = [self.comment_char,]
+        templ = [self.comment_char, ]
         templ += ["%s" for col in column_names]
-        file_handle.write("{0}".format(
-                self.comment_char + self.delimiter.join(column_names))
-                          + self.endline)
-
+        file_handle.write("{0}".format(self.comment_char + self.delimiter.join(column_names)) +
+                          self.endline)
 
     def write_catalog(self, filename, chunk_size=None,
                       write_header=True, write_mode='w'):
@@ -463,7 +464,6 @@ class InstanceCatalog(object):
                               obs_metadata=self.obs_metadata,
                               constraint=self.constraint)
 
-
     def _query_and_write(self, filename, chunk_size=None, write_header=True,
                          write_mode='w', obs_metadata=None, constraint=None):
         """
@@ -488,7 +488,6 @@ class InstanceCatalog(object):
         'a' if you want to append to an existing output file (default: 'w')
         """
 
-
         file_handle = open(filename, write_mode)
         if write_header:
             self.write_header(file_handle)
@@ -503,7 +502,6 @@ class InstanceCatalog(object):
 
         file_handle.close()
 
-
     def _write_pre_process(self):
         """
         This function verifies the catalog's required columns, initializes
@@ -514,11 +512,9 @@ class InstanceCatalog(object):
 
         # find the indices of columns that cannot be null
         self._cannotBeNullDexes = []
-        for (i,col) in enumerate(self.iter_column_names()):
+        for (i, col) in enumerate(self.iter_column_names()):
             if col in self.cannot_be_null:
                 self._cannotBeNullDexes.append(i)
-
-
 
     def _write_recarray(self, chunk, file_handle):
         """
@@ -532,6 +528,16 @@ class InstanceCatalog(object):
         @param [in] file_handle is a file handle pointing to the file where
         the catalog is being written.
         """
+
+        if self._pre_screen:
+            # go through the database query results and remove all of those
+            # rows that have already run afoul of self.cannot_be_null
+            for col_name in self.cannot_be_null:
+                if col_name in chunk.dtype.names:
+                    str_vec = np.char.lower(chunk[col_name].astype('str'))
+                    good_dexes = np.where(np.logical_and(str_vec != 'none',
+                                          np.logical_and(str_vec != 'nan', str_vec != 'null')))
+                    chunk = chunk[good_dexes]
 
         self._set_current_chunk(chunk)
         chunk_cols = [self.transformations[col](self.column_by_name(col))
@@ -547,15 +553,13 @@ class InstanceCatalog(object):
         # for memory efficiency
         file_handle.writelines(self._template % line
                                for line in zip(*chunk_cols)
-                               if numpy.array([not is_null(line[i]) for i in self._cannotBeNullDexes]).all())
+                               if np.array([not is_null(line[i]) for i in self._cannotBeNullDexes]).all())
                                # the last boolean in this line causes a row not to be printed if it has
                                # a null value in one of the columns that cannot be null; it is ignored
                                # if no columns are specified by cannot_be_null
 
-
-
     def iter_catalog(self, chunk_size=None):
-        db_required_columns = self.db_required_columns()
+        self.db_required_columns()
 
         query_result = self.db_obj.query_columns(colnames=self._active_columns,
                                                  obs_metadata=self.obs_metadata,
@@ -571,7 +575,7 @@ class InstanceCatalog(object):
                 yield line
 
     def iter_catalog_chunks(self, chunk_size=None):
-        db_required_columns = self.db_required_columns()
+        self.db_required_columns()
 
         query_result = self.db_obj.query_columns(colnames=self._active_columns,
                                                  obs_metadata=self.obs_metadata,
@@ -583,7 +587,7 @@ class InstanceCatalog(object):
                           if col in self.transformations.keys() else
                           self.column_by_name(col)
                           for col in self.iter_column_names()]
-            chunkColMap = dict([(col, i) for i,col in enumerate(self.iter_column_names())])
+            chunkColMap = dict([(col, i) for i, col in enumerate(self.iter_column_names())])
             yield chunk_cols, chunkColMap
 
     def get_objId(self):
@@ -592,11 +596,12 @@ class InstanceCatalog(object):
     def get_uniqueId(self, nShift=10):
         arr = self.column_by_name(self.refIdCol)
         if len(arr) > 0:
-            return numpy.left_shift(self.column_by_name(self.refIdCol), nShift) + self.db_obj.getObjectTypeId()
+            return np.left_shift(self.column_by_name(self.refIdCol), nShift) + \
+                   self.db_obj.getObjectTypeId()
         else:
             return arr
 
-    def _get_class_that_defined_method(self,meth):
+    def _get_class_that_defined_method(self, meth):
         """
         This method will return the name of the class that first defined the
         input method.
@@ -616,9 +621,9 @@ class InstanceCatalog(object):
         Print the origins of the columns in this catalog
         """
 
-        print '\nwhere the columns in ',self.__class__,' come from'
+        print '\nwhere the columns in ', self.__class__, ' come from'
         for column_name in self._column_origins:
-            print column_name,self._column_origins[column_name]
+            print column_name, self._column_origins[column_name]
 
         print '\n'
 

@@ -1,8 +1,10 @@
+from __future__ import with_statement
 import os
 import numpy as np
 import sqlite3
 import unittest
 import lsst.utils.tests
+from lsst.utils import getPackageDir
 from lsst.sims.utils import ObservationMetaData
 from lsst.sims.catalogs.db import CatalogDBObject
 from lsst.sims.catalogs.utils import myTestStars, makeStarTestDB
@@ -126,6 +128,14 @@ class unicodeCannotBeNullCatalog(InstanceCatalog):
     cannot_be_null = ['n5']
 
 
+class severalCannotBeNullCatalog(InstanceCatalog):
+    """
+    This catalog class will not write rows with null values in the n2 or n4 columns
+    """
+    column_outputs = ['id', 'n1', 'n2', 'n3', 'n4', 'n5']
+    cannot_be_null = ['n2', 'n4']
+
+
 class CanBeNullCatalog(InstanceCatalog):
     """
     This catalog class will write all rows to the catalog
@@ -188,6 +198,7 @@ class InstanceCatalogMetaDataTest(unittest.TestCase):
         new column_outputs to an InstanceCatalog using its constructor
         works properly.
         """
+        scratch_dir = os.path.join(getPackageDir('sims_catalogs'), 'tests', 'scratchSpace')
 
         mjd = 5120.0
         RA = 1.5
@@ -248,10 +259,10 @@ class InstanceCatalogMetaDataTest(unittest.TestCase):
         self.assertEqual(len(columnsShouldBe), 0)
         self.assertEqual(len(generatedColumns), 4)
 
-        testCat.write_catalog('testArgCatalog.txt')
-        inCat = open('testArgCatalog.txt', 'r')
-        lines = inCat.readlines()
-        inCat.close()
+        cat_name = os.path.join(scratch_dir, 'testArgCatalog.txt')
+        testCat.write_catalog(cat_name)
+        with open(cat_name, 'r') as inCat:
+            lines = inCat.readlines()
         header = lines[0]
         header = header.strip('#')
         header = header.strip('\n')
@@ -260,8 +271,8 @@ class InstanceCatalogMetaDataTest(unittest.TestCase):
         self.assertIn('decJ2000', header)
         self.assertIn('properMotionRa', header)
         self.assertIn('properMotionDec', header)
-        if os.path.exists('testArgCatalog.txt'):
-            os.unlink('testArgCatalog.txt')
+        if os.path.exists(cat_name):
+            os.unlink(cat_name)
 
     def testArgValues(self):
         """
@@ -277,8 +288,10 @@ class InstanceCatalogMetaDataTest(unittest.TestCase):
         for col in columns:
             self.assertIn(col, cat._actually_calculated_columns)
 
-        cat.write_catalog('cartoonValCat.txt')
-        testData = np.genfromtxt('cartoonValCat.txt', dtype=dtype, delimiter=',')
+        scratch_dir = os.path.join(getPackageDir('sims_catalogs'), 'tests', 'scratchSpace')
+        cat_name = os.path.join(scratch_dir, 'cartoonValCat.txt')
+        cat.write_catalog(cat_name)
+        testData = np.genfromtxt(cat_name, dtype=dtype, delimiter=',')
         for testLine, controlLine in zip(testData, baselineData):
             self.assertAlmostEqual(testLine[0], controlLine['n1'], 6)
             self.assertAlmostEqual(testLine[1], controlLine['n2'], 6)
@@ -287,8 +300,8 @@ class InstanceCatalogMetaDataTest(unittest.TestCase):
 
         if os.path.exists(dbName):
             os.unlink(dbName)
-        if os.path.exists('cartoonValCat.txt'):
-            os.unlink('cartoonValCat.txt')
+        if os.path.exists(cat_name):
+            os.unlink(cat_name)
 
     def testAllCalculatedColumns(self):
         """
@@ -327,22 +340,30 @@ class InstanceCatalogCannotBeNullTest(unittest.TestCase):
         def testCannotBeNull(self):
             """
             Test to make sure that the code for filtering out rows with null values
-            in key rowss works.
+            in key rows works.
             """
 
+            scratch_dir = os.path.join(getPackageDir('sims_catalogs'), 'tests', 'scratchSpace')
+
             # each of these classes flags a different column with a different datatype as cannot_be_null
-            availableCatalogs = [floatCannotBeNullCatalog, strCannotBeNullCatalog, unicodeCannotBeNullCatalog]
+            availableCatalogs = [floatCannotBeNullCatalog, strCannotBeNullCatalog, unicodeCannotBeNullCatalog,
+                                 severalCannotBeNullCatalog]
             dbobj = CatalogDBObject.from_objid('cannotBeNull')
+
+            ct_n2 = 0  # number of rows in floatCannotBeNullCatalog
+            ct_n4 = 0  # number of rows in strCannotBeNullCatalog
+            ct_n2_n4 = 0  # number of rows in severalCannotBeNullCatalog
 
             for catClass in availableCatalogs:
                 cat = catClass(dbobj)
-                fileName = 'cannotBeNullTestFile.txt'
+                fileName = os.path.join(scratch_dir, 'cannotBeNullTestFile.txt')
                 cat.write_catalog(fileName)
                 dtype = np.dtype([('id', int), ('n1', np.float64), ('n2', np.float64), ('n3', np.float64),
                                   ('n4', (str, 40)), ('n5', (unicode, 40))])
                 testData = np.genfromtxt(fileName, dtype=dtype, delimiter=',')
 
-                j = 0  # a counter to keep track of the rows read in from the catalog
+                ct_good = 0  # a counter to keep track of the rows read in from the catalog
+                ct_total = len(self.baselineOutput)
 
                 for i in range(len(self.baselineOutput)):
 
@@ -350,16 +371,24 @@ class InstanceCatalogCannotBeNullTest(unittest.TestCase):
                     # first, we must assess whether or not the row we are currently
                     # testing would, in fact, pass the cannot_be_null test
                     validLine = True
-                    if (isinstance(self.baselineOutput[cat.cannot_be_null[0]][i], str) or
-                        isinstance(self.baselineOutput[cat.cannot_be_null[0]][i], unicode)):
+                    for col_name in cat.cannot_be_null:
+                        if (isinstance(self.baselineOutput[col_name][i], str) or
+                            isinstance(self.baselineOutput[col_name][i], unicode)):
 
-                        if self.baselineOutput[cat.cannot_be_null[0]][i].strip().lower() == 'none':
-                            validLine = False
-                    else:
-                        if np.isnan(self.baselineOutput[cat.cannot_be_null[0]][i]):
-                            validLine = False
+                            if self.baselineOutput[col_name][i].strip().lower() == 'none':
+                                validLine = False
+                        else:
+                            if np.isnan(self.baselineOutput[col_name][i]):
+                                validLine = False
 
                     if validLine:
+                        if catClass is floatCannotBeNullCatalog:
+                            ct_n2 += 1
+                        elif catClass is strCannotBeNullCatalog:
+                            ct_n4 += 1
+                        elif catClass is severalCannotBeNullCatalog:
+                            ct_n2_n4 += 1
+
                         # if the row in self.baslineOutput should be in the catalog, we now check
                         # that baseline and testData agree on column values (there are some gymnastics
                         # here because you cannot do an == on NaN's
@@ -367,32 +396,79 @@ class InstanceCatalogCannotBeNullTest(unittest.TestCase):
                             if k < 4:
                                 if not np.isnan(xx):
                                     msg = ('k: %d -- %s %s -- %s' %
-                                           (k, str(xx), str(testData[j][k]), cat.cannot_be_null))
-                                    self.assertAlmostEqual(xx, testData[j][k], 3, msg=msg)
+                                           (k, str(xx), str(testData[ct_good][k]), cat.cannot_be_null))
+                                    self.assertAlmostEqual(xx, testData[ct_good][k], 3, msg=msg)
                                 else:
-                                    np.testing.assert_equal(testData[j][k], np.NaN)
+                                    np.testing.assert_equal(testData[ct_good][k], np.NaN)
                             else:
                                 msg = ('%s (%s) is not %s (%s)' %
-                                       (xx, type(xx), testData[j][k], type(testData[j][k])))
-                                self.assertEqual(xx.strip(), testData[j][k].strip(), msg=msg)
-                        j += 1
+                                       (xx, type(xx), testData[ct_good][k], type(testData[ct_good][k])))
+                                self.assertEqual(xx.strip(), testData[ct_good][k].strip(), msg=msg)
+                        ct_good += 1
 
-                self.assertEqual(i, 99)  # make sure that we tested all of the baseline rows
-                self.assertEqual(j, len(testData))  # make sure that we tested all of the testData rows
-                msg = '%d >= %d' % (j, i)
-                self.assertLess(j, i, msg=msg)  # make sure that some rows did not make it into the catalog
+                self.assertEqual(ct_good, len(testData))  # make sure that we tested all of the testData rows
+                msg = '%d >= %d' % (ct_good, ct_total)
+                self.assertLess(ct_good, ct_total, msg=msg)  # make sure that some rows did not make
+                                                             # it into the catalog
+
+            # make sure that severalCannotBeNullCatalog weeded out rows that were individually in
+            # floatCannotBeNullCatalog or strCannotBeNullCatalog
+            self.assertGreater(ct_n2, ct_n2_n4)
+            self.assertGreater(ct_n4, ct_n2_n4)
 
             if os.path.exists(fileName):
                 os.unlink(fileName)
+
+        def testCannotBeNull_pre_screen(self):
+            """
+            Check that writing a catalog with self._pre_screen = True produces
+            the same results as writing one with self._pre_screen = False, except
+            with a smaller self._current_chunk.
+            """
+
+            scratch_dir = os.path.join(getPackageDir('sims_catalogs'), 'tests', 'scratchSpace')
+
+            # each of these classes flags a different column with a different datatype as cannot_be_null
+            availableCatalogs = [floatCannotBeNullCatalog, strCannotBeNullCatalog, unicodeCannotBeNullCatalog,
+                                 severalCannotBeNullCatalog]
+            dbobj = CatalogDBObject.from_objid('cannotBeNull')
+
+            for catClass in availableCatalogs:
+                cat = catClass(dbobj)
+                cat._pre_screen = True
+                control_cat = catClass(dbobj)
+                fileName = os.path.join(scratch_dir, 'cannotBeNullTestFile_prescreen.txt')
+                control_fileName = os.path.join(scratch_dir, 'cannotBeNullTestFile_prescreen_control.txt')
+                cat.write_catalog(fileName)
+                control_cat.write_catalog(control_fileName)
+
+                # make sure that pre-screened catalog passed fewer rows into
+                # self._current_chunk than did the non-pre-screened catalog
+                self.assertGreater(control_cat._current_chunk.size, cat._current_chunk.size)
+
+                with open(fileName, 'r') as test_file:
+                    test_lines = test_file.readlines()
+                    with open(control_fileName, 'r') as control_file:
+                        control_lines = control_file.readlines()
+                        for line in control_lines:
+                            self.assertIn(line, test_lines)
+                        for line in test_lines:
+                            self.assertIn(line, control_lines)
+
+                if os.path.exists(fileName):
+                    os.unlink(fileName)
+                if os.path.exists(control_fileName):
+                    os.unlink(control_fileName)
 
         def testCanBeNull(self):
             """
             Test to make sure that we can still write all rows to catalogs,
             even those with null values in key columns
             """
+            scratch_dir = os.path.join(getPackageDir('sims_catalogs'), 'tests', 'scratchSpace')
             dbobj = CatalogDBObject.from_objid('cannotBeNull')
             cat = dbobj.getCatalog('canBeNull')
-            fileName = 'canBeNullTestFile.txt'
+            fileName = os.path.join(scratch_dir, 'canBeNullTestFile.txt')
             cat.write_catalog(fileName)
             dtype = np.dtype([('id', int), ('n1', np.float64), ('n2', np.float64), ('n3', np.float64),
                               ('n4', (str, 40)), ('n5', (unicode, 40))])

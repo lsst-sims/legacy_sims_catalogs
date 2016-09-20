@@ -1,8 +1,7 @@
-import numpy
-from collections import OrderedDict
 from lsst.sims.catalogs.db import CatalogDBObject
 
 __all__ = ["CompoundCatalogDBObject"]
+
 
 class CompoundCatalogDBObject(CatalogDBObject):
     """
@@ -74,35 +73,14 @@ class CompoundCatalogDBObject(CatalogDBObject):
         dbo = self._dbObjectClassList[0](connection=connection)
         # need to instantiate the first one because sometimes
         # idColKey is not defined until instantiation
-        # (see GalaxyTileObj in sims_catUtils/../baseCatalogModels/GalaxyModels.py
+        # (see GalaxyTileObj in sims_catUtils/../baseCatalogModels/GalaxyModels.py)
 
         self.tableid = dbo.tableid
         self.idColKey = dbo.idColKey
         self.raColName = dbo.raColName
         self.decColName = dbo.decColName
 
-        if hasattr(dbo, 'driver'):
-            driver = dbo.driver
-        else:
-            driver = None
-
-        if hasattr(dbo, 'host'):
-            host = dbo.host
-        else:
-            host = None
-
-        if hasattr(dbo, 'port'):
-            port = dbo.port
-        else:
-            port = None
-
-        if hasattr(dbo, 'verbose'):
-            verbose = dbo.verbose
-        else:
-            verbose = False
-
         super(CompoundCatalogDBObject, self).__init__(connection=dbo.connection)
-
 
     def _make_columns(self):
         """
@@ -111,11 +89,11 @@ class CompoundCatalogDBObject(CatalogDBObject):
         columns to identify them with their specific CatalogDBObjects.
         """
         column_names = []
-        self.columns= []
+        self.columns = []
         for dbo, dbName in zip(self._dbObjectClassList, self._nameList):
             for row in dbo.columns:
-                new_row=[ww for ww in row]
-                new_row[0]=str('%s_%s' % (dbName, row[0]))
+                new_row = [ww for ww in row]
+                new_row[0] = str('%s_%s' % (dbName, row[0]))
                 if new_row[1] is None:
                     new_row[1] = row[0]
                 self.columns.append(tuple(new_row))
@@ -131,10 +109,9 @@ class CompoundCatalogDBObject(CatalogDBObject):
                 # names like 'galaxytileid' in query_columns, but leaving 'galaxytileid'
                 # un-mangled in self.columns so that self.typeMap knows how to deal
                 # with it when it comes back.
-                if row[0] not in column_names and (row[1] is None or row[1]==row[0]):
+                if row[0] not in column_names and (row[1] is None or row[1] == row[0]):
                     self.columns.append(row)
                     column_names.append(row[0])
-
 
     def _make_dbTypeMap(self):
         """
@@ -147,7 +124,6 @@ class CompoundCatalogDBObject(CatalogDBObject):
                 if col not in self.dbTypeMap:
                     self.dbTypeMap[col] = dbo.dbTypeMap[col]
 
-
     def _make_dbDefaultValues(self):
         """
         Construct the self.dbDefaultValues member by concatenating the
@@ -157,7 +133,6 @@ class CompoundCatalogDBObject(CatalogDBObject):
         for dbo, dbName in zip(self._dbObjectClassList, self._nameList):
             for col in dbo.dbDefaultValues:
                 self.dbDefaultValues['%s_%s' % (dbName, col)] = dbo.dbDefaultValues[col]
-
 
     def _validate_input(self):
         """
@@ -200,41 +175,41 @@ class CompoundCatalogDBObject(CatalogDBObject):
                 if dbo.objid not in objidList:
                     objidList.append(dbo.objid)
                 else:
-                    raise RuntimeError('WARNING the objid %s ' % dbo.objid \
-                                         + 'is duplicated in your list of ' \
-                                         + 'CatalogDBObjects\n' \
-                                         + 'CompoundCatalogDBObject requires each' \
-                                         + ' CatalogDBObject have a unique objid\n')
+                    raise RuntimeError('The objid %s ' % dbo.objid +
+                                       'is duplicated in your list of ' +
+                                       'CatalogDBObjects\n' +
+                                       'CompoundCatalogDBObject requires each' +
+                                       ' CatalogDBObject have a unique objid\n')
 
         acceptable = True
         msg = ''
-        if len(hostList)>1:
+        if len(hostList) > 1:
             acceptable = False
             msg += ' hosts: ' + str(hostList) + '\n'
 
-        if len(databaseList)!=1:
+        if len(databaseList) != 1:
             acceptable = False
             msg += ' databases: ' + str(databaseList) + '\n'
 
-        if len(portList)>1:
+        if len(portList) > 1:
             acceptable = False
             msg += ' ports: ' + str(portList) + '\n'
 
-        if len(driverList)>1:
+        if len(driverList) > 1:
             acceptable = False
             msg += ' drivers: ' + str(driverList) + '\n'
 
-        if len(tableList)!=1:
+        if len(tableList) != 1:
             acceptable = False
             msg += ' tables: ' + str(tableList) + '\n'
 
         if not acceptable:
-            raise RuntimeError('The CatalogDBObjects fed to ' \
-                               + 'CompoundCatalogDBObject do not all ' \
-                               + 'query the same table:\n' \
-                               + msg)
+            raise RuntimeError('The CatalogDBObjects fed to ' +
+                               'CompoundCatalogDBObject do not all ' +
+                               'query the same table:\n' +
+                               msg)
 
-        if self._table_restriction is not None and len(tableList)>0:
+        if self._table_restriction is not None and len(tableList) > 0:
             if tableList[0] not in self._table_restriction:
-                raise RuntimeError("This CompoundCatalogDBObject does not support " \
-                                   + "the table '%s' " % tableList[0])
+                raise RuntimeError("This CompoundCatalogDBObject does not support " +
+                                   "the table '%s' " % tableList[0])
