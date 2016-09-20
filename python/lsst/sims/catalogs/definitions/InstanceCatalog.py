@@ -79,10 +79,8 @@ class InstanceCatalogMeta(type):
         # add methods for default columns
         for default in cls.default_columns:
             setattr(cls, 'default_%s'%(default[0]),
-                lambda self, value=default[1], type=default[2]:\
-                        numpy.array([value for i in
-                                 xrange(len(self._current_chunk))],
-                                 dtype=type))
+                    lambda self, value=default[1], type=default[2]:
+                    numpy.array([value for i in xrange(len(self._current_chunk))], dtype=type))
 
         # store compound columns and check for collisions
         #
