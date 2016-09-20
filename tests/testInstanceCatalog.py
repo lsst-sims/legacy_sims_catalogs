@@ -395,7 +395,8 @@ class InstanceCatalogCannotBeNullTest(unittest.TestCase):
 
                 self.assertEqual(ct_good, len(testData))  # make sure that we tested all of the testData rows
                 msg = '%d >= %d' % (ct_good, ct_total)
-                self.assertLess(ct_good, ct_total, msg=msg)  # make sure that some rows did not make it into the catalog
+                self.assertLess(ct_good, ct_total, msg=msg)  # make sure that some rows did not make
+                                                             # it into the catalog
 
             if os.path.exists(fileName):
                 os.unlink(fileName)
