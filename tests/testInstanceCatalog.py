@@ -350,6 +350,10 @@ class InstanceCatalogCannotBeNullTest(unittest.TestCase):
                                  severalCannotBeNullCatalog]
             dbobj = CatalogDBObject.from_objid('cannotBeNull')
 
+            ct_n2 = 0  # number of rows in floatCannotBeNullCatalog
+            ct_n4 = 0  # number of rows in strCannotBeNullCatalog
+            ct_n2_n4 = 0  # number of rows in severalCannotBeNullCatalog
+
             for catClass in availableCatalogs:
                 cat = catClass(dbobj)
                 fileName = os.path.join(scratch_dir, 'cannotBeNullTestFile.txt')
@@ -378,6 +382,13 @@ class InstanceCatalogCannotBeNullTest(unittest.TestCase):
                                 validLine = False
 
                     if validLine:
+                        if catClass is floatCannotBeNullCatalog:
+                            ct_n2 += 1
+                        elif catClass is strCannotBeNullCatalog:
+                            ct_n4 += 1
+                        elif catClass is severalCannotBeNullCatalog:
+                            ct_n2_n4 += 1
+
                         # if the row in self.baslineOutput should be in the catalog, we now check
                         # that baseline and testData agree on column values (there are some gymnastics
                         # here because you cannot do an == on NaN's
@@ -399,6 +410,11 @@ class InstanceCatalogCannotBeNullTest(unittest.TestCase):
                 msg = '%d >= %d' % (ct_good, ct_total)
                 self.assertLess(ct_good, ct_total, msg=msg)  # make sure that some rows did not make
                                                              # it into the catalog
+
+            # make sure that severalCannotBeNullCatalog weeded out rows that were individually in
+            # floatCannotBeNullCatalog or strCannotBeNullCatalog
+            self.assertGreater(ct_n2, ct_n2_n4)
+            self.assertGreater(ct_n4, ct_n2_n4)
 
             if os.path.exists(fileName):
                 os.unlink(fileName)
