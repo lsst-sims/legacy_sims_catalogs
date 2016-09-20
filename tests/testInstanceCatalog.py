@@ -346,7 +346,8 @@ class InstanceCatalogCannotBeNullTest(unittest.TestCase):
             scratch_dir = os.path.join(getPackageDir('sims_catalogs'), 'tests', 'scratchSpace')
 
             # each of these classes flags a different column with a different datatype as cannot_be_null
-            availableCatalogs = [floatCannotBeNullCatalog, strCannotBeNullCatalog, unicodeCannotBeNullCatalog]
+            availableCatalogs = [floatCannotBeNullCatalog, strCannotBeNullCatalog, unicodeCannotBeNullCatalog,
+                                 severalCannotBeNullCatalog]
             dbobj = CatalogDBObject.from_objid('cannotBeNull')
 
             for catClass in availableCatalogs:
@@ -366,14 +367,15 @@ class InstanceCatalogCannotBeNullTest(unittest.TestCase):
                     # first, we must assess whether or not the row we are currently
                     # testing would, in fact, pass the cannot_be_null test
                     validLine = True
-                    if (isinstance(self.baselineOutput[cat.cannot_be_null[0]][i], str) or
-                        isinstance(self.baselineOutput[cat.cannot_be_null[0]][i], unicode)):
+                    for col_name in cat.cannot_be_null:
+                        if (isinstance(self.baselineOutput[col_name][i], str) or
+                            isinstance(self.baselineOutput[col_name][i], unicode)):
 
-                        if self.baselineOutput[cat.cannot_be_null[0]][i].strip().lower() == 'none':
-                            validLine = False
-                    else:
-                        if np.isnan(self.baselineOutput[cat.cannot_be_null[0]][i]):
-                            validLine = False
+                            if self.baselineOutput[col_name][i].strip().lower() == 'none':
+                                validLine = False
+                        else:
+                            if np.isnan(self.baselineOutput[col_name][i]):
+                                validLine = False
 
                     if validLine:
                         # if the row in self.baslineOutput should be in the catalog, we now check
