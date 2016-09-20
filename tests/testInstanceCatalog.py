@@ -1,3 +1,4 @@
+from __future__ import with_statement
 import os
 import numpy as np
 import sqlite3
@@ -395,10 +396,9 @@ class InstanceCatalogCannotBeNullTest(unittest.TestCase):
 
         def testCannotBeNull_pre_screen(self):
             """
-            Test to make sure that the code for filtering out rows with null values
-            in key rowss works.  This time, check that the code works when we set
-            InstanceCatalog._pre_screen = True, causing write_catalog to screen
-            the database query results before calculating getter columns.
+            Check that writing a catalog with self._pre_screen = True produces
+            the same results as writing one with self._pre_creen = False, except
+            with a smaller self._current_chunk.
             """
 
             # each of these classes flags a different column with a different datatype as cannot_be_null
@@ -419,63 +419,19 @@ class InstanceCatalogCannotBeNullTest(unittest.TestCase):
                 # self._current_chunk than did the non-pre-screened catalog
                 self.assertGreater(control_cat._current_chunk.size, cat._current_chunk.size)
 
-                dtype = np.dtype([('id', int), ('n1', np.float64), ('n2', np.float64), ('n3', np.float64),
-                                  ('n4', (str, 40)), ('n5', (unicode, 40))])
-                testData = np.genfromtxt(fileName, dtype=dtype, delimiter=',')
+                with open(fileName, 'r') as test_file:
+                    test_lines = test_file.readlines()
+                    with open(control_fileName, 'r') as control_file:
+                        control_lines = control_file.readlines()
+                        for line in control_lines:
+                            self.assertIn(line, test_lines)
+                        for line in test_lines:
+                            self.assertIn(line, control_lines)
 
-                ct_good = 0  # a counter to keep track of the rows read in from the catalog
-                ct_total = len(self.baselineOutput)
-
-                for i in range(len(self.baselineOutput)):
-
-                    # self.baselineOutput contains all of the rows from the dbobj
-                    # first, we must assess whether or not the row we are currently
-                    # testing would, in fact, pass the cannot_be_null test
-                    validLine = True
-
-                    for col_name in cat.cannot_be_null:
-                        if self.baselineOutput[col_name][i] is None:
-                            validLine = False
-                            break
-
-                        if (isinstance(self.baselineOutput[col_name][i], np.string_) or
-                            isinstance(self.baselineOutput[col_name][i], unicode)):
-
-                            if self.baselineOutput[col_name][i].strip().lower() == 'none':
-                                validLine = False
-                                break
-                        else:
-                            if np.isnan(self.baselineOutput[col_name][i]):
-                                validLine = False
-                                break
-
-                    if validLine:
-                        # if the row in self.baslineOutput should be in the catalog, we now check
-                        # that baseline and testData agree on column values (there are some gymnastics
-                        # here because you cannot do an == on NaN's
-                        for (k, xx) in enumerate(self.baselineOutput[i]):
-                            if k < 4:
-                                if not np.isnan(xx):
-                                    msg = ('k: %d -- %s %s -- %s' %
-                                           (k, str(xx), str(testData[ct_good][k]), cat.cannot_be_null))
-                                    self.assertAlmostEqual(xx, testData[ct_good][k], 3, msg=msg)
-                                else:
-                                    np.testing.assert_equal(testData[ct_good][k], np.NaN)
-                            else:
-                                msg = ('%s (%s) is not %s (%s)' %
-                                       (xx, type(xx), testData[ct_good][k], type(testData[ct_good][k])))
-                                self.assertEqual(xx.strip(), testData[ct_good][k].strip(), msg=msg)
-                        ct_good += 1
-
-                self.assertEqual(ct_good, len(testData))  # make sure that we tested all of the testData rows
-                msg = '%d >= %d' % (ct_good, ct_total)
-                self.assertLess(ct_good, ct_total, msg=msg)  # make sure that some rows did not make it into the catalog
-                self.assertGreater(ct_good, 0) # makesure that some rows did make it into the catalog
-
-            if os.path.exists(fileName):
-                os.unlink(fileName)
-            if os.path.exists(control_fileName):
-                os.unlink(control_fileName)
+                if os.path.exists(fileName):
+                    os.unlink(fileName)
+                if os.path.exists(control_fileName):
+                    os.unlink(control_fileName)
 
         def testCanBeNull(self):
             """
