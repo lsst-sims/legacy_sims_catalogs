@@ -1,5 +1,5 @@
 from __future__ import with_statement
-import numpy
+import numpy as np
 from lsst.sims.catalogs.db import CompoundCatalogDBObject
 
 
@@ -357,15 +357,15 @@ class CompoundInstanceCatalog(object):
                             if name not in chunk.dtype.fields:
                                 master_colnames[ix][iy] = name_map[ix][name]
 
-                    local_recarray = chunk[master_colnames[ix]].view(numpy.recarray)
+                    local_recarray = chunk[master_colnames[ix]].view(np.recarray)
 
                     local_recarray.flags['WRITEABLE'] = False  # so numpy does not raise a warning
                                                                # because it thinks we may accidentally
                                                                # write to this array
                     if new_dtype_list[ix] is None:
-                        new_dtype = numpy.dtype([tuple([dd.replace(catName+'_', '')] +
-                                                       [local_recarray.dtype[dd]])
-                                                for dd in master_colnames[ix]])
+                        new_dtype = np.dtype([tuple([dd.replace(catName+'_', '')] +
+                                                    [local_recarray.dtype[dd]])
+                                              for dd in master_colnames[ix]])
                         new_dtype_list[ix] = new_dtype
 
                     local_recarray.dtype = new_dtype_list[ix]
