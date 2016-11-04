@@ -7,6 +7,26 @@ from sqlalchemy import (types as satypes, Column, Table, Index,
     create_engine, MetaData)
 import string, random
 
+def np_to_sql_type(input_type):
+    """
+    Returns the SQL data type (as encoded by sqlalchemy)
+    corresponding to a numpy dtype
+
+    input_type is an element of a numpy.dtype array
+    """
+    name = input_type.name
+    size = input_type.itemsize
+    if name.startswith('float'):
+        return satypes.Float(precision=16)
+    if name == 'int64':
+        return satypes.BIGINT()
+    if name == 'int32':
+        return satypes.Integer()
+    if name.startswith('string'):
+        return satypes.String(length=size)
+
+    raise RuntimeError("Do not know how to map %s to SQL" % str(input_type))
+
 #from http://stackoverflow.com/questions/2257441/python-random-string-generation-with-upper-case-letters-and-digits
 def id_generator(size=8, chars=string.ascii_lowercase):
     return ''.join(random.choice(chars) for x in range(size))
@@ -41,33 +61,12 @@ def buildTypeMap():
     return npTypeMap
 
 def createSQLTable(dtype, tableid, idCol, metadata, customTypeMap={}, defaultPrecision=16, defaultScale=6):
-    npTypeMap = buildTypeMap()
-    nativeTypes = OrderedDict()
-    for name in dtype.names:
-        try:
-            nativeTypes[name] = npTypeMap[dtype[name].char]
-        except KeyError:
-            warings.warn("No mapping available for column %s (%s).  It will not be included in the autoloaded database.\n"\
-                         "You may be able to fix this by passing a custom dtype to the class constructor."%(name, dtype[name]))
-            continue
     sqlColumns = []
-    for name in nativeTypes:
-        try:
-            sqlType = satypes._type_map[nativeTypes[name]]
-        except KeyError:
-            warnings.warn("Could not find a mapping to a SQL type for native type: %s"%(nativeTypes[name]))
-        
-        if name in customTypeMap:
-            sqlColumns.append(Column(name, customTypeMap[name], primary_key=(idCol==name)))
-        #Look for string like types
-        elif 'format' in dir(nativeTypes[name]):
-            sqlColumns.append(Column(name, type(sqlType)(dtype[name].itemsize), primary_key=(idCol==name)))
-        #Look for numeric like types
-        elif 'scale' in dir(sqlType):
-            sqlColumns.append(Column(name, type(sqlType)(precision=defaultPrecision, 
-                              scale=defaultScale), primary_key=(idCol==name)))
-        else:
-            sqlColumns.append(Column(name, sqlType, primary_key=(idCol==name)))
+    for itype in range(len(dtype)):
+        sqlType = np_to_sql_type(dtype[itype])
+        name = dtype.names[itype]
+        sqlColumns.append(Column(name, sqlType, primary_key=(idCol==name)))
+
     if tableid is None:
         tableid = id_generator()
     datatable = Table(tableid, metadata, *sqlColumns)
