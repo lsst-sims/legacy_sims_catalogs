@@ -47,18 +47,6 @@ def guessDtype(dataPath, numGuess, delimiter, **kwargs):
     dataArr = np.genfromtxt(StringIO(teststr), dtype=None, names=True, delimiter=delimiter, **kwargs)
     return dataArr.dtype
 
-def buildTypeMap():
-    npTypeMap = {}
-    for name in dir(numpy):
-        obj = getattr(numpy, name)
-        if hasattr(obj, 'dtype'):
-            try:
-                npn = obj(0)
-                nat = np.asscalar(npn)
-                npTypeMap[npn.dtype.char] = type(nat)
-            except:
-                pass
-    return npTypeMap
 
 def createSQLTable(dtype, tableid, idCol, metadata):
     """
