@@ -1,11 +1,11 @@
 from __future__ import with_statement
-from collections import OrderedDict
-import warnings
 import numpy as np
 from StringIO import StringIO
-from sqlalchemy import (types as satypes, Column, Table, Index, 
-    create_engine, MetaData)
-import string, random
+from sqlalchemy import (types as satypes, Column, Table, Index,
+                        create_engine, MetaData)
+import string
+import random
+
 
 def np_to_sql_type(input_type):
     """
@@ -27,15 +27,18 @@ def np_to_sql_type(input_type):
 
     raise RuntimeError("Do not know how to map %s to SQL" % str(input_type))
 
-#from http://stackoverflow.com/questions/2257441/python-random-string-generation-with-upper-case-letters-and-digits
+
+# from http://stackoverflow.com/questions/2257441/python-random-string-generation-with-upper-case-letters-and-digits
 def id_generator(size=8, chars=string.ascii_lowercase):
     return ''.join(random.choice(chars) for x in range(size))
+
 
 def make_engine(dbAddress):
     """create and connect to a database engine"""
     engine = create_engine(dbAddress, echo=False)
     metadata = MetaData(bind=engine)
     return engine, metadata
+
 
 def guessDtype(dataPath, numGuess, delimiter, **kwargs):
     cnt = 0
@@ -67,7 +70,7 @@ def createSQLTable(dtype, tableid, idCol, metadata):
     for itype in range(len(dtype)):
         sqlType = np_to_sql_type(dtype[itype])
         name = dtype.names[itype]
-        sqlColumns.append(Column(name, sqlType, primary_key=(idCol==name)))
+        sqlColumns.append(Column(name, sqlType, primary_key = (idCol == name)))
 
     if tableid is None:
         tableid = id_generator()
@@ -75,7 +78,9 @@ def createSQLTable(dtype, tableid, idCol, metadata):
     metadata.create_all()
     return datatable
 
-def loadTable(datapath, datatable, delimiter, dtype, engine, indexCols=[], skipLines=1, chunkSize=100000, **kwargs):
+
+def loadTable(datapath, datatable, delimiter, dtype, engine,
+              indexCols=[], skipLines=1, chunkSize=100000, **kwargs):
     cnt = 0
     with open(datapath) as fh:
         while cnt < skipLines:
@@ -89,16 +94,21 @@ def loadTable(datapath, datatable, delimiter, dtype, engine, indexCols=[], skipL
             if cnt%chunkSize == 0:
                 print "Loading chunk #%i"%(int(cnt/chunkSize))
                 dataArr = np.genfromtxt(StringIO(tmpstr), dtype=dtype, delimiter=delimiter, **kwargs)
-                engine.execute(datatable.insert(), [dict((name, np.asscalar(l[name])) for name in l.dtype.names) for l in dataArr])
+                engine.execute(datatable.insert(),
+                               [dict((name, np.asscalar(l[name])) for name in l.dtype.names)
+                                for l in dataArr])
                 tmpstr = ''
-        #Clean up the last chunk
+        # Clean up the last chunk
         if len(tmpstr) > 0:
             dataArr = np.genfromtxt(StringIO(tmpstr), dtype=dtype, delimiter=delimiter, **kwargs)
             try:
-                engine.execute(datatable.insert(), [dict((name, np.asscalar(l[name])) for name in l.dtype.names) for l in dataArr])
+                engine.execute(datatable.insert(),
+                               [dict((name, np.asscalar(l[name])) for name in l.dtype.names)
+                                for l in dataArr])
             # If the file only has one line, the result of genfromtxt is a 0-d array, so cannot be iterated
             except TypeError:
-                engine.execute(datatable.insert(), [dict((name, np.asscalar(dataArr[name])) for name in dataArr.dtype.names),])
+                engine.execute(datatable.insert(),
+                               [dict((name, np.asscalar(dataArr[name])) for name in dataArr.dtype.names), ])
 
     for col in indexCols:
         if hasattr(col, "__iter__"):
@@ -110,6 +120,7 @@ def loadTable(datapath, datatable, delimiter, dtype, engine, indexCols=[], skipL
             i = Index('%sidx'%col, datatable.c[col])
 
         i.create(engine)
+
 
 def loadData(dataPath, dtype, delimiter, tableId, idCol, engine, metaData, numGuess, append=False, **kwargs):
     if dtype is None:
