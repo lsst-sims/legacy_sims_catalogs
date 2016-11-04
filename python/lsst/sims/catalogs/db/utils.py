@@ -61,6 +61,20 @@ def buildTypeMap():
     return npTypeMap
 
 def createSQLTable(dtype, tableid, idCol, metadata):
+    """
+    create a sqlalchemy Table object.
+
+    Parameters
+    ----------
+    dtype is a numpy dtype describing the columns in the table
+    tableid is the name of the table to be created
+    idCol is the column on which to construct the Table's primary key
+    metadata is the sqlalchemy MetaData object associated with the database connection
+
+    Returns
+    -------
+    A sqlalchemy Table object with the columns specified by dtype
+    """
     sqlColumns = []
     for itype in range(len(dtype)):
         sqlType = np_to_sql_type(dtype[itype])
