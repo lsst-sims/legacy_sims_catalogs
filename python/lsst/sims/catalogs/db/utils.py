@@ -60,7 +60,7 @@ def buildTypeMap():
                 pass
     return npTypeMap
 
-def createSQLTable(dtype, tableid, idCol, metadata, customTypeMap={}, defaultPrecision=16, defaultScale=6):
+def createSQLTable(dtype, tableid, idCol, metadata):
     sqlColumns = []
     for itype in range(len(dtype)):
         sqlType = np_to_sql_type(dtype[itype])
