@@ -1,11 +1,12 @@
 from __future__ import with_statement
 from collections import OrderedDict
 import warnings
-import numpy
+import numpy as np
 from StringIO import StringIO
 from sqlalchemy import (types as satypes, Column, Table, Index, 
     create_engine, MetaData)
 import string, random
+
 #from http://stackoverflow.com/questions/2257441/python-random-string-generation-with-upper-case-letters-and-digits
 def id_generator(size=8, chars=string.ascii_lowercase):
     return ''.join(random.choice(chars) for x in range(size))
@@ -23,7 +24,7 @@ def guessDtype(dataPath, numGuess, delimiter, **kwargs):
         while cnt < numGuess:
             teststr += fh.readline()
             cnt += 1
-    dataArr = numpy.genfromtxt(StringIO(teststr), dtype=None, names=True, delimiter=delimiter, **kwargs)
+    dataArr = np.genfromtxt(StringIO(teststr), dtype=None, names=True, delimiter=delimiter, **kwargs)
     return dataArr.dtype
 
 def buildTypeMap():
@@ -33,7 +34,7 @@ def buildTypeMap():
         if hasattr(obj, 'dtype'):
             try:
                 npn = obj(0)
-                nat = numpy.asscalar(npn)
+                nat = np.asscalar(npn)
                 npTypeMap[npn.dtype.char] = type(nat)
             except:
                 pass
@@ -86,17 +87,17 @@ def loadTable(datapath, datatable, delimiter, dtype, engine, indexCols=[], skipL
             cnt += 1
             if cnt%chunkSize == 0:
                 print "Loading chunk #%i"%(int(cnt/chunkSize))
-                dataArr = numpy.genfromtxt(StringIO(tmpstr), dtype=dtype, delimiter=delimiter, **kwargs)
-                engine.execute(datatable.insert(), [dict((name, numpy.asscalar(l[name])) for name in l.dtype.names) for l in dataArr])
+                dataArr = np.genfromtxt(StringIO(tmpstr), dtype=dtype, delimiter=delimiter, **kwargs)
+                engine.execute(datatable.insert(), [dict((name, np.asscalar(l[name])) for name in l.dtype.names) for l in dataArr])
                 tmpstr = ''
         #Clean up the last chunk
         if len(tmpstr) > 0:
-            dataArr = numpy.genfromtxt(StringIO(tmpstr), dtype=dtype, delimiter=delimiter, **kwargs)
+            dataArr = np.genfromtxt(StringIO(tmpstr), dtype=dtype, delimiter=delimiter, **kwargs)
             try:
-                engine.execute(datatable.insert(), [dict((name, numpy.asscalar(l[name])) for name in l.dtype.names) for l in dataArr])
+                engine.execute(datatable.insert(), [dict((name, np.asscalar(l[name])) for name in l.dtype.names) for l in dataArr])
             # If the file only has one line, the result of genfromtxt is a 0-d array, so cannot be iterated
             except TypeError:
-                engine.execute(datatable.insert(), [dict((name, numpy.asscalar(dataArr[name])) for name in dataArr.dtype.names),])
+                engine.execute(datatable.insert(), [dict((name, np.asscalar(dataArr[name])) for name in dataArr.dtype.names),])
 
     for col in indexCols:
         if hasattr(col, "__iter__"):
