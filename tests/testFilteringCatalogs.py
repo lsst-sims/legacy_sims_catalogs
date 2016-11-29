@@ -384,6 +384,82 @@ class CompoundInstanceCatalogTestCase(unittest.TestCase):
         if os.path.exists(cat_name):
             os.unlink(cat_name)
 
+    def test_compound_cat_compound_column(self):
+        """
+        Test filtering a CompoundInstanceCatalog on a compound column
+        """
+
+        class CatClass4(InstanceCatalog):
+            column_outputs = ['id', 'a', 'b']
+            cannot_be_null = ['a']
+
+            @compound('a', 'b')
+            def get_alphabet(self):
+                a = self.column_by_name('ip1')
+                a = a*a
+                b = self.column_by_name('ip2')
+                b = b*0.25
+                return np.array([np.where(a % 2 == 0, a, None), b])
+
+        class CatClass5(InstanceCatalog):
+            column_outputs = ['id', 'a', 'b', 'filter']
+            cannot_be_null = ['b', 'filter']
+
+            @compound('a', 'b')
+            def get_alphabet(self):
+                ii = self.column_by_name('ip1')
+                return np.array([self.column_by_name('ip2')**3,
+                                 np.where(ii % 2 == 1, ii, None)])
+
+            @cached
+            def get_filter(self):
+                ii = self.column_by_name('ip1')
+                return np.where(ii % 3 != 0, ii, None)
+
+        class DbClass(CatalogDBObject):
+            host = None
+            port = None
+            database = self.db_name
+            driver = 'sqlite'
+            tableid = 'test'
+            idColKey = 'id'
+
+        class DbClass4(DbClass):
+            objid = 'silliness4'
+
+        class DbClass5(DbClass):
+            objid = 'silliness5'
+
+        cat_name = os.path.join(self.scratch_dir, "compound_cat_compound_filter_cat.txt")
+        if os.path.exists(cat_name):
+            os.unlink(cat_name)
+
+        cat = CompoundInstanceCatalog([CatClass4, CatClass5], [DbClass4, DbClass5])
+        cat.write_catalog(cat_name)
+
+        # now make sure that the catalog contains the expected data
+        with open(cat_name, 'r') as input_file:
+            input_lines = input_file.readlines()
+        self.assertEqual(len(input_lines), 9)  # 8 data lines and a header
+
+        first_cat_lines = ['1, 4, 0.75\n', '3, 16, 1.25\n',
+                           '5, 36, 1.75\n', '7, 64, 2.25\n',
+                           '9, 100, 2.75\n']
+
+        second_cat_lines = ['0, 8, 1, 1\n', '4, 216, 5, 5\n',
+                            '6, 512, 7, 7\n']
+
+        for i_line, line in enumerate(input_lines):
+            if i_line is 0:
+                continue
+            elif i_line < 6:
+                self.assertEqual(line, first_cat_lines[i_line-1])
+            else:
+                self.assertEqual(line, second_cat_lines[i_line-6])
+
+        if os.path.exists(cat_name):
+            os.unlink(cat_name)
+
 
 class MemoryTestClass(lsst.utils.tests.MemoryTestCase):
     pass
