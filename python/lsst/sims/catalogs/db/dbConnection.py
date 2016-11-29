@@ -19,7 +19,8 @@ from lsst.daf.persistence import DbAuth
 #TODO: test for cdecimal and use it if it exists.
 import decimal
 
-__all__ = ["ChunkIterator", "DBObject", "CatalogDBObject", "fileDBObject"]
+__all__ = ["ChunkIterator", "DBObject", "CatalogDBObject", "fileDBObject",
+           "_get_connection"]
 
 def valueOfPi():
     """
