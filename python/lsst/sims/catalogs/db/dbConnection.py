@@ -233,6 +233,39 @@ class DBConnection(object):
         return self._verbose
 
 
+_connection_cache = []
+
+
+def _get_connection(database, driver, host, port):
+    """
+    Search _connection_cache for a DBConnection matching the specified
+    parameters.  If it exists, return it.  If not, open a connection to
+    the specified database, add it to the cache, and return the connection.
+
+    Parameters
+    ----------
+    database is the name of the database file being connected to
+
+    driver is the dialect of the database (e.g. 'sqlite', 'mssql', etc.)
+
+    host is the URL of the remote host, if appropriate
+
+    port is the port on the remote host to connect to, if appropriate
+    """
+    global _connection_cache
+
+    for conn in _connection_cache:
+        if conn.database == database:
+            if conn.driver == driver:
+                if conn.host == host:
+                    if conn.port == port:
+                        return conn
+
+    conn = DBConnection(database=database, driver=driver, host=host, port=port)
+    _connection_cache.append(conn)
+    return conn
+
+
 class DBObject(object):
 
     def __init__(self, database=None, driver=None, host=None, port=None, verbose=False,
@@ -270,8 +303,8 @@ class DBObject(object):
                 if value is not None or not hasattr(self, key):
                     setattr(self, key, value)
 
-            self.connection = DBConnection(database=self.database, driver=self.driver, host=self.host,
-                                           port=self.port, verbose=self.verbose)
+            self.connection = _get_connection(self.database, self.driver, self.host, self.port)
+
         else:
             self.connection = connection
             self.database = connection.database
