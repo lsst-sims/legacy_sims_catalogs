@@ -515,11 +515,7 @@ class InstanceCatalog(object):
         # removing rows that run afoul of that criterion from the chunk.
         if self.cannot_be_null is not None:
             for filter_col in self.cannot_be_null:
-                try:
-                    filter_vals = np.char.lower(self.column_by_name(filter_col).astype('str'))
-                except:
-                    # apparently, the column does not exist in this catalog
-                    continue
+                filter_vals = np.char.lower(self.column_by_name(filter_col).astype('str'))
 
                 good_dexes = np.where(np.logical_and(filter_vals != 'none',
                                       np.logical_and(filter_vals  != 'nan', filter_vals != 'null')))
