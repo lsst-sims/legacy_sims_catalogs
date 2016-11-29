@@ -255,10 +255,10 @@ def _get_connection(database, driver, host, port):
     global _connection_cache
 
     for conn in _connection_cache:
-        if conn.database == database:
-            if conn.driver == driver:
-                if conn.host == host:
-                    if conn.port == port:
+        if conn.database is database:
+            if conn.driver is driver:
+                if conn.host is host:
+                    if conn.port is port:
                         return conn
 
     conn = DBConnection(database=database, driver=driver, host=host, port=port)
