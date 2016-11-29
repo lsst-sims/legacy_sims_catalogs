@@ -210,6 +210,9 @@ class InstanceCatalogTestCase(unittest.TestCase):
                 self.assertEqual(line, '%d, %d, %d, %d, %.1f\n'
                                         % (ii, ip3*ip3, ip3*ip3*ip3, ip3*ip3*ip3*ip3, 0.5*(ip3*ip3)))
 
+        if os.path.exists(cat_name):
+            os.unlink(cat_name)
+
     def test_filter_on_compound_column(self):
         """
         Test filtering on a catalog that filters on a compound column
