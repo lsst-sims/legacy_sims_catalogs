@@ -210,6 +210,47 @@ class InstanceCatalogTestCase(unittest.TestCase):
                 self.assertEqual(line, '%d, %d, %d, %d, %.1f\n'
                                         % (ii, ip3*ip3, ip3*ip3*ip3, ip3*ip3*ip3*ip3, 0.5*(ip3*ip3)))
 
+    def test_filter_on_compound_column(self):
+        """
+        Test filtering on a catalog that filters on a compound column
+        (example code has shown this to be a difficult case)
+        """
+
+        class FilteredCat5(InstanceCatalog):
+            column_outputs = ['id', 'a', 'b', 'c']
+            cannot_be_null = ['c']
+
+            @compound('a', 'b', 'c')
+            def get_alphabet(self):
+                ii = self.column_by_name('ip3')
+                c = ii*ii*ii*ii
+                return np.array([ii*ii, ii*ii*ii,
+                                 np.where(c % 3 == 0, c, None)])
+
+        cat_name = os.path.join(self.scratch_dir, "inst_actual_compound_column_filter_cat.txt")
+        if os.path.exists(cat_name):
+            os.unlink(cat_name)
+
+        cat = FilteredCat5(self.db)
+        cat.write_catalog(cat_name)
+
+        with open(cat_name, 'r') as input_file:
+            input_lines = input_file.readlines()
+
+        # verify that the catalog contains expected data
+        self.assertEqual(len(input_lines), 5)  # 4 data lines and a header
+        for i_line, line in enumerate(input_lines):
+            if i_line is 0:
+                continue
+            else:
+                ii = (i_line - 1)*3
+                ip3 = ii + 3
+                self.assertEqual(line, '%d, %d, %d, %d\n'
+                                        % (ii, ip3*ip3, ip3*ip3*ip3, ip3*ip3*ip3*ip3))
+
+        if os.path.exists(cat_name):
+            os.unlink(cat_name)
+
 
 class CompoundInstanceCatalogTestCase(unittest.TestCase):
     """
