@@ -78,6 +78,8 @@ class InstanceCatalogTestCase(unittest.TestCase):
                 self.assertEqual(line,
                                  '%d, %d, %d, %d\n' % (ii, ii+1, ii+2, ii+3))
 
+        if os.path.exists(cat_name):
+            os.unlink(cat_name)
 
 class CompoundInstanceCatalogTestCase(unittest.TestCase):
     """
