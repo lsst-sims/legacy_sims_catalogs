@@ -91,7 +91,8 @@ class CompoundCatalogDBObject(CatalogDBObject):
         column_names = []
         self.columns = []
         for dbo, dbName in zip(self._dbObjectClassList, self._nameList):
-            for row in dbo.columns:
+            db_inst = dbo()
+            for row in db_inst.columns:
                 new_row = [ww for ww in row]
                 new_row[0] = str('%s_%s' % (dbName, row[0]))
                 if new_row[1] is None:
