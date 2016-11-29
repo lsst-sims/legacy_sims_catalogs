@@ -305,6 +305,13 @@ class InstanceCatalog(object):
             # just call the column: this will log queries to the database.
             self.column_by_name(col_name)
 
+        # now do the same thing for columns specified in cannot_be_null
+        # (in case the catalog is filtered on columns that are not meant
+        # to be written to the catalog)
+        if self.cannot_be_null is not None:
+            for col_name in self.cannot_be_null:
+                self.column_by_name(col_name)
+
         db_required_columns = list(self._current_chunk.referenced_columns)
 
         default_columns_set = set(el[0] for el in self.default_columns)

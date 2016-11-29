@@ -291,6 +291,37 @@ class InstanceCatalogTestCase(unittest.TestCase):
         if os.path.exists(cat_name):
             os.unlink(cat_name)
 
+    def test_hidden_filter(self):
+        """
+        Test filtering on a column that is not written to the final catalog.
+        """
+        class FilteredCat7(InstanceCatalog):
+            column_outputs = ['id', 'ip1']
+            cannot_be_null = ['filter']
+
+            def get_filter(self):
+                ii = self.column_by_name('ip3')
+                return np.where(ii<7, ii, None)
+
+        cat_name = os.path.join(self.scratch_dir, "inst_hidden_filter_cat.txt")
+        if os.path.exists(cat_name):
+            os.unlink(cat_name)
+
+        cat = FilteredCat7(self.db)
+        cat.write_catalog(cat_name)
+
+        with open(cat_name, 'r') as input_file:
+            input_lines = input_file.readlines()
+
+        self.assertEqual(len(input_lines), 5)
+        for i_line, line in enumerate(input_lines):
+            if i_line is 0:
+                continue
+            else:
+                ii = i_line - 1
+                self.assertLess(ii+3, 7)
+                self.assertEqual(line, '%d, %d\n' % (ii, ii+1))
+
 
 class CompoundInstanceCatalogTestCase(unittest.TestCase):
     """
