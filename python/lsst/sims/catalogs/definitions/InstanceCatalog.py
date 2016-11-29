@@ -7,32 +7,7 @@ import copy
 from lsst.sims.utils import defaultSpecMap
 from lsst.sims.utils import ObservationMetaData
 
-__all__ = ["InstanceCatalog", "is_null"]
-
-
-def is_null(argument):
-    """
-    Return True if 'argument' is some null value
-    (i.e. 'Null', None, nan).
-
-    False otherwise.
-
-    This is used by InstanceCatalog.write_catalog() to identify rows
-    with null values in key columns.
-    """
-    if argument is None:
-        return True
-    elif isinstance(argument, str) or isinstance(argument, unicode):
-        if argument.strip().lower() == 'null':
-            return True
-        elif argument.strip().lower() == 'nan':
-            return True
-        elif argument.strip().lower() == 'none':
-            return True
-    elif np.isnan(argument):
-        return True
-
-    return False
+__all__ = ["InstanceCatalog"]
 
 
 class InstanceCatalogMeta(type):
@@ -510,12 +485,6 @@ class InstanceCatalog(object):
         db_required_columns, required_columns_with_defaults = self.db_required_columns()
         self._template = None
 
-        # find the indices of columns that cannot be null
-        self._cannotBeNullDexes = []
-        for (i, col) in enumerate(self.iter_column_names()):
-            if col in self.cannot_be_null:
-                self._cannotBeNullDexes.append(i)
-
     def _write_recarray(self, chunk, file_handle):
         """
         This method takes a recarray (usually returned by querying db_obj),
@@ -540,6 +509,32 @@ class InstanceCatalog(object):
                     chunk = chunk[good_dexes]
 
         self._set_current_chunk(chunk)
+
+        # If some columns are specified as cannot_be_null, loop over those columns,
+        # removing rows that run afoul of that criterion from the chunk.
+        if len(self.cannot_be_null) > 0:
+            for filter_col in self.cannot_be_null:
+                try:
+                    filter_vals = np.char.lower(self.column_by_name(filter_col).astype('str'))
+                except:
+                    # apparently, the column does not exist in this catalog
+                    continue
+
+                good_dexes = np.where(np.logical_and(filter_vals != 'none',
+                                      np.logical_and(filter_vals  != 'nan', filter_vals != 'null')))
+
+                if len(good_dexes[0]) < len(chunk):
+                    chunk = chunk[good_dexes]
+
+                    # In the event that self._column_cache has already been created,
+                    # update the cache so that only valid rows remain therein
+                    new_cache = {}
+                    if len(self._column_cache) > 0:
+                        for col_name in self._column_cache:
+                            new_cache[col_name] = self._column_cache[col_name][good_dexes]
+
+                    self._set_current_chunk(chunk, column_cache=new_cache)
+
         chunk_cols = [self.transformations[col](self.column_by_name(col))
                       if col in self.transformations.keys() else
                       self.column_by_name(col)
@@ -551,12 +546,7 @@ class InstanceCatalog(object):
 
         # use a generator expression for lines rather than a list
         # for memory efficiency
-        file_handle.writelines(self._template % line
-                               for line in zip(*chunk_cols)
-                               if np.array([not is_null(line[i]) for i in self._cannotBeNullDexes]).all())
-                               # the last boolean in this line causes a row not to be printed if it has
-                               # a null value in one of the columns that cannot be null; it is ignored
-                               # if no columns are specified by cannot_be_null
+        file_handle.writelines(self._template % line for line in zip(*chunk_cols))
 
     def iter_catalog(self, chunk_size=None):
         self.db_required_columns()
