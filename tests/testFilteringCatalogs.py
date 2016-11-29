@@ -77,6 +77,7 @@ class InstanceCatalogTestCase(unittest.TestCase):
                 continue
             else:
                 ii = i_line - 1
+                self.assertLess(ii, 5)
                 self.assertEqual(line,
                                  '%d, %d, %d, %d\n' % (ii, ii+1, ii+2, ii+3))
 
@@ -120,6 +121,8 @@ class InstanceCatalogTestCase(unittest.TestCase):
                 ip1 = ii + 1
                 ip2 = ii + 2
                 ip3 = ii + 3
+                self.assertEqual((ii+2) % 2, 0)
+                self.assertEqual((ii+3) % 3, 0)
                 self.assertEqual(line,
                                  '%d, %d, %d, %d\n' % (ii, ip1, ip2, ip3))
 
@@ -163,6 +166,8 @@ class InstanceCatalogTestCase(unittest.TestCase):
                 ip1 = ii + 1
                 ip2 = ii + 2
                 ip3 = ii + 3
+                self.assertEqual((ii+2) % 2, 0)
+                self.assertEqual((ii+3) % 3, 0)
                 self.assertEqual(line,
                                  '%d, %d, %d, %d\n' % (ii, ip1, ip2, ip3))
 
@@ -207,6 +212,7 @@ class InstanceCatalogTestCase(unittest.TestCase):
             else:
                 ii = (i_line - 1)*3
                 ip3 = ii + 3
+                self.assertEqual((ip3*ip3) % 3, 0)
                 self.assertEqual(line, '%d, %d, %d, %d, %.1f\n'
                                         % (ii, ip3*ip3, ip3*ip3*ip3, ip3*ip3*ip3*ip3, 0.5*(ip3*ip3)))
 
@@ -248,6 +254,7 @@ class InstanceCatalogTestCase(unittest.TestCase):
             else:
                 ii = (i_line - 1)*3
                 ip3 = ii + 3
+                self.assertEqual((ip3**4) % 3, 0)
                 self.assertEqual(line, '%d, %d, %d, %d\n'
                                         % (ii, ip3*ip3, ip3*ip3*ip3, ip3*ip3*ip3*ip3))
 
@@ -286,6 +293,7 @@ class InstanceCatalogTestCase(unittest.TestCase):
                 continue
             else:
                 ii = 4 + i_line
+                self.assertGreater(ii+1, 5)
                 self.assertEqual(line, '%d, %d\n' % (ii, ii+1))
 
         if os.path.exists(cat_name):
@@ -441,13 +449,16 @@ class CompoundInstanceCatalogTestCase(unittest.TestCase):
                 continue
             elif i_line < 6:
                 ii = 2*(i_line-1) + 1
+                self.assertEqual((ii+1) % 2, 0)
                 self.assertEqual(line, '%d, %d\n' % (ii, ii+1))
             elif i_line < 10:
                 ii = i_line - 6
+                self.assertLess(ii, 4)
                 self.assertEqual(line, '%d, %d\n' % (ii, ii+2))
             else:
-                ii = i_line - 10
-                self.assertEqual(line, '%d, %d\n' % (ii+6, ii+6+3))
+                ii = i_line - 10 + 6
+                self.assertGreater(ii, 5)
+                self.assertEqual(line, '%d, %d\n' % (ii, ii+3))
 
         if os.path.exists(cat_name):
             os.unlink(cat_name)
