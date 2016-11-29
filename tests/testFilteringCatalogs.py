@@ -13,6 +13,72 @@ def setup_module(module):
     lsst.utils.tests.init()
 
 
+class InstanceCatalogTestCase(unittest.TestCase):
+    """
+    This class will contain tests that will help us verify
+    that using cannot_be_null to filter the contents of an
+    InstanceCatalog works as it should.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        cls.scratch_dir = os.path.join(getPackageDir('sims_catalogs'), 'tests', 'scratchSpace')
+
+        cls.db_src_name = os.path.join(cls.scratch_dir, 'inst_cat_filter_db.txt')
+        if os.path.exists(cls.db_src_name):
+            os.unlink(cls.db_src_name)
+
+        with open(cls.db_src_name, 'w') as output_file:
+            output_file.write('#a header\n')
+            for ii in range(10):
+                output_file.write('%d %d %d %d\n' % (ii, ii+1, ii+2, ii+3))
+
+        dtype = np.dtype([('id', int), ('ip1', int), ('ip2', int), ('ip3', int)])
+        cls.db = fileDBObject(cls.db_src_name, runtable='test', dtype=dtype,
+                              idColKey='id')
+
+    @classmethod
+    def tearDownClass(cls):
+
+        del cls.db
+
+        if os.path.exists(cls.db_src_name):
+            os.unlink(cls.db_src_name)
+
+    def test_single_filter(self):
+        """
+        Test filtering on a single column
+        """
+
+        class FilteredCat(InstanceCatalog):
+            column_outputs = ['id', 'ip1', 'ip2', 'ip3t']
+            cannot_be_null = ['ip3t']
+
+            def get_ip3t(self):
+                base = self.column_by_name('ip3')
+                ii = self.column_by_name('id')
+                return np.where(ii < 5, base, None)
+
+        cat_name = os.path.join(self.scratch_dir, 'inst_single_filter_cat.txt')
+        if os.path.exists(cat_name):
+            os.unlink(cat_name)
+
+        cat = FilteredCat(self.db)
+        cat.write_catalog(cat_name)
+        with open(cat_name, 'r') as input_file:
+            input_lines = input_file.readlines()
+
+        # verify that the catalog contains the expected data
+        self.assertEqual(len(input_lines), 6)  # 5 data lines and a header
+        for i_line, line in enumerate(input_lines):
+            if i_line is 0:
+                continue
+            else:
+                ii = i_line - 1
+                self.assertEqual(line,
+                                 '%d, %d, %d, %d\n' % (ii, ii+1, ii+2, ii+3))
+
+
 class CompoundInstanceCatalogTestCase(unittest.TestCase):
     """
     This class will contain tests that will help us verify that using
