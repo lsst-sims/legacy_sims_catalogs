@@ -7,6 +7,7 @@ import lsst.utils.tests
 from lsst.utils import getPackageDir
 from lsst.sims.catalogs.definitions import InstanceCatalog, CompoundInstanceCatalog
 from lsst.sims.catalogs.db import fileDBObject, CatalogDBObject
+from lsst.sims.catalogs.decorators import compound
 
 
 def setup_module(module):
@@ -162,6 +163,46 @@ class InstanceCatalogTestCase(unittest.TestCase):
 
         if os.path.exists(cat_name):
             os.unlink(cat_name)
+
+    def test_compound_column(self):
+        """
+        Test filtering on a catalog with a compound column that is calculated
+        after the filter column (example code has shown this to be a difficult case)
+        """
+
+        class FilteredCat4(InstanceCatalog):
+            column_outputs = ['id', 'a', 'b', 'c', 'filter_col']
+            cannot_be_null = ['filter_col']
+
+            @compound('a', 'b', 'c')
+            def get_alphabet(self):
+                ii = self.column_by_name('ip3')
+                return np.array([ii*ii, ii*ii*ii, ii*ii*ii*ii])
+
+            def get_filter_col(self):
+                base = self.column_by_name('a')
+                return np.where(base % 3 == 0, base/2.0, None)
+
+        cat_name = os.path.join(self.scratch_dir, "inst_compound_column_filter_cat.txt")
+        if os.path.exists(cat_name):
+            os.unlink(cat_name)
+
+        cat = FilteredCat4(self.db)
+        cat.write_catalog(cat_name)
+
+        with open(cat_name, 'r') as input_file:
+            input_lines = input_file.readlines()
+
+        # verify that the catalog contains expected data
+        self.assertEqual(len(input_lines), 5)  # 4 data lines and a header
+        for i_line, line in enumerate(input_lines):
+            if i_line is 0:
+                continue
+            else:
+                ii = (i_line - 1)*3
+                ip3 = ii + 3
+                self.assertEqual(line, '%d, %d, %d, %d, %.1f\n'
+                                        % (ii, ip3*ip3, ip3*ip3*ip3, ip3*ip3*ip3*ip3, 0.5*(ip3*ip3)))
 
 
 class CompoundInstanceCatalogTestCase(unittest.TestCase):
