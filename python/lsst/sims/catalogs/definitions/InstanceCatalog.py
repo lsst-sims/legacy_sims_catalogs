@@ -4,6 +4,7 @@ import numpy as np
 import inspect
 import re
 import copy
+from collections import OrderedDict
 from lsst.sims.utils import defaultSpecMap
 from lsst.sims.utils import ObservationMetaData
 
@@ -531,7 +532,16 @@ class InstanceCatalog(object):
                     new_cache = {}
                     if len(self._column_cache) > 0:
                         for col_name in self._column_cache:
-                            new_cache[col_name] = self._column_cache[col_name][good_dexes]
+                            if col_name in self._compound_column_names:
+                                # this is a sub-column of a compound column;
+                                # ignore it, we will update the cache when we come
+                                # to the compound column
+                                continue
+                            elif 'get_'+col_name in self._compound_columns:
+                                super_col = self._column_cache[col_name]
+                                new_cache[col_name] = OrderedDict([(key, super_col[key][good_dexes]) for key in super_col])
+                            else:
+                                new_cache[col_name] = self._column_cache[col_name][good_dexes]
 
                     self._set_current_chunk(chunk, column_cache=new_cache)
 
