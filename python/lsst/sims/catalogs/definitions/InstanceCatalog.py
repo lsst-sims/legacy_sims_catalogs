@@ -131,7 +131,7 @@ class InstanceCatalog(object):
     column_outputs = None
     specFileMap = defaultSpecMap
     default_columns = []
-    cannot_be_null = []  # a list of columns which, if null, cause a row not to be printed by write_catalog()
+    cannot_be_null = None  # will be a list of columns which, if null, cause a row not to be printed by write_catalog()
     default_formats = {'S': '%s', 'f': '%.4f', 'i': '%i'}
     override_formats = {}
     transformations = {}
@@ -498,7 +498,7 @@ class InstanceCatalog(object):
         the catalog is being written.
         """
 
-        if self._pre_screen:
+        if self._pre_screen and self.cannot_be_null is not None:
             # go through the database query results and remove all of those
             # rows that have already run afoul of self.cannot_be_null
             for col_name in self.cannot_be_null:
@@ -512,7 +512,7 @@ class InstanceCatalog(object):
 
         # If some columns are specified as cannot_be_null, loop over those columns,
         # removing rows that run afoul of that criterion from the chunk.
-        if len(self.cannot_be_null) > 0:
+        if self.cannot_be_null is not None:
             for filter_col in self.cannot_be_null:
                 try:
                     filter_vals = np.char.lower(self.column_by_name(filter_col).astype('str'))
