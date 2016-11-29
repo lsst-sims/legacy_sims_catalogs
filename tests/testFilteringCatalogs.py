@@ -7,7 +7,7 @@ import lsst.utils.tests
 from lsst.utils import getPackageDir
 from lsst.sims.catalogs.definitions import InstanceCatalog, CompoundInstanceCatalog
 from lsst.sims.catalogs.db import fileDBObject, CatalogDBObject
-from lsst.sims.catalogs.decorators import compound
+from lsst.sims.catalogs.decorators import cached, compound
 
 
 def setup_module(module):
@@ -55,6 +55,7 @@ class InstanceCatalogTestCase(unittest.TestCase):
             column_outputs = ['id', 'ip1', 'ip2', 'ip3t']
             cannot_be_null = ['ip3t']
 
+            @cached
             def get_ip3t(self):
                 base = self.column_by_name('ip3')
                 ii = self.column_by_name('id')
@@ -90,10 +91,12 @@ class InstanceCatalogTestCase(unittest.TestCase):
             column_outputs = ['id', 'ip1', 'ip2t', 'ip3t']
             cannot_be_null = ['ip2t', 'ip3t']
 
+            @cached
             def get_ip2t(self):
                 base = self.column_by_name('ip2')
                 return np.where(base % 2 == 0, base, None)
 
+            @cached
             def get_ip3t(self):
                 base = self.column_by_name('ip3')
                 return np.where(base % 3 == 0, base, None)
@@ -130,10 +133,12 @@ class InstanceCatalogTestCase(unittest.TestCase):
         class FilteredCat3(InstanceCatalog):
             column_outputs = ['id', 'ip1', 'ip2t', 'ip3t']
 
+            @cached
             def get_ip2t(self):
                 base = self.column_by_name('ip2')
                 return np.where(base % 2 == 0, base, None)
 
+            @cached
             def get_ip3t(self):
                 base = self.column_by_name('ip3')
                 return np.where(base % 3 == 0, base, None)
@@ -179,6 +184,7 @@ class InstanceCatalogTestCase(unittest.TestCase):
                 ii = self.column_by_name('ip3')
                 return np.array([ii*ii, ii*ii*ii, ii*ii*ii*ii])
 
+            @cached
             def get_filter_col(self):
                 base = self.column_by_name('a')
                 return np.where(base % 3 == 0, base/2.0, None)
@@ -252,6 +258,7 @@ class CompoundInstanceCatalogTestCase(unittest.TestCase):
             column_outputs = ['id', 'ip1t']
             cannot_be_null = ['ip1t']
 
+            @cached
             def get_ip1t(self):
                 base = self.column_by_name('ip1')
                 output = []
@@ -266,6 +273,7 @@ class CompoundInstanceCatalogTestCase(unittest.TestCase):
             column_outputs = ['id', 'ip2t']
             cannot_be_null = ['ip2t']
 
+            @cached
             def get_ip2t(self):
                 base = self.column_by_name('ip2')
                 ii = self.column_by_name('id')
@@ -275,6 +283,7 @@ class CompoundInstanceCatalogTestCase(unittest.TestCase):
             column_outputs = ['id', 'ip3t']
             cannot_be_null = ['ip3t']
 
+            @cached
             def get_ip3t(self):
                 base = self.column_by_name('ip3')
                 ii = self.column_by_name('id')
