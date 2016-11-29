@@ -254,6 +254,40 @@ class InstanceCatalogTestCase(unittest.TestCase):
         if os.path.exists(cat_name):
             os.unlink(cat_name)
 
+    def test_empty_chunk(self):
+        """
+        Test that catalog filtering behaves correctly, even when the first
+        chunk is empty
+        """
+
+        class FilteredCat6(InstanceCatalog):
+            column_outputs = ['id', 'filter']
+            cannot_be_null = ['filter']
+
+            @cached
+            def get_filter(self):
+                ii = self.column_by_name('ip1')
+                return np.where(ii>5, ii, None)
+
+        cat_name = os.path.join(self.scratch_dir, "inst_empty_chunk_cat.txt")
+        if os.path.exists(cat_name):
+            os.unlink(cat_name)
+
+        cat = FilteredCat6(self.db)
+        cat.write_catalog(cat_name, chunk_size=2)
+
+        # check that the catalog contains the correct information
+        with open(cat_name, 'r') as input_file:
+            input_lines = input_file.readlines()
+
+        self.assertEqual(len(input_lines), 6)  # 5 data lines and a header
+        for i_line, line in enumerate(input_lines):
+            if i_line is 0:
+                continue
+            else:
+                ii = 4 + i_line
+                self.assertEqual(line, '%d, %d\n' % (ii, ii+1))
+
 
 class CompoundInstanceCatalogTestCase(unittest.TestCase):
     """

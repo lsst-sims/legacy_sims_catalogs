@@ -545,6 +545,9 @@ class InstanceCatalog(object):
 
                     self._set_current_chunk(chunk, column_cache=new_cache)
 
+        if len(self._current_chunk) is 0:
+            return
+
         chunk_cols = [self.transformations[col](self.column_by_name(col))
                       if col in self.transformations.keys() else
                       self.column_by_name(col)
