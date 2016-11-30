@@ -20,7 +20,7 @@ from lsst.daf.persistence import DbAuth
 import decimal
 
 __all__ = ["ChunkIterator", "DBObject", "CatalogDBObject", "fileDBObject",
-           "_get_connection"]
+           "_get_connection", "_close_all_connections"]
 
 def valueOfPi():
     """
@@ -235,6 +235,17 @@ class DBConnection(object):
 
 
 _connection_cache = []
+
+
+def _close_all_connections():
+    """
+    Close all of the database connections in the _conneciton_cache.
+    This is mostly needed to clean up after ourselves in unit tests.
+    """
+    global _connection_cache
+    for conn in _connection_cache:
+        del conn
+    _connection_cache = []
 
 
 def _get_connection(database, driver, host, port):
