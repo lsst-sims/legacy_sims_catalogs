@@ -332,6 +332,46 @@ class InstanceCatalogTestCase(unittest.TestCase):
         if os.path.exists(cat_name):
             os.unlink(cat_name)
 
+    def test_adding_filter(self):
+        """
+        Test that, when we use the kwarg in the constructor to add to
+        cannot_be_null, the filter is appended to existing filters.
+        """
+        class FilteredCat8(InstanceCatalog):
+            column_outputs = ['id', 'ip1']
+            cannot_be_null = ['filter1']
+
+            def get_filter1(self):
+                ii = self.column_by_name('ip2')
+                return np.where(ii%2 == 0, ii, None)
+
+            def get_filter2(self):
+                ii = self.column_by_name('ip3')
+                return np.where(ii > 8, ii, None)
+
+        cat_name = os.path.join(self.scratch_dir, "inst_adding_filter_cat.txt")
+        if os.path.exists(cat_name):
+            os.unlink(cat_name)
+
+        cat = FilteredCat8(self.db, cannot_be_null = ['filter2'])
+        self.assertIn('filter1', cat._cannot_be_null)
+        self.assertIn('filter2', cat._cannot_be_null)
+
+        cat.write_catalog(cat_name)
+        with open(cat_name, 'r') as input_file:
+            input_lines = input_file.readlines()
+        self.assertEqual(len(input_lines), 3)
+        for i_line, line in enumerate(input_lines):
+            if i_line is 0:
+                continue
+            else:
+                ii = (i_line - 1)*2 + 6
+                self.assertEqual((ii+2) % 2, 0)
+                self.assertGreater(ii+3, 8)
+                self.assertEqual(line, '%d, %d\n' % (ii, ii+1))
+
+        if os.path.exists(cat_name):
+            os.unlink(cat_name)
 
 class CompoundInstanceCatalogTestCase(unittest.TestCase):
     """
