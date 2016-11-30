@@ -564,6 +564,8 @@ class InstanceCatalog(object):
                 good_dexes = np.where(np.logical_and(filter_vals != 'none',
                                       np.logical_and(filter_vals  != 'nan', filter_vals != 'null')))
 
+                final_dexes = final_dexes[good_dexes]
+
                 if len(good_dexes[0]) < len(chunk):
                     self._update_current_chunk(good_dexes)
 
