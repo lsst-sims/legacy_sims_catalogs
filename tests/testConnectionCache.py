@@ -1,0 +1,116 @@
+import unittest
+import sqlite3
+import os
+import numpy as np
+
+import lsst.utils.tests
+from lsst.utils import getPackageDir
+from lsst.sims.catalogs.db import _close_all_connections
+from lsst.sims.catalogs.db import CatalogDBObject, DBObject
+from lsst.sims.catalogs.db.dbConnection import _connection_cache
+
+
+def setup_module(module):
+    lsst.utils.tests.init()
+
+
+class CachingTestCase(unittest.TestCase):
+    """
+    This class will contain tests to make sure that CatalogDBObject is
+    correctly using the global _connection_cache
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        cls.scratch_dir = os.path.join(getPackageDir("sims_catalogs"),
+                                       "tests", "scratchSpace")
+        cls.db_name = os.path.join(cls.scratch_dir, "connection_cache_test_db.db")
+        if os.path.exists(cls.db_name):
+            os.unlink(cls.db_name)
+
+        conn = sqlite3.connect(cls.db_name)
+        c = conn.cursor()
+        c.execute('''CREATE TABLE test (id int, i1 int, i2 int)''')
+        for ii in range(5):
+            c.execute('''INSERT INTO test VALUES (%i, %i, %i)''' % (ii, ii*ii, -ii))
+        conn.commit()
+        conn.close()
+
+    @classmethod
+    def tearDownClass(cls):
+        _close_all_connections()
+        if os.path.exists(cls.db_name):
+            os.unlink(cls.db_name)
+
+    def test_catalog_db_object_cacheing(self):
+        """
+        Test that opening multiple CatalogDBObjects that connect to the same
+        database only results in one connection being opened and used.  We
+        will test this by instantiating two CatalogDBObjects and a DBObject
+        that connect to the same database.  We will then test that the two
+        CatalogDBObjects' connections are identical, but that the DBObject has
+        its own connection.
+        """
+
+        _close_all_connections()
+        self.assertEqual(len(_connection_cache), 0)
+
+        class DbClass1(CatalogDBObject):
+            database = self.db_name
+            port = None
+            host = None
+            driver = 'sqlite'
+            tableid = 'test'
+            idColKey = 'id'
+            objid = 'test_db_class_1'
+
+            columns = [('identification', 'id')]
+
+        class DbClass2(CatalogDBObject):
+            database = self.db_name
+            port = None
+            host = None
+            driver = 'sqlite'
+            tableid = 'test'
+            idColKey = 'id'
+            objid = 'test_db_class_2'
+
+            columns = [('other', 'i1')]
+
+        db1 = DbClass1()
+        db2 = DbClass2()
+        self.assertEqual(db1.connection, db2.connection)
+
+        db3 = DBObject(database=self.db_name, driver='sqlite', host=None, port=None)
+        self.assertNotEqual(db1.connection, db3.connection)
+
+        # check that if we had passed db1.connection to a DBObject,
+        # the connections would be identical
+        db4 = DBObject(connection=db1.connection)
+        self.assertEqual(db4.connection, db1.connection)
+
+        # verify that db1 and db2 are both useable
+        results = db1.query_columns(colnames=['id', 'i1', 'i2', 'identification'])
+        results = results.next()
+        self.assertEqual(len(results), 5)
+        np.testing.assert_array_equal(results['id'], range(5))
+        np.testing.assert_array_equal(results['id'], results['identification'])
+        np.testing.assert_array_equal(results['id']**2, results['i1'])
+        np.testing.assert_array_equal(results['id']*(-1), results['i2'])
+
+        results = db2.query_columns(colnames=['id', 'i1', 'i2', 'other'])
+        results = results.next()
+        self.assertEqual(len(results), 5)
+        np.testing.assert_array_equal(results['id'], range(5))
+        np.testing.assert_array_equal(results['id']**2, results['i1'])
+        np.testing.assert_array_equal(results['i1'], results['other'])
+        np.testing.assert_array_equal(results['id']*(-1), results['i2'])
+
+
+class MemoryTestClass(lsst.utils.tests.MemoryTestCase):
+    pass
+
+
+if __name__ == "__main__":
+    lsst.utils.tests.init()
+    unittest.main()
