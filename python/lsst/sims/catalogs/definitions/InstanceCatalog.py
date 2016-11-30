@@ -510,6 +510,29 @@ class InstanceCatalog(object):
         db_required_columns, required_columns_with_defaults = self.db_required_columns()
         self._template = None
 
+    def _update_current_chunk(self, good_dexes):
+        """
+        Update self._current_chunk and self._column_cache to only include the rows
+        specified by good_dexes (which will be a list of indexes).
+        """
+        # In the event that self._column_cache has already been created,
+        # update the cache so that only valid rows remain therein
+        new_cache = {}
+        if len(self._column_cache) > 0:
+            for col_name in self._column_cache:
+                if col_name in self._compound_column_names:
+                    # this is a sub-column of a compound column;
+                    # ignore it, we will update the cache when we come
+                    # to the compound column
+                    continue
+                elif 'get_'+col_name in self._compound_columns:
+                    super_col = self._column_cache[col_name]
+                    new_cache[col_name] = OrderedDict([(key, super_col[key][good_dexes]) for key in super_col])
+                else:
+                    new_cache[col_name] = self._column_cache[col_name][good_dexes]
+
+        self._set_current_chunk(self._current_chunk[good_dexes], column_cache=new_cache)
+
     def _filter_chunk(self, chunk):
         """
         Take a chunk of database rows and select only those that match the criteria
@@ -542,44 +565,14 @@ class InstanceCatalog(object):
                                       np.logical_and(filter_vals  != 'nan', filter_vals != 'null')))
 
                 if len(good_dexes[0]) < len(chunk):
-                    chunk = chunk[good_dexes]
-                    final_dexes = final_dexes[good_dexes]
-
-                    # In the event that self._column_cache has already been created,
-                    # update the cache so that only valid rows remain therein
-                    new_cache = {}
-                    if len(self._column_cache) > 0:
-                        for col_name in self._column_cache:
-                            if col_name in self._compound_column_names:
-                                # this is a sub-column of a compound column;
-                                # ignore it, we will update the cache when we come
-                                # to the compound column
-                                continue
-                            elif 'get_'+col_name in self._compound_columns:
-                                super_col = self._column_cache[col_name]
-                                new_cache[col_name] = OrderedDict([(key, super_col[key][good_dexes]) for key in super_col])
-                            else:
-                                new_cache[col_name] = self._column_cache[col_name][good_dexes]
-
-                    self._set_current_chunk(chunk, column_cache=new_cache)
+                    self._update_current_chunk(good_dexes)
 
         return final_dexes
 
-    def _write_recarray(self, chunk, file_handle):
+    def _write_current_chunk(self, file_handle):
         """
-        This method takes a recarray (usually returned by querying db_obj),
-        and writes it to the catalog.  This method also handles any transformation
-        of columns that needs to happen before they are written to the catalog.
-
-        @param [in] chunk is the recarray of queried columns to be formatted
-        and written to the catalog.
-
-        @param [in] file_handle is a file handle pointing to the file where
-        the catalog is being written.
+        write self._current_chunk to the file specified by file_handle
         """
-
-        self._filter_chunk(chunk)
-
         if len(self._current_chunk) is 0:
             return
 
@@ -595,6 +588,21 @@ class InstanceCatalog(object):
         # use a generator expression for lines rather than a list
         # for memory efficiency
         file_handle.writelines(self._template % line for line in zip(*chunk_cols))
+
+    def _write_recarray(self, chunk, file_handle):
+        """
+        This method takes a recarray (usually returned by querying db_obj),
+        and writes it to the catalog.  This method also handles any transformation
+        of columns that needs to happen before they are written to the catalog.
+
+        @param [in] chunk is the recarray of queried columns to be formatted
+        and written to the catalog.
+
+        @param [in] file_handle is a file handle pointing to the file where
+        the catalog is being written.
+        """
+        self._filter_chunk(chunk)
+        self._write_current_chunk(file_handle)
 
     def iter_catalog(self, chunk_size=None):
         self.db_required_columns()
