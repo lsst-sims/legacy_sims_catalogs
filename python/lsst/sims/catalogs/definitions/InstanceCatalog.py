@@ -173,7 +173,7 @@ class InstanceCatalog(object):
                 yield column
 
     def __init__(self, db_obj, obs_metadata=None, column_outputs=None,
-                 constraint=None, specFileMap=None):
+                 constraint=None, specFileMap=None, cannot_be_null=None):
 
         """
         @param [in] db_obj is an instantiation of the CatalogDBObject class,
@@ -189,6 +189,11 @@ class InstanceCatalog(object):
         @param [in] column_outputs is a list of column names to be output
         in the catalog.  This is optional and will be appended to the list
         of column_outputs defined int he class definition.
+
+        @param [in] cannot_be_null is a list of column names indicating columns
+        which cannot have the values Null, None, or NaN.  Rows running afoul
+        of this criterion will not be written by the write_catalog() method
+        (though they may appear in the iterator returned by iter_catalog()).
 
         @param [in] constraint is an optional SQL constraint to be applied to the
         database query
@@ -229,6 +234,18 @@ class InstanceCatalog(object):
                 for col in column_outputs:
                     if col not in self._column_outputs:
                         self._column_outputs.append(col)
+
+        self._cannot_be_null = None
+        if self.cannot_be_null is not None:
+            self._cannot_be_null = copy.deepcopy(self.cannot_be_null)
+
+        if cannot_be_null is not None:
+            if self.cannot_be_null is None:
+                self._cannot_be_null = copy.deepcopy(cannot_be_null)
+            else:
+                for col in cannot_be_null:
+                    if col not in self._cannot_be_null:
+                        self._cannot_be_null.append(col)
 
         self._actually_calculated_columns = []  # a list of all the columns referenced by self.column_by_name
         self.constraint = constraint
@@ -305,11 +322,11 @@ class InstanceCatalog(object):
             # just call the column: this will log queries to the database.
             self.column_by_name(col_name)
 
-        # now do the same thing for columns specified in cannot_be_null
+        # now do the same thing for columns specified in _cannot_be_null
         # (in case the catalog is filtered on columns that are not meant
         # to be written to the catalog)
-        if self.cannot_be_null is not None:
-            for col_name in self.cannot_be_null:
+        if self._cannot_be_null is not None:
+            for col_name in self._cannot_be_null:
                 self.column_by_name(col_name)
 
         db_required_columns = list(self._current_chunk.referenced_columns)
@@ -506,10 +523,10 @@ class InstanceCatalog(object):
         the catalog is being written.
         """
 
-        if self._pre_screen and self.cannot_be_null is not None:
+        if self._pre_screen and self._cannot_be_null is not None:
             # go through the database query results and remove all of those
-            # rows that have already run afoul of self.cannot_be_null
-            for col_name in self.cannot_be_null:
+            # rows that have already run afoul of self._cannot_be_null
+            for col_name in self._cannot_be_null:
                 if col_name in chunk.dtype.names:
                     str_vec = np.char.lower(chunk[col_name].astype('str'))
                     good_dexes = np.where(np.logical_and(str_vec != 'none',
@@ -520,8 +537,8 @@ class InstanceCatalog(object):
 
         # If some columns are specified as cannot_be_null, loop over those columns,
         # removing rows that run afoul of that criterion from the chunk.
-        if self.cannot_be_null is not None:
-            for filter_col in self.cannot_be_null:
+        if self._cannot_be_null is not None:
+            for filter_col in self._cannot_be_null:
                 filter_vals = np.char.lower(self.column_by_name(filter_col).astype('str'))
 
                 good_dexes = np.where(np.logical_and(filter_vals != 'none',

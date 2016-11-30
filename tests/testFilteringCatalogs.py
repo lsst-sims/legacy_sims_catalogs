@@ -131,7 +131,7 @@ class InstanceCatalogTestCase(unittest.TestCase):
 
     def test_post_facto_filters(self):
         """
-        Test a case where filters are declared after instantiation
+        Test a case where filters are declared at instantiation
         """
         class FilteredCat3(InstanceCatalog):
             column_outputs = ['id', 'ip1', 'ip2t', 'ip3t']
@@ -150,8 +150,7 @@ class InstanceCatalogTestCase(unittest.TestCase):
         if os.path.exists(cat_name):
             os.unlink(cat_name)
 
-        cat = FilteredCat3(self.db)
-        cat.cannot_be_null = ['ip2t', 'ip3t']
+        cat = FilteredCat3(self.db, cannot_be_null=['ip2t', 'ip3t'])
         cat.write_catalog(cat_name)
 
         with open(cat_name, 'r') as input_file:
