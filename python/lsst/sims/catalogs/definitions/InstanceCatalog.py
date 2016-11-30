@@ -510,18 +510,14 @@ class InstanceCatalog(object):
         db_required_columns, required_columns_with_defaults = self.db_required_columns()
         self._template = None
 
-    def _write_recarray(self, chunk, file_handle):
+    def _filter_chunk(self, chunk):
         """
-        This method takes a recarray (usually returned by querying db_obj),
-        and writes it to the catalog.  This method also handles any transformation
-        of columns that needs to happen before they are written to the catalog.
-
-        @param [in] chunk is the recarray of queried columns to be formatted
-        and written to the catalog.
-
-        @param [in] file_handle is a file handle pointing to the file where
-        the catalog is being written.
+        Take a chunk of database rows and select only those that match the criteria
+        set by self._cannot_be_null.  Set self._current_chunk to be the rows that pass
+        this test.  Return a numpy array of the indices of those rows relative to
+        the original chunk.
         """
+        final_dexes = np.arange(len(chunk), dtype=int)
 
         if self._pre_screen and self._cannot_be_null is not None:
             # go through the database query results and remove all of those
@@ -532,6 +528,7 @@ class InstanceCatalog(object):
                     good_dexes = np.where(np.logical_and(str_vec != 'none',
                                           np.logical_and(str_vec != 'nan', str_vec != 'null')))
                     chunk = chunk[good_dexes]
+                    final_dexes = final_dexes[good_dexes]
 
         self._set_current_chunk(chunk)
 
@@ -546,6 +543,7 @@ class InstanceCatalog(object):
 
                 if len(good_dexes[0]) < len(chunk):
                     chunk = chunk[good_dexes]
+                    final_dexes = final_dexes[good_dexes]
 
                     # In the event that self._column_cache has already been created,
                     # update the cache so that only valid rows remain therein
@@ -564,6 +562,23 @@ class InstanceCatalog(object):
                                 new_cache[col_name] = self._column_cache[col_name][good_dexes]
 
                     self._set_current_chunk(chunk, column_cache=new_cache)
+
+        return final_dexes
+
+    def _write_recarray(self, chunk, file_handle):
+        """
+        This method takes a recarray (usually returned by querying db_obj),
+        and writes it to the catalog.  This method also handles any transformation
+        of columns that needs to happen before they are written to the catalog.
+
+        @param [in] chunk is the recarray of queried columns to be formatted
+        and written to the catalog.
+
+        @param [in] file_handle is a file handle pointing to the file where
+        the catalog is being written.
+        """
+
+        self._filter_chunk(chunk)
 
         if len(self._current_chunk) is 0:
             return
