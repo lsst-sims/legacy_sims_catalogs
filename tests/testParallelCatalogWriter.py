@@ -90,15 +90,15 @@ class ParallelWriterTestCase(unittest.TestCase):
 
         db = DbClass()
 
-        class_dict = {os.path.join(self.scratch_dir, 'par_test1.txt'): CatClass1,
-                      os.path.join(self.scratch_dir, 'par_test2.txt'): CatClass2,
-                      os.path.join(self.scratch_dir, 'par_test3.txt'): CatClass3}
+        class_dict = {os.path.join(self.scratch_dir, 'par_test1.txt'): CatClass1(db),
+                      os.path.join(self.scratch_dir, 'par_test2.txt'): CatClass2(db),
+                      os.path.join(self.scratch_dir, 'par_test3.txt'): CatClass3(db)}
 
         for file_name in class_dict:
             if os.path.exists(file_name):
                 os.unlink(file_name)
 
-        parallelCatalogWriter(class_dict, db)
+        parallelCatalogWriter(class_dict)
 
         dtype = np.dtype([('id', int), ('test', int), ('ii', int)])
         data1 = np.genfromtxt(os.path.join(self.scratch_dir, 'par_test1.txt'), dtype=dtype, delimiter=',')

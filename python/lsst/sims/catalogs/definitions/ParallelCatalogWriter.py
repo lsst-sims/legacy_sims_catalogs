@@ -4,7 +4,7 @@ import copy
 __all__ = ["parallelCatalogWriter"]
 
 
-def parallelCatalogWriter(catalog_class_dict, db_obj,
+def parallelCatalogWriter(catalog_dict,
                           obs_metadata=None, constraint=None,
                           cannot_be_null=None, chunk_size=None,
                           write_mode='w', write_header=True):
@@ -17,13 +17,10 @@ def parallelCatalogWriter(catalog_class_dict, db_obj,
 
     Parameters
     ----------
-    catalog_class_dict is a dict keyed on the names of the files to be written.
-    The values are the IntanceCatalog classes to be written (note: the classes,
-    not instantiations of those classes; this method will instantiate them
-    for you)
-
-    db_obj is the CatalogDBObject on which to base the catalogs (the actual
-    instantiation; not just the class)
+    catalog_dict is a dict keyed on the names of the files to be written.
+    The values are the IntanceCatalogs to be written (note: these are full
+    instantiations of InstanceCatalogs, not just InstanceCatalog classes
+    as with the CompoundInstanceCatalog)
 
     obs_metadata is an ObservationMetaData describing the field of view
 
@@ -45,18 +42,34 @@ def parallelCatalogWriter(catalog_class_dict, db_obj,
     Output
     ------
     This method does not return anything, it just writes the files that are the
-    keys of catalog_class_dict
+    keys of catalog_dict
     """
 
-    catalog_dict = {}
-    for file_name in catalog_class_dict:
-        cat_class = catalog_class_dict[file_name]
-        cat = cat_class(db_obj, obs_metadata=obs_metadata,
-                        constraint=constraint,
-                        cannot_be_null=cannot_be_null)
+    list_of_file_names = catalog_dict.keys()
+    ref_cat = catalog_dict[list_of_file_names[0]]
+    for ix, file_name in enumerate(list_of_file_names):
+        if ix>0:
+            cat = catalog_dict[file_name]
+            try:
+                assert cat.db_obj.connection.database is ref_cat.db_obj.connection.database
+                assert cat.db_obj.connection.host is ref_cat.db_obj.connection.host
+                assert cat.db_obj.connection.port is ref_cat.db_obj.connection.port
+                assert cat.db_obj.connection.driver is ref_cat.db_obj.connection.driver
+                assert cat.db_obj.tableid is ref_cat.db_obj.tableid
+            except:
+                msg = ('Cannot build these catalogs in parallel. '
+                       'The two databases are different.  Connection info is:\n'
+                       'database: %s != %s\n' % (cat.db_obj.connection.database, ref_cat.db_obj.database)
+                       + 'host: %s != %s\n' % (cat.db_obj.connection.host, ref_cat.db_obj.connection.host)
+                       + 'port: %s != %s\n' % (cat.db_obj.connection.port, ref_cat.db_obj.connection.port)
+                       + 'driver: %s != %s\n' % (cat.db_obj.connection.driver, ref_cat.db_obj.connection.driver)
+                       + 'table: %s != %s\n' % (cat.db_obj.tableid, ref_cat.db_obj.tableid))
 
+                raise RuntimeError(msg)
+
+    for file_name in list_of_file_names:
+        cat = catalog_dict[file_name]
         cat._write_pre_process()
-        catalog_dict[file_name] = cat
 
     active_columns = None
     for file_name in catalog_dict:
@@ -68,20 +81,18 @@ def parallelCatalogWriter(catalog_class_dict, db_obj,
                 if col_name not in active_columns:
                     active_columns.append(col_name)
 
-    query_result = db_obj.query_columns(colnames=active_columns,
-                                        obs_metadata=obs_metadata,
-                                        constraint=constraint,
-                                        chunk_size=chunk_size)
+    query_result = ref_cat.db_obj.query_columns(colnames=active_columns,
+                                                obs_metadata=obs_metadata,
+                                                constraint=constraint,
+                                                chunk_size=chunk_size)
 
     file_handle_dict = {}
-    for file_name in catalog_class_dict:
+    for file_name in catalog_dict:
         file_handle = open(file_name, write_mode)
         file_handle_dict[file_name] = file_handle
 
         if write_header:
             catalog_dict[file_name].write_header(file_handle)
-
-    list_of_file_names = catalog_dict.keys()
 
     for master_chunk in query_result:
         chunk = master_chunk
@@ -97,7 +108,7 @@ def parallelCatalogWriter(catalog_class_dict, db_obj,
 
                 chunk = chunk[good_dexes]
 
-        for file_name in catalog_class_dict:
+        for file_name in catalog_dict:
             catalog_dict[file_name]._write_current_chunk(file_handle_dict[file_name])
 
     for file_name in file_handle_dict:
