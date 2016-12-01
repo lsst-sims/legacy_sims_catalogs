@@ -4,9 +4,7 @@ import copy
 __all__ = ["parallelCatalogWriter"]
 
 
-def parallelCatalogWriter(catalog_dict,
-                          obs_metadata=None, constraint=None,
-                          cannot_be_null=None, chunk_size=None,
+def parallelCatalogWriter(catalog_dict, chunk_size=None, constraint=None,
                           write_mode='w', write_header=True):
     """
     This method will take several InstanceCatalog classes that are meant
@@ -22,13 +20,8 @@ def parallelCatalogWriter(catalog_dict,
     instantiations of InstanceCatalogs, not just InstanceCatalog classes
     as with the CompoundInstanceCatalog)
 
-    obs_metadata is an ObservationMetaData describing the field of view
-
-    constraint is an optional SQL constraint to be applied to the database query
-
-    cannot_be_null as an optional list of catalog columns that cannot be null
-    in any of the catalogs (note: catalogs will only contain rows which pass this
-    test for all catalogs).
+    constraint is an optional SQL constraint to be applied to the database query.
+    Note: constraints applied to individual catalogs will be ignored.
 
     chunk_size is an int which optionally specifies the number of rows to be
     returned from db_obj at a time
@@ -90,7 +83,7 @@ def parallelCatalogWriter(catalog_dict,
                     active_columns.append(col_name)
 
     query_result = ref_cat.db_obj.query_columns(colnames=active_columns,
-                                                obs_metadata=obs_metadata,
+                                                obs_metadata=ref_cat.obs_metadata,
                                                 constraint=constraint,
                                                 chunk_size=chunk_size)
 
