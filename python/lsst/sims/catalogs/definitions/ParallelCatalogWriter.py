@@ -7,7 +7,7 @@ __all__ = ["parallelCatalogWriter"]
 def parallelCatalogWriter(catalog_class_dict, db_obj,
                           obs_metadata=None, constraint=None,
                           cannot_be_null=None, chunk_size=None,
-                          write_mode='w'):
+                          write_mode='w', write_header=True):
     """
     This method will take several InstanceCatalog classes that are meant
     to be based on the same CatalogDBObject and write them out in parallel
@@ -38,6 +38,9 @@ def parallelCatalogWriter(catalog_class_dict, db_obj,
 
     write_mode is either 'w' (write) or 'a' (append), determining whether or
     not the writer will overwrite existing catalog files (assuming they exist)
+
+    write_header is a boolean that controls whether or not to write the header
+    in the catalogs.
 
     Output
     ------
@@ -74,7 +77,9 @@ def parallelCatalogWriter(catalog_class_dict, db_obj,
     for file_name in catalog_class_dict:
         file_handle = open(file_name, write_mode)
         file_handle_dict[file_name] = file_handle
-        catalog_dict[file_name].write_header(file_handle)
+
+        if write_header:
+            catalog_dict[file_name].write_header(file_handle)
 
     list_of_file_names = catalog_dict.keys()
 
