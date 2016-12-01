@@ -51,6 +51,14 @@ def parallelCatalogWriter(catalog_dict,
         if ix>0:
             cat = catalog_dict[file_name]
             try:
+                assert cat.obs_metadata == ref_cat.obs_metadata
+            except:
+                print cat.obs_metadata
+                print ref_cat.obs_metadata
+                raise RuntimeError('Catalogs passed to parallelCatalogWriter have different '
+                                   'ObservationMetaData.  I do not know how to deal with that.')
+
+            try:
                 assert cat.db_obj.connection.database is ref_cat.db_obj.connection.database
                 assert cat.db_obj.connection.host is ref_cat.db_obj.connection.host
                 assert cat.db_obj.connection.port is ref_cat.db_obj.connection.port
