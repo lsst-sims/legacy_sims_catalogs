@@ -61,12 +61,12 @@ def parallelCatalogWriter(catalog_dict, chunk_size=None, constraint=None,
             except:
                 msg = ('Cannot build these catalogs in parallel. '
                        'The two databases are different.  Connection info is:\n'
-                       'database: %s != %s\n' % (cat.db_obj.connection.database, ref_cat.db_obj.database)
-                       + 'host: %s != %s\n' % (cat.db_obj.connection.host, ref_cat.db_obj.connection.host)
-                       + 'port: %s != %s\n' % (cat.db_obj.connection.port, ref_cat.db_obj.connection.port)
-                       + 'driver: %s != %s\n' % (cat.db_obj.connection.driver, ref_cat.db_obj.connection.driver)
-                       + 'table: %s != %s\n' % (cat.db_obj.tableid, ref_cat.db_obj.tableid)
-                       + 'objid: %s != %s\n' % (cat.db_obj.objid, ref_cat.db_obj.objid))
+                       'database: %s vs. %s\n' % (cat.db_obj.connection.database, ref_cat.db_obj.database)
+                       + 'host: %s vs. %s\n' % (cat.db_obj.connection.host, ref_cat.db_obj.connection.host)
+                       + 'port: %s vs. %s\n' % (cat.db_obj.connection.port, ref_cat.db_obj.connection.port)
+                       + 'driver: %s vs. %s\n' % (cat.db_obj.connection.driver, ref_cat.db_obj.connection.driver)
+                       + 'table: %s vs. %s\n' % (cat.db_obj.tableid, ref_cat.db_obj.tableid)
+                       + 'objid: %s vs. %s\n' % (cat.db_obj.objid, ref_cat.db_obj.objid))
 
                 raise RuntimeError(msg)
 
