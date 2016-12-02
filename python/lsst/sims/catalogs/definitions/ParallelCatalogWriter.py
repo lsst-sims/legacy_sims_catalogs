@@ -66,7 +66,7 @@ def parallelCatalogWriter(catalog_dict, chunk_size=None, constraint=None,
                        + 'port: %s != %s\n' % (cat.db_obj.connection.port, ref_cat.db_obj.connection.port)
                        + 'driver: %s != %s\n' % (cat.db_obj.connection.driver, ref_cat.db_obj.connection.driver)
                        + 'table: %s != %s\n' % (cat.db_obj.tableid, ref_cat.db_obj.tableid)
-                       + 'objid: %s !- %s\n' % (cat.db_obj.objid, ref_cat.db_obj.objid))
+                       + 'objid: %s != %s\n' % (cat.db_obj.objid, ref_cat.db_obj.objid))
 
                 raise RuntimeError(msg)
 
