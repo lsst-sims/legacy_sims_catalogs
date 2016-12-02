@@ -57,6 +57,7 @@ def parallelCatalogWriter(catalog_dict, chunk_size=None, constraint=None,
                 assert cat.db_obj.connection.port is ref_cat.db_obj.connection.port
                 assert cat.db_obj.connection.driver is ref_cat.db_obj.connection.driver
                 assert cat.db_obj.tableid is ref_cat.db_obj.tableid
+                assert cat.db_obj.objid is ref_cat.db_obj.objid
             except:
                 msg = ('Cannot build these catalogs in parallel. '
                        'The two databases are different.  Connection info is:\n'
