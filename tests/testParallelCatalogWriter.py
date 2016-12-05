@@ -105,14 +105,10 @@ class ParallelWriterTestCase(unittest.TestCase):
         data2 = np.genfromtxt(os.path.join(self.scratch_dir, 'par_test2.txt'), dtype=dtype, delimiter=',')
         data3 = np.genfromtxt(os.path.join(self.scratch_dir, 'par_test3.txt'), dtype=dtype, delimiter=',')
 
-        # verify that all three catalogs got the same objects
-        np.testing.assert_array_equal(data1['id'], data2['id'])
-        np.testing.assert_array_equal(data2['id'], data3['id'])
-
         # verify that the contents of the catalogs fit with the constraints in cannot_be_null
-        self.assertEqual(len(np.where(data1['id']%2 == 0)[0]), 0)
-        self.assertEqual(len(np.where(data1['id']%5 != 0)[0]), 0)
         self.assertEqual(len(np.where(data1['ii']%2 == 0)[0]), 0)
+        self.assertEqual(len(np.where(data2['id']%2 == 0)[0]), 0)
+        self.assertEqual(len(np.where(data3['id']%5 != 0)[0]), 0)
 
         # verify that the added value columns came out to the correct value
         np.testing.assert_array_equal(data1['id']**2, data1['test'])
@@ -127,20 +123,41 @@ class ParallelWriterTestCase(unittest.TestCase):
         control_cat = ControlCatalog(db)
         iterator = control_cat.iter_catalog()
         ct = 0
-        ct_in = 0
+        ct_in_1 = 0
+        ct_in_2 = 0
+        ct_in_3 = 0
         for control_data in iterator:
             ct += 1
-            if control_data[0] in data1['id']:
-                ct_in += 1
-            else:
-                is_valid = ((control_data[0]%2 == 1) and
-                            (control_data[0]%5 == 0) and
-                            (control_data[1]%2 == 1))
-                
-                self.assertFalse(is_valid, msg='Column filtering missed a row')
 
-        self.assertEqual(ct_in, len(data1['id']))
+            if control_data[1] % 2 == 0:
+                self.assertNotIn(control_data[0], data1['id'])
+            else:
+                ct_in_1 += 1
+                self.assertIn(control_data[0], data1['id'])
+                dex = np.where(data1['id']==control_data[0])[0][0]
+                self.assertEqual(control_data[1], data1['ii'][dex])
+
+            if control_data[0] % 2 == 0:
+                self.assertNotIn(control_data[0], data2['id'])
+            else:
+                ct_in_2 += 1
+                self.assertIn(control_data[0], data2['id'])
+                dex = np.where(data2['id']==control_data[0])[0][0]
+                self.assertEqual(control_data[1], data2['ii'][dex])
+
+            if control_data[0] % 5 != 0:
+                self.assertNotIn(control_data[0], data3['id'])
+            else:
+                ct_in_3 += 1
+                self.assertIn(control_data[0], data3['id'])
+                dex = np.where(data3['id']==control_data[0])[0][0]
+                self.assertEqual(control_data[1], data3['ii'][dex])
+
+        self.assertEqual(ct_in_1, len(data1['id']))
+        self.assertEqual(ct_in_2, len(data2['id']))
+        self.assertEqual(ct_in_3, len(data3['id']))
         self.assertEqual(ct, 100)
+
 
 class MemoryTestClass(lsst.utils.tests.MemoryTestCase):
     pass

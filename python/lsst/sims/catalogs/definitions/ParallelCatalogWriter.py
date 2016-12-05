@@ -89,34 +89,29 @@ def parallelCatalogWriter(catalog_dict, chunk_size=None, constraint=None,
                                                 obs_metadata=ref_cat.obs_metadata,
                                                 constraint=constraint,
                                                 chunk_size=chunk_size)
+    if write_header:
+        for file_name in catalog_dict:
+            with open(file_name, write_mode) as file_handle:
+                catalog_dict[file_name].write_header(file_handle)
 
-    file_handle_dict = {}
-    for file_name in catalog_dict:
-        file_handle = open(file_name, write_mode)
-        file_handle_dict[file_name] = file_handle
-
-        if write_header:
-            catalog_dict[file_name].write_header(file_handle)
+    first_chunk = True
 
     for master_chunk in query_result:
         t_start = time.time()
-        chunk = master_chunk
 
         for i_file, file_name in enumerate(list_of_file_names):
+            chunk = master_chunk
             cat = catalog_dict[file_name]
             good_dexes = cat._filter_chunk(chunk)
-
             if len(good_dexes) < len(chunk):
-                for i_old in range(i_file):
-                    old_cat = catalog_dict[list_of_file_names[i_old]]
-                    old_cat._update_current_chunk(good_dexes)
-
                 chunk = chunk[good_dexes]
 
-        for file_name in catalog_dict:
-            catalog_dict[file_name]._write_current_chunk(file_handle_dict[file_name])
+            write_mode = 'a'
+            if first_chunk:
+                local_write_mode = write_mode
 
+            with open(file_name, local_write_mode) as file_handle:
+                catalog_dict[file_name]._write_current_chunk(file_handle)
+
+        first_chunk = False
         print '    did chunk in ',time.time()-t_start
-
-    for file_name in file_handle_dict:
-        file_handle_dict[file_name].close()
