@@ -89,12 +89,12 @@ def parallelCatalogWriter(catalog_dict, chunk_size=None, constraint=None,
                                                 obs_metadata=ref_cat.obs_metadata,
                                                 constraint=constraint,
                                                 chunk_size=chunk_size)
+    local_write_mode = write_mode
     if write_header:
         for file_name in catalog_dict:
-            with open(file_name, write_mode) as file_handle:
+            with open(file_name, local_write_mode) as file_handle:
                 catalog_dict[file_name].write_header(file_handle)
-
-    first_chunk = True
+        local_write_mode = 'a'
 
     for master_chunk in query_result:
         t_start = time.time()
@@ -106,12 +106,8 @@ def parallelCatalogWriter(catalog_dict, chunk_size=None, constraint=None,
             if len(good_dexes) < len(chunk):
                 chunk = chunk[good_dexes]
 
-            write_mode = 'a'
-            if first_chunk:
-                local_write_mode = write_mode
-
             with open(file_name, local_write_mode) as file_handle:
                 catalog_dict[file_name]._write_current_chunk(file_handle)
 
-        first_chunk = False
+        local_write_mode = 'a'
         print '    did chunk in ',time.time()-t_start
