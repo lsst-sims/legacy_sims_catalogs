@@ -111,7 +111,6 @@ def parallelCatalogWriter(catalog_dict, chunk_size=None, constraint=None,
                 local_write_mode = write_mode
 
             with open(file_name, local_write_mode) as file_handle:
-                print 'writing to ',file_name
                 catalog_dict[file_name]._write_current_chunk(file_handle)
 
         first_chunk = False
