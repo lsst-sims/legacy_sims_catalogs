@@ -13,14 +13,14 @@ from sqlalchemy import (create_engine, MetaData,
                         Table, event)
 from sqlalchemy import exc as sa_exc
 from lsst.daf.persistence import DbAuth
+from lsst.sims.utils.CodeUtilities import sims_clean_up
 
 #The documentation at http://docs.sqlalchemy.org/en/rel_0_7/core/types.html#sqlalchemy.types.Numeric
 #suggests using the cdecimal module.  Since it is not standard, import decimal.
 #TODO: test for cdecimal and use it if it exists.
 import decimal
 
-__all__ = ["ChunkIterator", "DBObject", "CatalogDBObject", "fileDBObject",
-           "_get_connection", "_close_all_connections"]
+__all__ = ["ChunkIterator", "DBObject", "CatalogDBObject", "fileDBObject"]
 
 def valueOfPi():
     """
@@ -234,54 +234,10 @@ class DBConnection(object):
         return self._verbose
 
 
-_connection_cache = []
-
-
-def _close_all_connections():
-    """
-    Close all of the database connections in the _conneciton_cache.
-    This is mostly needed to clean up after ourselves in unit tests.
-    """
-    global _connection_cache
-    for conn in _connection_cache:
-        del conn
-    _connection_cache = []
-
-
-def _get_connection(database, driver, host, port):
-    """
-    Search _connection_cache for a DBConnection matching the specified
-    parameters.  If it exists, return it.  If not, open a connection to
-    the specified database, add it to the cache, and return the connection.
-
-    Parameters
-    ----------
-    database is the name of the database file being connected to
-
-    driver is the dialect of the database (e.g. 'sqlite', 'mssql', etc.)
-
-    host is the URL of the remote host, if appropriate
-
-    port is the port on the remote host to connect to, if appropriate
-    """
-    global _connection_cache
-
-    for conn in _connection_cache:
-        if conn.database is database:
-            if conn.driver is driver:
-                if conn.host is host:
-                    if conn.port is port:
-                        return conn
-
-    conn = DBConnection(database=database, driver=driver, host=host, port=port)
-    _connection_cache.append(conn)
-    return conn
-
-
 class DBObject(object):
 
     def __init__(self, database=None, driver=None, host=None, port=None, verbose=False,
-                 connection=None, use_cache=False):
+                 connection=None):
         """
         Initialize DBObject.
 
@@ -298,11 +254,6 @@ class DBObject(object):
         @param [in] connection is an optional instance of DBConnection, in the event that
         this DBObject can share a database connection with another DBObject.  This is only
         necessary or even possible in a few specialized cases and should be used carefully.
-
-        @param [in] use_cache is a boolean.  If true, this DBObject will try to get its
-        connection from the global cache of database connections.  If False, a new
-        database connection will be opened (provided the connection kwarg is None).  The
-        new connection will not be added to the cache of connections.
         """
 
         self.dtype = None
@@ -320,11 +271,7 @@ class DBObject(object):
                 if value is not None or not hasattr(self, key):
                     setattr(self, key, value)
 
-            if use_cache:
-                self.connection = _get_connection(self.database, self.driver, self.host, self.port)
-            else:
-                self.connection = DBConnection(database=self.database, driver=self.driver, host=self.host,
-                                               port=self.port, verbose=self.verbose)
+            self.connection = self._get_connection(self.database, self.driver, self.host, self.port)
 
         else:
             self.connection = connection
@@ -334,7 +281,38 @@ class DBObject(object):
             self.port = connection.port
             self.verbose = connection.verbose
 
+    def _get_connection(self, database, driver, host, port):
+        """
+        Search self._connection_cache (if it exists; it won't for DBObject, but
+        will for CatalogDBObject) for a DBConnection matching the specified
+        parameters.  If it exists, return it.  If not, open a connection to
+        the specified database, add it to the cache, and return the connection.
 
+        Parameters
+        ----------
+        database is the name of the database file being connected to
+
+        driver is the dialect of the database (e.g. 'sqlite', 'mssql', etc.)
+
+        host is the URL of the remote host, if appropriate
+
+        port is the port on the remote host to connect to, if appropriate
+        """
+
+        if hasattr(self, '_connection_cache'):
+            for conn in self._connection_cache:
+                if conn.database is database:
+                    if conn.driver is driver:
+                        if conn.host is host:
+                            if conn.port is port:
+                                return conn
+
+        conn = DBConnection(database=database, driver=driver, host=host, port=port)
+
+        if hasattr(self, '_connection_cache'):
+            self._connection_cache.append(conn)
+
+        return conn
 
     def get_table_names(self):
         """Return a list of the names of the tables in the database"""
@@ -525,6 +503,8 @@ class CatalogDBObject(DBObject):
     raColName = None
     decColName = None
 
+    _connection_cache = []  # a list to store open database connections in
+
     #Provide information if this object should be tested in the unit test
     doRunTest = False
     testObservationMetaData = None
@@ -590,7 +570,7 @@ class CatalogDBObject(DBObject):
                           "possible.")
 
         super(CatalogDBObject, self).__init__(database=database, driver=driver, host=host, port=port,
-                                              verbose=verbose, connection=connection, use_cache=True)
+                                              verbose=verbose, connection=connection)
 
         try:
             self._get_table()
@@ -788,6 +768,8 @@ class CatalogDBObject(DBObject):
             query = query.limit(limit)
 
         return ChunkIterator(self, query, chunk_size)
+
+sims_clean_up.targets.append(CatalogDBObject._connection_cache)
 
 class fileDBObject(CatalogDBObject):
     ''' Class to read a file into a database and then query it'''

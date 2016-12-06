@@ -5,9 +5,7 @@ import numpy as np
 
 import lsst.utils.tests
 from lsst.utils import getPackageDir
-from lsst.sims.catalogs.db import _close_all_connections
 from lsst.sims.catalogs.db import CatalogDBObject, DBObject
-from lsst.sims.catalogs.db.dbConnection import _connection_cache
 
 
 def setup_module(module):
@@ -17,7 +15,7 @@ def setup_module(module):
 class CachingTestCase(unittest.TestCase):
     """
     This class will contain tests to make sure that CatalogDBObject is
-    correctly using the global _connection_cache
+    correctly using its _connection_cache
     """
 
     @classmethod
@@ -38,7 +36,6 @@ class CachingTestCase(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        _close_all_connections()
         if os.path.exists(cls.db_name):
             os.unlink(cls.db_name)
 
@@ -52,8 +49,7 @@ class CachingTestCase(unittest.TestCase):
         its own connection.
         """
 
-        _close_all_connections()
-        self.assertEqual(len(_connection_cache), 0)
+        self.assertEqual(len(CatalogDBObject._connection_cache), 0)
 
         class DbClass1(CatalogDBObject):
             database = self.db_name
@@ -80,14 +76,20 @@ class CachingTestCase(unittest.TestCase):
         db1 = DbClass1()
         db2 = DbClass2()
         self.assertEqual(db1.connection, db2.connection)
+        self.assertEqual(len(CatalogDBObject._connection_cache), 1)
+
 
         db3 = DBObject(database=self.db_name, driver='sqlite', host=None, port=None)
         self.assertNotEqual(db1.connection, db3.connection)
+
+        self.assertEqual(len(CatalogDBObject._connection_cache), 1)
 
         # check that if we had passed db1.connection to a DBObject,
         # the connections would be identical
         db4 = DBObject(connection=db1.connection)
         self.assertEqual(db4.connection, db1.connection)
+
+        self.assertEqual(len(CatalogDBObject._connection_cache), 1)
 
         # verify that db1 and db2 are both useable
         results = db1.query_columns(colnames=['id', 'i1', 'i2', 'identification'])
