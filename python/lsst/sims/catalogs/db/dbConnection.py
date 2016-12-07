@@ -561,8 +561,15 @@ class CatalogDBObject(DBObject):
         if self.idColKey is None:
             self.idColKey = self.getIdColKey()
         if (self.objid is None) or (self.tableid is None) or (self.idColKey is None):
-            raise ValueError("CatalogDBObject must be subclassed, and "
-                             "define objid, tableid and idColKey.")
+            msg = ("CatalogDBObject must be subclassed, and "
+                   "define objid, tableid and idColKey.  You are missing: ")
+            if self.objid is None:
+                msg += "objid, "
+            if self.tableid is None:
+                msg += "tableid, "
+            if self.idColKey is None:
+                msg += "idColKey"
+            raise ValueError(msg)
 
         if (self.objectTypeId is None) and verbose:
             warnings.warn("objectTypeId has not "
