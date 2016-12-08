@@ -301,10 +301,10 @@ class DBObject(object):
 
         if hasattr(self, '_connection_cache'):
             for conn in self._connection_cache:
-                if conn.database is database:
-                    if conn.driver is driver:
-                        if conn.host is host:
-                            if conn.port is port:
+                if str(conn.database) == str(database):
+                    if str(conn.driver) == str(driver):
+                        if str(conn.host) == str(host):
+                            if str(conn.port) == str(port):
                                 return conn
 
         conn = DBConnection(database=database, driver=driver, host=host, port=port)
