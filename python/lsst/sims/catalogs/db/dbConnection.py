@@ -193,11 +193,11 @@ class DBConnection(object):
 
 
     def __eq__(self, other):
-        return (self._database is other._database) and \
-               (self._driver is other._driver) and \
-               (self._host is other._host) and \
-               (self._port is other._port) and \
-               (self._verbose is other._verbose)
+        return (str(self._database) == str(other._database)) and \
+               (str(self._driver) == str(other._driver)) and \
+               (str(self._host) == str(other._host)) and \
+               (str(self._port) == str(other._port)) and \
+               (str(self._verbose) == str(other._verbose))
 
 
     @property
