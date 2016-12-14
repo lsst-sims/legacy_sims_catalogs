@@ -1,5 +1,4 @@
 import copy
-import time
 
 
 __all__ = ["parallelCatalogWriter"]
@@ -97,7 +96,6 @@ def parallelCatalogWriter(catalog_dict, chunk_size=None, constraint=None,
         local_write_mode = 'a'
 
     for master_chunk in query_result:
-        t_start = time.time()
 
         for i_file, file_name in enumerate(list_of_file_names):
             chunk = master_chunk
@@ -110,4 +108,3 @@ def parallelCatalogWriter(catalog_dict, chunk_size=None, constraint=None,
                 catalog_dict[file_name]._write_current_chunk(file_handle)
 
         local_write_mode = 'a'
-        print '    did chunk in ',time.time()-t_start
