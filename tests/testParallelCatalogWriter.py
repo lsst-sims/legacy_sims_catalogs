@@ -24,7 +24,7 @@ class DbClass(CatalogDBObject):
     host = None
     port = None
     driver = 'sqlite'
-    objid = 'paralle_writer_test_db'
+    objid = 'parallel_writer_test_db'
     idColKey = 'id'
 
 class CatClass1(InstanceCatalog):
