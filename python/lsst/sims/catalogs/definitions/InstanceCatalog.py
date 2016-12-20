@@ -239,6 +239,13 @@ class InstanceCatalog(object):
                     if col not in self._column_outputs:
                         self._column_outputs.append(col)
 
+        # Because cannot_be_null can both be declared at class definition
+        # and at instantiation, we need to be able to combine the two inputs
+        # into something the InstanceCatalog will actually use to filter
+        # rows.  self._cannot_be_null is a member variable that contains
+        # the contents both of self.cannot_be_null (set at class definition)
+        # and the cannot_be_null kwarg passed to __init__().  self._cannot_be_null
+        # is what the catalog actually uses in self._filter_chunk
         self._cannot_be_null = None
         if self.cannot_be_null is not None:
             self._cannot_be_null = copy.deepcopy(self.cannot_be_null)
