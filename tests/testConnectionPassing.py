@@ -150,6 +150,9 @@ class ConnectionPassingTest(unittest.TestCase):
 
         stars = starDBObj()
         galaxies = galDBObj(connection=stars.connection)
+
+        self.assertEqual(stars.connection, galaxies.connection)
+
         starCat = starCatalog(stars)
         galCat = galCatalog(galaxies)
         starCat.write_catalog(catName, chunk_size=5)

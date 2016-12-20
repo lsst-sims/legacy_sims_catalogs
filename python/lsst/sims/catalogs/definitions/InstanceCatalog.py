@@ -4,35 +4,11 @@ import numpy as np
 import inspect
 import re
 import copy
+from collections import OrderedDict
 from lsst.sims.utils import defaultSpecMap
 from lsst.sims.utils import ObservationMetaData
 
-__all__ = ["InstanceCatalog", "is_null"]
-
-
-def is_null(argument):
-    """
-    Return True if 'argument' is some null value
-    (i.e. 'Null', None, nan).
-
-    False otherwise.
-
-    This is used by InstanceCatalog.write_catalog() to identify rows
-    with null values in key columns.
-    """
-    if argument is None:
-        return True
-    elif isinstance(argument, str) or isinstance(argument, unicode):
-        if argument.strip().lower() == 'null':
-            return True
-        elif argument.strip().lower() == 'nan':
-            return True
-        elif argument.strip().lower() == 'none':
-            return True
-    elif np.isnan(argument):
-        return True
-
-    return False
+__all__ = ["InstanceCatalog"]
 
 
 class InstanceCatalogMeta(type):
@@ -156,7 +132,9 @@ class InstanceCatalog(object):
     column_outputs = None
     specFileMap = defaultSpecMap
     default_columns = []
-    cannot_be_null = []  # a list of columns which, if null, cause a row not to be printed by write_catalog()
+    cannot_be_null = None  # will be a list of columns which, if null, cause a row not to be printed by write_catalog()
+                           # Note: these columns will be filtered on even if they are not included in column_outputs
+
     default_formats = {'S': '%s', 'f': '%.4f', 'i': '%i'}
     override_formats = {}
     transformations = {}
@@ -197,7 +175,7 @@ class InstanceCatalog(object):
                 yield column
 
     def __init__(self, db_obj, obs_metadata=None, column_outputs=None,
-                 constraint=None, specFileMap=None):
+                 constraint=None, specFileMap=None, cannot_be_null=None):
 
         """
         @param [in] db_obj is an instantiation of the CatalogDBObject class,
@@ -213,6 +191,13 @@ class InstanceCatalog(object):
         @param [in] column_outputs is a list of column names to be output
         in the catalog.  This is optional and will be appended to the list
         of column_outputs defined int he class definition.
+
+        @param [in] cannot_be_null is a list of column names indicating columns
+        which cannot have the values Null, None, or NaN.  Rows running afoul
+        of this criterion will not be written by the write_catalog() method
+        (though they may appear in the iterator returned by iter_catalog()).
+        Note: these columns will be filtered on, even if they do not appear in
+        column_outputs.
 
         @param [in] constraint is an optional SQL constraint to be applied to the
         database query
@@ -253,6 +238,25 @@ class InstanceCatalog(object):
                 for col in column_outputs:
                     if col not in self._column_outputs:
                         self._column_outputs.append(col)
+
+        # Because cannot_be_null can both be declared at class definition
+        # and at instantiation, we need to be able to combine the two inputs
+        # into something the InstanceCatalog will actually use to filter
+        # rows.  self._cannot_be_null is a member variable that contains
+        # the contents both of self.cannot_be_null (set at class definition)
+        # and the cannot_be_null kwarg passed to __init__().  self._cannot_be_null
+        # is what the catalog actually uses in self._filter_chunk
+        self._cannot_be_null = None
+        if self.cannot_be_null is not None:
+            self._cannot_be_null = copy.deepcopy(self.cannot_be_null)
+
+        if cannot_be_null is not None:
+            if self.cannot_be_null is None:
+                self._cannot_be_null = copy.deepcopy(cannot_be_null)
+            else:
+                for col in cannot_be_null:
+                    if col not in self._cannot_be_null:
+                        self._cannot_be_null.append(col)
 
         self._actually_calculated_columns = []  # a list of all the columns referenced by self.column_by_name
         self.constraint = constraint
@@ -328,6 +332,13 @@ class InstanceCatalog(object):
         for col_name in self.iter_column_names():
             # just call the column: this will log queries to the database.
             self.column_by_name(col_name)
+
+        # now do the same thing for columns specified in _cannot_be_null
+        # (in case the catalog is filtered on columns that are not meant
+        # to be written to the catalog)
+        if self._cannot_be_null is not None:
+            for col_name in self._cannot_be_null:
+                self.column_by_name(col_name)
 
         db_required_columns = list(self._current_chunk.referenced_columns)
 
@@ -510,11 +521,86 @@ class InstanceCatalog(object):
         db_required_columns, required_columns_with_defaults = self.db_required_columns()
         self._template = None
 
-        # find the indices of columns that cannot be null
-        self._cannotBeNullDexes = []
-        for (i, col) in enumerate(self.iter_column_names()):
-            if col in self.cannot_be_null:
-                self._cannotBeNullDexes.append(i)
+    def _update_current_chunk(self, good_dexes):
+        """
+        Update self._current_chunk and self._column_cache to only include the rows
+        specified by good_dexes (which will be a list of indexes).
+        """
+        # In the event that self._column_cache has already been created,
+        # update the cache so that only valid rows remain therein
+        new_cache = {}
+        if len(self._column_cache) > 0:
+            for col_name in self._column_cache:
+                if col_name in self._compound_column_names:
+                    # this is a sub-column of a compound column;
+                    # ignore it, we will update the cache when we come
+                    # to the compound column
+                    continue
+                elif 'get_'+col_name in self._compound_columns:
+                    super_col = self._column_cache[col_name]
+                    new_cache[col_name] = OrderedDict([(key, super_col[key][good_dexes]) for key in super_col])
+                else:
+                    new_cache[col_name] = self._column_cache[col_name][good_dexes]
+
+        self._set_current_chunk(self._current_chunk[good_dexes], column_cache=new_cache)
+
+    def _filter_chunk(self, chunk):
+        """
+        Take a chunk of database rows and select only those that match the criteria
+        set by self._cannot_be_null.  Set self._current_chunk to be the rows that pass
+        this test.  Return a numpy array of the indices of those rows relative to
+        the original chunk.
+        """
+        final_dexes = np.arange(len(chunk), dtype=int)
+
+        if self._pre_screen and self._cannot_be_null is not None:
+            # go through the database query results and remove all of those
+            # rows that have already run afoul of self._cannot_be_null
+            for col_name in self._cannot_be_null:
+                if col_name in chunk.dtype.names:
+                    str_vec = np.char.lower(chunk[col_name].astype('str'))
+                    good_dexes = np.where(np.logical_and(str_vec != 'none',
+                                          np.logical_and(str_vec != 'nan', str_vec != 'null')))
+                    chunk = chunk[good_dexes]
+                    final_dexes = final_dexes[good_dexes]
+
+        self._set_current_chunk(chunk)
+
+        # If some columns are specified as cannot_be_null, loop over those columns,
+        # removing rows that run afoul of that criterion from the chunk.
+        if self._cannot_be_null is not None:
+            for filter_col in self._cannot_be_null:
+                filter_vals = np.char.lower(self.column_by_name(filter_col).astype('str'))
+
+                good_dexes = np.where(np.logical_and(filter_vals != 'none',
+                                      np.logical_and(filter_vals  != 'nan', filter_vals != 'null')))
+
+                final_dexes = final_dexes[good_dexes]
+
+                if len(good_dexes[0]) < len(chunk):
+                    self._update_current_chunk(good_dexes)
+
+        return final_dexes
+
+    def _write_current_chunk(self, file_handle):
+        """
+        write self._current_chunk to the file specified by file_handle
+        """
+        if len(self._current_chunk) is 0:
+            return
+
+        chunk_cols = [self.transformations[col](self.column_by_name(col))
+                      if col in self.transformations.keys() else
+                      self.column_by_name(col)
+                      for col in self.iter_column_names()]
+
+        # Create the template with the first chunk
+        if self._template is None:
+            self._template = self._make_line_template(chunk_cols)
+
+        # use a generator expression for lines rather than a list
+        # for memory efficiency
+        file_handle.writelines(self._template % line for line in zip(*chunk_cols))
 
     def _write_recarray(self, chunk, file_handle):
         """
@@ -528,35 +614,8 @@ class InstanceCatalog(object):
         @param [in] file_handle is a file handle pointing to the file where
         the catalog is being written.
         """
-
-        if self._pre_screen:
-            # go through the database query results and remove all of those
-            # rows that have already run afoul of self.cannot_be_null
-            for col_name in self.cannot_be_null:
-                if col_name in chunk.dtype.names:
-                    str_vec = np.char.lower(chunk[col_name].astype('str'))
-                    good_dexes = np.where(np.logical_and(str_vec != 'none',
-                                          np.logical_and(str_vec != 'nan', str_vec != 'null')))
-                    chunk = chunk[good_dexes]
-
-        self._set_current_chunk(chunk)
-        chunk_cols = [self.transformations[col](self.column_by_name(col))
-                      if col in self.transformations.keys() else
-                      self.column_by_name(col)
-                      for col in self.iter_column_names()]
-
-        # Create the template with the first chunk
-        if self._template is None:
-            self._template = self._make_line_template(chunk_cols)
-
-        # use a generator expression for lines rather than a list
-        # for memory efficiency
-        file_handle.writelines(self._template % line
-                               for line in zip(*chunk_cols)
-                               if np.array([not is_null(line[i]) for i in self._cannotBeNullDexes]).all())
-                               # the last boolean in this line causes a row not to be printed if it has
-                               # a null value in one of the columns that cannot be null; it is ignored
-                               # if no columns are specified by cannot_be_null
+        self._filter_chunk(chunk)
+        self._write_current_chunk(file_handle)
 
     def iter_catalog(self, chunk_size=None):
         self.db_required_columns()

@@ -422,8 +422,7 @@ class InstanceCatalogCannotBeNullTest(unittest.TestCase):
         def testCannotBeNull_pre_screen(self):
             """
             Check that writing a catalog with self._pre_screen = True produces
-            the same results as writing one with self._pre_screen = False, except
-            with a smaller self._current_chunk.
+            the same results as writing one with self._pre_screen = False.
             """
 
             scratch_dir = os.path.join(getPackageDir('sims_catalogs'), 'tests', 'scratchSpace')
@@ -441,10 +440,6 @@ class InstanceCatalogCannotBeNullTest(unittest.TestCase):
                 control_fileName = os.path.join(scratch_dir, 'cannotBeNullTestFile_prescreen_control.txt')
                 cat.write_catalog(fileName)
                 control_cat.write_catalog(control_fileName)
-
-                # make sure that pre-screened catalog passed fewer rows into
-                # self._current_chunk than did the non-pre-screened catalog
-                self.assertGreater(control_cat._current_chunk.size, cat._current_chunk.size)
 
                 with open(fileName, 'r') as test_file:
                     test_lines = test_file.readlines()

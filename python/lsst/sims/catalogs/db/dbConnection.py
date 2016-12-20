@@ -13,6 +13,7 @@ from sqlalchemy import (create_engine, MetaData,
                         Table, event)
 from sqlalchemy import exc as sa_exc
 from lsst.daf.persistence import DbAuth
+from lsst.sims.utils.CodeUtilities import sims_clean_up
 
 #The documentation at http://docs.sqlalchemy.org/en/rel_0_7/core/types.html#sqlalchemy.types.Numeric
 #suggests using the cdecimal module.  Since it is not standard, import decimal.
@@ -192,11 +193,10 @@ class DBConnection(object):
 
 
     def __eq__(self, other):
-        return (self._database is other._database) and \
-               (self._driver is other._driver) and \
-               (self._host is other._host) and \
-               (self._port is other._port) and \
-               (self._verbose is other._verbose)
+        return (str(self._database) == str(other._database)) and \
+               (str(self._driver) == str(other._driver)) and \
+               (str(self._host) == str(other._host)) and \
+               (str(self._port) == str(other._port))
 
 
     @property
@@ -270,8 +270,8 @@ class DBObject(object):
                 if value is not None or not hasattr(self, key):
                     setattr(self, key, value)
 
-            self.connection = DBConnection(database=self.database, driver=self.driver, host=self.host,
-                                           port=self.port, verbose=self.verbose)
+            self.connection = self._get_connection(self.database, self.driver, self.host, self.port)
+
         else:
             self.connection = connection
             self.database = connection.database
@@ -280,7 +280,38 @@ class DBObject(object):
             self.port = connection.port
             self.verbose = connection.verbose
 
+    def _get_connection(self, database, driver, host, port):
+        """
+        Search self._connection_cache (if it exists; it won't for DBObject, but
+        will for CatalogDBObject) for a DBConnection matching the specified
+        parameters.  If it exists, return it.  If not, open a connection to
+        the specified database, add it to the cache, and return the connection.
 
+        Parameters
+        ----------
+        database is the name of the database file being connected to
+
+        driver is the dialect of the database (e.g. 'sqlite', 'mssql', etc.)
+
+        host is the URL of the remote host, if appropriate
+
+        port is the port on the remote host to connect to, if appropriate
+        """
+
+        if hasattr(self, '_connection_cache'):
+            for conn in self._connection_cache:
+                if str(conn.database) == str(database):
+                    if str(conn.driver) == str(driver):
+                        if str(conn.host) == str(host):
+                            if str(conn.port) == str(port):
+                                return conn
+
+        conn = DBConnection(database=database, driver=driver, host=host, port=port)
+
+        if hasattr(self, '_connection_cache'):
+            self._connection_cache.append(conn)
+
+        return conn
 
     def get_table_names(self):
         """Return a list of the names of the tables in the database"""
@@ -471,6 +502,8 @@ class CatalogDBObject(DBObject):
     raColName = None
     decColName = None
 
+    _connection_cache = []  # a list to store open database connections in
+
     #Provide information if this object should be tested in the unit test
     doRunTest = False
     testObservationMetaData = None
@@ -527,8 +560,15 @@ class CatalogDBObject(DBObject):
         if self.idColKey is None:
             self.idColKey = self.getIdColKey()
         if (self.objid is None) or (self.tableid is None) or (self.idColKey is None):
-            raise ValueError("CatalogDBObject must be subclassed, and "
-                             "define objid, tableid and idColKey.")
+            msg = ("CatalogDBObject must be subclassed, and "
+                   "define objid, tableid and idColKey.  You are missing: ")
+            if self.objid is None:
+                msg += "objid, "
+            if self.tableid is None:
+                msg += "tableid, "
+            if self.idColKey is None:
+                msg += "idColKey"
+            raise ValueError(msg)
 
         if (self.objectTypeId is None) and verbose:
             warnings.warn("objectTypeId has not "
@@ -734,6 +774,8 @@ class CatalogDBObject(DBObject):
             query = query.limit(limit)
 
         return ChunkIterator(self, query, chunk_size)
+
+sims_clean_up.targets.append(CatalogDBObject._connection_cache)
 
 class fileDBObject(CatalogDBObject):
     ''' Class to read a file into a database and then query it'''
