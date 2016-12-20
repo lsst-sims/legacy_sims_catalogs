@@ -133,6 +133,8 @@ class InstanceCatalog(object):
     specFileMap = defaultSpecMap
     default_columns = []
     cannot_be_null = None  # will be a list of columns which, if null, cause a row not to be printed by write_catalog()
+                           # Note: these columns will be filtered on even if they are not included in column_outputs
+
     default_formats = {'S': '%s', 'f': '%.4f', 'i': '%i'}
     override_formats = {}
     transformations = {}
@@ -194,6 +196,8 @@ class InstanceCatalog(object):
         which cannot have the values Null, None, or NaN.  Rows running afoul
         of this criterion will not be written by the write_catalog() method
         (though they may appear in the iterator returned by iter_catalog()).
+        Note: these columns will be filtered on, even if they do not appear in
+        column_outputs.
 
         @param [in] constraint is an optional SQL constraint to be applied to the
         database query
