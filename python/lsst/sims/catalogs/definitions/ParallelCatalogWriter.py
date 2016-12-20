@@ -52,12 +52,7 @@ def parallelCatalogWriter(catalog_dict, chunk_size=None, constraint=None,
                                    'ObservationMetaData.  I do not know how to deal with that.')
 
             try:
-                assert cat.db_obj.connection.database is ref_cat.db_obj.connection.database
-                assert cat.db_obj.connection.host is ref_cat.db_obj.connection.host
-                assert cat.db_obj.connection.port is ref_cat.db_obj.connection.port
-                assert cat.db_obj.connection.driver is ref_cat.db_obj.connection.driver
-                assert cat.db_obj.tableid is ref_cat.db_obj.tableid
-                assert cat.db_obj.objid is ref_cat.db_obj.objid
+                assert cat.db_obj.connection == ref_cat.db_obj.connection
             except:
                 msg = ('Cannot build these catalogs in parallel. '
                        'The two databases are different.  Connection info is:\n'

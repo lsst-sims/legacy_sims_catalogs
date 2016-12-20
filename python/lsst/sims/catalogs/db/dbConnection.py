@@ -196,8 +196,7 @@ class DBConnection(object):
         return (str(self._database) == str(other._database)) and \
                (str(self._driver) == str(other._driver)) and \
                (str(self._host) == str(other._host)) and \
-               (str(self._port) == str(other._port)) and \
-               (str(self._verbose) == str(other._verbose))
+               (str(self._port) == str(other._port))
 
 
     @property
