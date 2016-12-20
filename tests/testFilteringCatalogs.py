@@ -260,6 +260,48 @@ class InstanceCatalogTestCase(unittest.TestCase):
         if os.path.exists(cat_name):
             os.unlink(cat_name)
 
+    def test_filter_on_unused_compound_column(self):
+        """
+        Test a catalog in which cannot_be_null is a compound column, but not one
+        that is written to the catalog.
+        """
+
+        class FilteredCat5b(InstanceCatalog):
+            column_outputs = ['id', 'a', 'b']
+            cannot_be_null = ['c']
+
+            @compound('a', 'b', 'c')
+            def get_alphabet(self):
+                ii = self.column_by_name('ip3')
+                c = ii*ii*ii*ii
+                return np.array([ii*ii, ii*ii*ii,
+                                 np.where(c % 3 == 0, c, None)])
+
+        cat_name = os.path.join(self.scratch_dir, "inst_actual_compound_column_filter_b_cat.txt")
+        if os.path.exists(cat_name):
+            os.unlink(cat_name)
+
+        cat = FilteredCat5b(self.db)
+        cat.write_catalog(cat_name)
+
+        with open(cat_name, 'r') as input_file:
+            input_lines = input_file.readlines()
+
+        # verify that the catalog contains expected data
+        self.assertEqual(len(input_lines), 5)  # 4 data lines and a header
+        for i_line, line in enumerate(input_lines):
+            if i_line is 0:
+                continue
+            else:
+                ii = (i_line - 1)*3
+                ip3 = ii + 3
+                self.assertEqual((ip3**4) % 3, 0)
+                self.assertEqual(line, '%d, %d, %d\n'
+                                        % (ii, ip3*ip3, ip3*ip3*ip3))
+
+        if os.path.exists(cat_name):
+            os.unlink(cat_name)
+
     def test_empty_chunk(self):
         """
         Test that catalog filtering behaves correctly, even when the first
