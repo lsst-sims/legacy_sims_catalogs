@@ -16,7 +16,7 @@ def parallelCatalogWriter(catalog_dict, chunk_size=None, constraint=None,
     Parameters
     ----------
     catalog_dict is a dict keyed on the names of the files to be written.
-    The values are the IntanceCatalogs to be written (note: these are full
+    The values are the InstanceCatalogs to be written (note: these are full
     instantiations of InstanceCatalogs, not just InstanceCatalog classes
     as with the CompoundInstanceCatalog)
 
