@@ -28,6 +28,7 @@ class DbClass(CatalogDBObject):
     objid = 'parallel_writer_test_db'
     idColKey = 'id'
 
+
 class CatClass1(InstanceCatalog):
     column_outputs = ['id', 'test1', 'ii']
     cannot_be_null = ['valid1']
@@ -36,7 +37,8 @@ class CatClass1(InstanceCatalog):
     def get_values(self):
         ii = self.column_by_name('ii')
         return np.array([self.column_by_name('id')**2,
-                         np.where(ii%2==1, ii, None)])
+                         np.where(ii%2 == 1, ii, None)])
+
 
 class CatClass2(InstanceCatalog):
     column_outputs = ['id', 'test2', 'ii']
@@ -46,7 +48,8 @@ class CatClass2(InstanceCatalog):
     def get_values(self):
         ii = self.column_by_name('id')
         return np.array([self.column_by_name('id')**3,
-                         np.where(ii%2==1, ii, None)])
+                         np.where(ii%2 == 1, ii, None)])
+
 
 class CatClass3(InstanceCatalog):
     column_outputs = ['id', 'test3', 'ii']
@@ -60,6 +63,7 @@ class CatClass3(InstanceCatalog):
     def get_valid3(self):
         ii = self.column_by_name('id')
         return np.where(ii%5 == 0, ii, None)
+
 
 class ControlCatalog(InstanceCatalog):
     column_outputs = ['id', 'ii']
@@ -81,7 +85,7 @@ class ParallelWriterTestCase(unittest.TestCase):
         c = conn.cursor()
         c.execute('''CREATE TABLE test (id int, ii int)''')
         for ii in range(100):
-            c.execute('''INSERT INTO test VALUES(%i, %i)''' % (ii, rng.random_integers(0,100)))
+            c.execute('''INSERT INTO test VALUES(%i, %i)''' % (ii, rng.random_integers(0, 100)))
 
         conn.commit()
         conn.close()
@@ -141,7 +145,7 @@ class ParallelWriterTestCase(unittest.TestCase):
             else:
                 ct_in_1 += 1
                 self.assertIn(control_data[0], data1['id'])
-                dex = np.where(data1['id']==control_data[0])[0][0]
+                dex = np.where(data1['id'] == control_data[0])[0][0]
                 self.assertEqual(control_data[1], data1['ii'][dex])
 
             if control_data[0] % 2 == 0:
@@ -149,7 +153,7 @@ class ParallelWriterTestCase(unittest.TestCase):
             else:
                 ct_in_2 += 1
                 self.assertIn(control_data[0], data2['id'])
-                dex = np.where(data2['id']==control_data[0])[0][0]
+                dex = np.where(data2['id'] == control_data[0])[0][0]
                 self.assertEqual(control_data[1], data2['ii'][dex])
 
             if control_data[0] % 5 != 0:
@@ -157,7 +161,7 @@ class ParallelWriterTestCase(unittest.TestCase):
             else:
                 ct_in_3 += 1
                 self.assertIn(control_data[0], data3['id'])
-                dex = np.where(data3['id']==control_data[0])[0][0]
+                dex = np.where(data3['id'] == control_data[0])[0][0]
                 self.assertEqual(control_data[1], data3['ii'][dex])
 
         self.assertEqual(ct_in_1, len(data1['id']))
@@ -215,7 +219,7 @@ class ParallelWriterTestCase(unittest.TestCase):
             else:
                 ct_in_1 += 1
                 self.assertIn(control_data[0], data1['id'])
-                dex = np.where(data1['id']==control_data[0])[0][0]
+                dex = np.where(data1['id'] == control_data[0])[0][0]
                 self.assertEqual(control_data[1], data1['ii'][dex])
 
             if control_data[0] % 2 == 0:
@@ -223,7 +227,7 @@ class ParallelWriterTestCase(unittest.TestCase):
             else:
                 ct_in_2 += 1
                 self.assertIn(control_data[0], data2['id'])
-                dex = np.where(data2['id']==control_data[0])[0][0]
+                dex = np.where(data2['id'] == control_data[0])[0][0]
                 self.assertEqual(control_data[1], data2['ii'][dex])
 
             if control_data[0] % 5 != 0:
@@ -231,7 +235,7 @@ class ParallelWriterTestCase(unittest.TestCase):
             else:
                 ct_in_3 += 1
                 self.assertIn(control_data[0], data3['id'])
-                dex = np.where(data3['id']==control_data[0])[0][0]
+                dex = np.where(data3['id'] == control_data[0])[0][0]
                 self.assertEqual(control_data[1], data3['ii'][dex])
 
         self.assertEqual(ct_in_1, len(data1['id']))

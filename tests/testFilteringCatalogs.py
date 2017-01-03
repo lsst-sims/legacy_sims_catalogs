@@ -418,6 +418,7 @@ class InstanceCatalogTestCase(unittest.TestCase):
         if os.path.exists(cat_name):
             os.unlink(cat_name)
 
+
 class CompoundInstanceCatalogTestCase(unittest.TestCase):
     """
     This class will contain tests that will help us verify that using

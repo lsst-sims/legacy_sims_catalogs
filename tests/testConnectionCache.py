@@ -80,7 +80,6 @@ class CachingTestCase(unittest.TestCase):
         self.assertEqual(db1.connection, db2.connection)
         self.assertEqual(len(CatalogDBObject._connection_cache), 1)
 
-
         db3 = DBObject(database=self.db_name, driver='sqlite', host=None, port=None)
         self.assertNotEqual(db1.connection, db3.connection)
 
