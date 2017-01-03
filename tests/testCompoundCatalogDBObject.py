@@ -5,6 +5,7 @@ import os
 import lsst.utils.tests
 from lsst.utils import getPackageDir
 
+from lsst.sims.utils.CodeUtilities import sims_clean_up
 from lsst.sims.utils import ObservationMetaData
 from lsst.sims.catalogs.db import fileDBObject, CompoundCatalogDBObject, CatalogDBObject
 
@@ -152,6 +153,7 @@ class CompoundCatalogDBObjectTestCase(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
+        sims_clean_up()
         if os.path.exists(cls.textFileName):
             os.unlink(cls.textFileName)
         if os.path.exists(cls.dbName):
@@ -571,6 +573,7 @@ class CompoundWithObsMetaData(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
+        sims_clean_up()
         if os.path.exists(cls.textFileName):
             os.unlink(cls.textFileName)
 

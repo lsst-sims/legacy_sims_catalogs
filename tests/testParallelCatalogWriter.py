@@ -6,6 +6,7 @@ import numpy as np
 
 import lsst.utils.tests
 from lsst.utils import getPackageDir
+from lsst.sims.utils.CodeUtilities import sims_clean_up
 from lsst.sims.catalogs.definitions import parallelCatalogWriter
 from lsst.sims.catalogs.definitions import InstanceCatalog
 from lsst.sims.catalogs.decorators import compound, cached
@@ -87,6 +88,7 @@ class ParallelWriterTestCase(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
+        sims_clean_up()
         if os.path.exists(cls.db_name):
             os.unlink(cls.db_name)
 

@@ -5,6 +5,7 @@ import numpy as np
 
 import lsst.utils.tests
 from lsst.utils import getPackageDir
+from lsst.sims.utils.CodeUtilities import sims_clean_up
 from lsst.sims.catalogs.db import CatalogDBObject, DBObject
 
 
@@ -36,6 +37,7 @@ class CachingTestCase(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
+        sims_clean_up()
         if os.path.exists(cls.db_name):
             os.unlink(cls.db_name)
 
