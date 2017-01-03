@@ -5,6 +5,7 @@ import numpy as np
 
 import lsst.utils.tests
 from lsst.utils import getPackageDir
+from lsst.sims.utils.CodeUtilities import sims_clean_up
 from lsst.sims.catalogs.db import CatalogDBObject, DBObject
 
 
@@ -36,6 +37,7 @@ class CachingTestCase(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
+        sims_clean_up()
         if os.path.exists(cls.db_name):
             os.unlink(cls.db_name)
 
@@ -77,7 +79,6 @@ class CachingTestCase(unittest.TestCase):
         db2 = DbClass2()
         self.assertEqual(db1.connection, db2.connection)
         self.assertEqual(len(CatalogDBObject._connection_cache), 1)
-
 
         db3 = DBObject(database=self.db_name, driver='sqlite', host=None, port=None)
         self.assertNotEqual(db1.connection, db3.connection)

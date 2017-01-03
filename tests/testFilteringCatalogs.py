@@ -5,6 +5,7 @@ import os
 
 import lsst.utils.tests
 from lsst.utils import getPackageDir
+from lsst.sims.utils.CodeUtilities import sims_clean_up
 from lsst.sims.catalogs.definitions import InstanceCatalog, CompoundInstanceCatalog
 from lsst.sims.catalogs.db import fileDBObject, CatalogDBObject
 from lsst.sims.catalogs.decorators import cached, compound
@@ -40,6 +41,8 @@ class InstanceCatalogTestCase(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
+
+        sims_clean_up()
 
         del cls.db
 
@@ -415,6 +418,7 @@ class InstanceCatalogTestCase(unittest.TestCase):
         if os.path.exists(cat_name):
             os.unlink(cat_name)
 
+
 class CompoundInstanceCatalogTestCase(unittest.TestCase):
     """
     This class will contain tests that will help us verify that using
@@ -445,6 +449,8 @@ class CompoundInstanceCatalogTestCase(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
+
+        sims_clean_up()
 
         if os.path.exists(cls.db_src_name):
             os.unlink(cls.db_src_name)

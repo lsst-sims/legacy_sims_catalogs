@@ -6,6 +6,7 @@ import unittest
 import numpy as np
 import lsst.utils.tests
 from lsst.utils import getPackageDir
+from lsst.sims.utils.CodeUtilities import sims_clean_up
 from lsst.sims.utils import ObservationMetaData
 from lsst.sims.catalogs.db import CatalogDBObject, fileDBObject
 import lsst.sims.catalogs.utils.testUtils as tu
@@ -145,6 +146,7 @@ class CatalogDBObjectTestCase(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
+        sims_clean_up()
         if os.path.exists('testCatalogDBObjectDatabase.db'):
             os.unlink('testCatalogDBObjectDatabase.db')
         if os.path.exists('testCatalogDBObjectNonsenseDB.db'):
@@ -861,6 +863,10 @@ class fileDBObjectTestCase(unittest.TestCase):
     to make sure that fileDBObject properly loads the file into a
     database.
     """
+
+    @classmethod
+    def tearDownClass(self):
+        sims_clean_up()
 
     def setUp(self):
         self.testDataFile = os.path.join(

@@ -4,6 +4,7 @@ import numpy as np
 import unittest
 import lsst.utils.tests
 from lsst.utils import getPackageDir
+from lsst.sims.utils.CodeUtilities import sims_clean_up
 from lsst.sims.utils import ObservationMetaData
 from lsst.sims.catalogs.db import fileDBObject, CatalogDBObject, CompoundCatalogDBObject
 from lsst.sims.catalogs.definitions import InstanceCatalog, CompoundInstanceCatalog
@@ -233,6 +234,7 @@ class CompoundCatalogTest(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
+        sims_clean_up()
         if os.path.exists(cls.table1FileName):
             os.unlink(cls.table1FileName)
         if os.path.exists(cls.table2FileName):

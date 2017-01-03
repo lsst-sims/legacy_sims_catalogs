@@ -5,6 +5,7 @@ import numpy as np
 import lsst.utils.tests
 
 from lsst.utils import getPackageDir
+from lsst.sims.utils.CodeUtilities import sims_clean_up
 from lsst.sims.catalogs.db import fileDBObject, CatalogDBObject
 from lsst.sims.catalogs.definitions import InstanceCatalog
 
@@ -101,6 +102,7 @@ class ConnectionPassingTest(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
+        sims_clean_up()
         if os.path.exists(cls.dbName):
             os.unlink(cls.dbName)
 
