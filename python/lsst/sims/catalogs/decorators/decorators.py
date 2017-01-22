@@ -15,7 +15,7 @@ def cached(f):
     if not f.__name__.startswith('get_'):
         raise ValueError("@cached can only be applied to get_* methods: "
                          "Method '%s' invalid." % f.__name__)
-    colname = f.__name__.lstrip('get_')
+    colname = f.__name__.replace('get_','',1)
     @wraps(f)
     def new_f(self, *args, **kwargs):
         if colname in self._column_cache:
