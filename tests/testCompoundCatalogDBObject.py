@@ -617,7 +617,7 @@ class CompoundWithObsMetaData(unittest.TestCase):
         good_rows = []
         for chunk in results:
             for line in chunk:
-                ix = line['id']
+                ix = int(line['id'])
                 good_rows.append(ix)
                 self.assertAlmostEqual(line['%s_raJ2000' % db1.objid], self.controlArray['ra'][ix], 10)
                 self.assertAlmostEqual(line['%s_decJ2000' % db1.objid], self.controlArray['dec'][ix], 10)
@@ -670,7 +670,7 @@ class CompoundWithObsMetaData(unittest.TestCase):
         good_rows = []
         for chunk in results:
             for line in chunk:
-                ix = line['id']
+                ix = int(line['id'])
                 good_rows.append(ix)
                 self.assertAlmostEqual(line['%s_raJ2000' % db1.objid], self.controlArray['ra'][ix], 10)
                 self.assertAlmostEqual(line['%s_decJ2000' % db1.objid], self.controlArray['dec'][ix], 10)
@@ -726,7 +726,7 @@ class CompoundWithObsMetaData(unittest.TestCase):
         good_rows = []
         for chunk in results:
             for line in chunk:
-                ix = line['id']
+                ix = int(line['id'])
                 good_rows.append(ix)
                 self.assertAlmostEqual(line['%s_raJ2000' % db1.objid], self.controlArray['ra'][ix], 10)
                 self.assertAlmostEqual(line['%s_decJ2000' % db1.objid], self.controlArray['dec'][ix], 10)
