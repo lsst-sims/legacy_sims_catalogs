@@ -119,7 +119,7 @@ class JobState(object):
 
 
   def updateState(self, key, state):
-    if self._states.has_key(key):
+    if key in self._states:
       self._states[key] = unicode(state)
       stmt = JobStateLog.update().where(
               JobStateLog.c.jobid == self._jobid.getId() and
@@ -136,7 +136,7 @@ class JobState(object):
       result = self._conn.execute(ins)
 
   def queryState(self, key):
-    if self._states.has_key(key):
+    if key in self._states:
       return self._states[key]
     else:
       return None

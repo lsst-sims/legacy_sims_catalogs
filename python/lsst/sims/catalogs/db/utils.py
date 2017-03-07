@@ -1,4 +1,5 @@
 from __future__ import with_statement
+from __future__ import print_function
 import numpy as np
 from StringIO import StringIO
 from sqlalchemy import (types as satypes, Column, Table, Index,
@@ -92,7 +93,7 @@ def loadTable(datapath, datatable, delimiter, dtype, engine,
             tmpstr += l
             cnt += 1
             if cnt%chunkSize == 0:
-                print "Loading chunk #%i"%(int(cnt/chunkSize))
+                print("Loading chunk #%i"%(int(cnt/chunkSize)))
                 dataArr = np.genfromtxt(StringIO(tmpstr), dtype=dtype, delimiter=delimiter, **kwargs)
                 engine.execute(datatable.insert(),
                                [dict((name, np.asscalar(l[name])) for name in l.dtype.names)
@@ -112,11 +113,11 @@ def loadTable(datapath, datatable, delimiter, dtype, engine,
 
     for col in indexCols:
         if hasattr(col, "__iter__"):
-            print "Creating index on %s"%(",".join(col))
+            print("Creating index on %s"%(",".join(col)))
             colArr = (datatable.c[c] for c in col)
             i = Index('%sidx'%''.join(col), *colArr)
         else:
-            print "Creating index on %s"%(col)
+            print("Creating index on %s"%(col))
             i = Index('%sidx'%col, datatable.c[col])
 
         i.create(engine)

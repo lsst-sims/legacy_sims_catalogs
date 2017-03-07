@@ -10,7 +10,7 @@ __all__ = ["getOneChunk", "writeResult", "sampleSphere", "myTestGals",
 
 def getOneChunk(results):
     try:
-        chunk = results.next()
+        chunk = next(results)
     except StopIteration:
         raise RuntimeError("No results were returned.  Cannot run tests.  Try increasing the size of the"
                            " test database")

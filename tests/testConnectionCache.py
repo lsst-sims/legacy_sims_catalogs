@@ -94,7 +94,7 @@ class CachingTestCase(unittest.TestCase):
 
         # verify that db1 and db2 are both useable
         results = db1.query_columns(colnames=['id', 'i1', 'i2', 'identification'])
-        results = results.next()
+        results = next(results)
         self.assertEqual(len(results), 5)
         np.testing.assert_array_equal(results['id'], range(5))
         np.testing.assert_array_equal(results['id'], results['identification'])
@@ -102,7 +102,7 @@ class CachingTestCase(unittest.TestCase):
         np.testing.assert_array_equal(results['id']*(-1), results['i2'])
 
         results = db2.query_columns(colnames=['id', 'i1', 'i2', 'other'])
-        results = results.next()
+        results = next(results)
         self.assertEqual(len(results), 5)
         np.testing.assert_array_equal(results['id'], range(5))
         np.testing.assert_array_equal(results['id']**2, results['i1'])

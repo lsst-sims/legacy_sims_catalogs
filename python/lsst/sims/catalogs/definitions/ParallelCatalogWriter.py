@@ -1,3 +1,4 @@
+from __future__ import print_function
 import copy
 
 
@@ -46,8 +47,8 @@ def parallelCatalogWriter(catalog_dict, chunk_size=None, constraint=None,
             try:
                 assert cat.obs_metadata == ref_cat.obs_metadata
             except:
-                print cat.obs_metadata
-                print ref_cat.obs_metadata
+                print(cat.obs_metadata)
+                print(ref_cat.obs_metadata)
                 raise RuntimeError('Catalogs passed to parallelCatalogWriter have different '
                                    'ObservationMetaData.  I do not know how to deal with that.')
 

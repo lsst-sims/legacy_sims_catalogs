@@ -1,3 +1,4 @@
+from __future__ import print_function
 import warnings
 import numpy
 import os
@@ -580,7 +581,7 @@ class CatalogDBObject(DBObject):
 
         try:
             self._get_table()
-        except sa_exc.OperationalError, e:
+        except sa_exc.OperationalError as e:
             if self.driver == 'mssql+pymssql':
                 message = "\n To connect to the UW CATSIM database: "
                 message += " Check that you have valid connection parameters, an open ssh tunnel "
@@ -601,11 +602,11 @@ class CatalogDBObject(DBObject):
 
     def show_mapped_columns(self):
         for col in self.columnMap.keys():
-            print "%s -- %s"%(col, self.typeMap[col][0].__name__)
+            print("%s -- %s"%(col, self.typeMap[col][0].__name__))
 
     def show_db_columns(self):
         for col in self.table.c.keys():
-            print "%s -- %s"%(col, self.table.c[col].type.__visit_name__)
+            print("%s -- %s"%(col, self.table.c[col].type.__visit_name__))
 
 
     def getCatalog(self, ftype, *args, **kwargs):

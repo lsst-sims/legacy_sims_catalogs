@@ -225,7 +225,7 @@ class InstanceCatalogMetaDataTest(unittest.TestCase):
             if col in columnsShouldBe:
                 columnsShouldBe.remove(col)
             else:
-                raise(RuntimeError, 'column %s returned; should not be there' % col)
+                raise RuntimeError('column %s returned; should not be there' % col)
 
         self.assertEqual(len(columnsShouldBe), 0)
 
@@ -237,7 +237,7 @@ class InstanceCatalogMetaDataTest(unittest.TestCase):
             if col in columnsShouldBe:
                 columnsShouldBe.remove(col)
             else:
-                raise(RuntimeError, 'column %s returned; should not be there' % col)
+                raise RuntimeError('column %s returned; should not be there' % col)
 
         self.assertEqual(len(columnsShouldBe), 0)
 
@@ -256,7 +256,7 @@ class InstanceCatalogMetaDataTest(unittest.TestCase):
             if col in columnsShouldBe:
                 columnsShouldBe.remove(col)
             else:
-                raise(RuntimeError, 'column %s returned; should not be there' % col)
+                raise RuntimeError('column %s returned; should not be there' % col)
 
         self.assertEqual(len(columnsShouldBe), 0)
         self.assertEqual(len(generatedColumns), 4)

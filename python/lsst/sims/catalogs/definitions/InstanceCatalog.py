@@ -1,4 +1,5 @@
 """Instance Catalog"""
+from __future__ import print_function
 import warnings
 import numpy as np
 import inspect
@@ -669,7 +670,7 @@ class InstanceCatalog(object):
         http://stackoverflow.com/questions/961048/get-class-that-defined-method
         """
 
-        for cls in inspect.getmro(meth.im_class):
+        for cls in inspect.getmro(meth.__self__.__class__):
             if meth.__name__ in cls.__dict__:
                 return cls
 
@@ -680,9 +681,9 @@ class InstanceCatalog(object):
         Print the origins of the columns in this catalog
         """
 
-        print '\nwhere the columns in ', self.__class__, ' come from'
+        print('\nwhere the columns in ', self.__class__, ' come from')
         for column_name in self._column_origins:
-            print column_name, self._column_origins[column_name]
+            print(column_name, self._column_origins[column_name])
 
-        print '\n'
+        print('\n')
 
