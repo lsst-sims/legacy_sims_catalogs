@@ -1,5 +1,5 @@
 setupRequired(daf_persistence)
-setupRequired(mysqlpython)
+setupRequired(python_mysqlclient)
 setupRequired(pymssql)
 setupRequired(python)
 setupRequired(sims_utils)
