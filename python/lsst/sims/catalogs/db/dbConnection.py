@@ -733,7 +733,20 @@ class CatalogDBObject(with_metaclass(CatalogDBObjectMeta, DBObject)):
             return results
 
         if sys.version_info.major == 2:
-            dtype = numpy.dtype([(past_str(k),)+self.typeMap[k] for k in cols])
+            dt_list = []
+            for k in cols:
+                sub_list = [past_str(k)]
+                if self.typeMap[k][0] is not str:
+                    for el in self.typeMap[k]:
+                        sub_list.append(el)
+                else:
+                    sub_list.append(past_str)
+                    for el in self.typeMap[k][1:]:
+                        sub_list.append(el)
+                dt_list.append(tuple(sub_list))
+
+            dtype = numpy.dtype(dt_list)
+
         else:
             dtype = numpy.dtype([(k,)+self.typeMap[k] for k in cols])
 
