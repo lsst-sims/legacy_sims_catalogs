@@ -8,7 +8,7 @@ import warnings
 import numpy
 import os
 import inspect
-from io import StringIO
+from io import BytesIO
 from collections import OrderedDict
 
 from .utils import loadData
@@ -377,7 +377,7 @@ class DBObject(object):
                     dataString+=','
                 dataString += str(xx)
             names = [str(ww) for ww in results[0].keys()]
-            dataArr = numpy.genfromtxt(StringIO(dataString, encoding='ascii'), dtype=None, names=names, delimiter=',')
+            dataArr = numpy.genfromtxt(BytesIO(dataString.encode()), dtype=None, names=names, delimiter=',')
             self.dtype = dataArr.dtype
 
         if len(results) == 0:
