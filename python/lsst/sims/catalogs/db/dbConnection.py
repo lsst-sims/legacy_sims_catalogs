@@ -379,7 +379,10 @@ class DBObject(object):
                 if dataString is not '':
                     dataString+=','
                 dataString += str(xx)
-            names = [str(ww) for ww in results[0].keys()]
+            if sys.version_info.major == 2:
+                names = [past_str(ww) for ww in results[0].keys()]
+            else:
+                names = [str(ww) for ww in results[0].keys()]
             dataArr = numpy.genfromtxt(BytesIO(dataString.encode()), dtype=None, names=names, delimiter=',')
             self.dtype = dataArr.dtype
 
