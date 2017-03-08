@@ -98,7 +98,7 @@ def loadTable(datapath, datatable, delimiter, dtype, engine,
             cnt += 1
             if cnt%chunkSize == 0:
                 print("Loading chunk #%i"%(int(cnt/chunkSize)))
-                dataArr = np.genfromtxt(StringIO(tmpstr), dtype=dtype, delimiter=delimiter, **kwargs)
+                dataArr = np.genfromtxt(StringIO(str(tmpstr)), dtype=dtype, delimiter=delimiter, **kwargs)
                 engine.execute(datatable.insert(),
                                [dict((name, np.asscalar(l[name])) for name in l.dtype.names)
                                 for l in dataArr])
