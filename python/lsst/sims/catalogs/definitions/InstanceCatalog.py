@@ -631,7 +631,7 @@ class InstanceCatalog(with_metaclass(InstanceCatalogMeta, object)):
                                                  constraint=self.constraint,
                                                  chunk_size=chunk_size)
 
-        list_of_transform_keys = list(self.transformation.keys())
+        list_of_transform_keys = list(self.transformations.keys())
 
         for chunk in query_result:
             self._set_current_chunk(chunk)
@@ -650,7 +650,7 @@ class InstanceCatalog(with_metaclass(InstanceCatalogMeta, object)):
                                                  constraint=self.constraint,
                                                  chunk_size=chunk_size)
 
-        list_of_transform_keys = list(self.transformation.keys())
+        list_of_transform_keys = list(self.transformations.keys())
 
         for chunk in query_result:
             self._set_current_chunk(chunk)
