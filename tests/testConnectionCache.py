@@ -79,18 +79,18 @@ class CachingTestCase(unittest.TestCase):
 
         db1 = DbClass1()
         db2 = DbClass2()
-        self.assertEqual(db1.connection, db2.connection)
+        self.assertEqual(id(db1.connection), id(db2.connection))
         self.assertEqual(len(CatalogDBObject._connection_cache), 1)
 
         db3 = DBObject(database=self.db_name, driver='sqlite', host=None, port=None)
-        self.assertNotEqual(db1.connection, db3.connection)
+        self.assertNotEqual(id(db1.connection), id(db3.connection))
 
         self.assertEqual(len(CatalogDBObject._connection_cache), 1)
 
         # check that if we had passed db1.connection to a DBObject,
         # the connections would be identical
         db4 = DBObject(connection=db1.connection)
-        self.assertEqual(db4.connection, db1.connection)
+        self.assertEqual(id(db4.connection), id(db1.connection))
 
         self.assertEqual(len(CatalogDBObject._connection_cache), 1)
 
