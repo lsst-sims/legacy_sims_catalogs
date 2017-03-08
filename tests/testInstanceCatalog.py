@@ -1,6 +1,11 @@
 from __future__ import with_statement
 from builtins import zip
 from builtins import str
+import sys
+str_type = str
+if sys.version_info.major == 2:
+    from past.builtins import str as past_str
+    str_type = past_str
 from builtins import range
 import os
 import numpy as np
@@ -35,7 +40,7 @@ def createCannotBeNullTestDB(filename=None, add_nans=True):
 
     rng = np.random.RandomState(32)
     dtype = np.dtype([('id', int), ('n1', np.float64), ('n2', np.float64), ('n3', np.float64),
-                      ('n4', (str, 40)), ('n5', (str, 40))])
+                      ('n4', (str_type, 40)), ('n5', (str_type, 40))])
     output = None
 
     if os.path.exists(dbName):
@@ -368,7 +373,7 @@ class InstanceCatalogCannotBeNullTest(unittest.TestCase):
                 fileName = os.path.join(scratch_dir, 'cannotBeNullTestFile.txt')
                 cat.write_catalog(fileName)
                 dtype = np.dtype([('id', int), ('n1', np.float64), ('n2', np.float64), ('n3', np.float64),
-                                  ('n4', (str, 40)), ('n5', (str, 40))])
+                                  ('n4', (str_type, 40)), ('n5', (str_type, 40))])
                 testData = np.genfromtxt(fileName, dtype=dtype, delimiter=',')
 
                 ct_good = 0  # a counter to keep track of the rows read in from the catalog
@@ -382,7 +387,7 @@ class InstanceCatalogCannotBeNullTest(unittest.TestCase):
                     validLine = True
                     for col_name in cat.cannot_be_null:
                         if (isinstance(self.baselineOutput[col_name][i], str) or
-                            isinstance(self.baselineOutput[col_name][i], str)):
+                            isinstance(self.baselineOutput[col_name][i], str_type)):
 
                             if self.baselineOutput[col_name][i].strip().lower() == 'none':
                                 validLine = False
@@ -475,7 +480,7 @@ class InstanceCatalogCannotBeNullTest(unittest.TestCase):
             fileName = os.path.join(scratch_dir, 'canBeNullTestFile.txt')
             cat.write_catalog(fileName)
             dtype = np.dtype([('id', int), ('n1', np.float64), ('n2', np.float64), ('n3', np.float64),
-                              ('n4', (str, 40)), ('n5', (str, 40))])
+                              ('n4', (str_type, 40)), ('n5', (str_type, 40))])
             testData = np.genfromtxt(fileName, dtype=dtype, delimiter=',')
 
             for i in range(len(self.baselineOutput)):
