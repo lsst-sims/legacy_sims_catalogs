@@ -52,7 +52,7 @@ def guessDtype(dataPath, numGuess, delimiter, **kwargs):
         while cnt < numGuess:
             teststr += fh.readline()
             cnt += 1
-    dataArr = np.genfromtxt(StringIO(teststr), dtype=None, names=True, delimiter=delimiter, **kwargs)
+    dataArr = np.genfromtxt(StringIO(teststr, encoding='ascii'), dtype=None, names=True, delimiter=delimiter, **kwargs)
     return dataArr.dtype
 
 
@@ -98,14 +98,14 @@ def loadTable(datapath, datatable, delimiter, dtype, engine,
             cnt += 1
             if cnt%chunkSize == 0:
                 print("Loading chunk #%i"%(int(cnt/chunkSize)))
-                dataArr = np.genfromtxt(StringIO(tmpstr), dtype=dtype, delimiter=delimiter, **kwargs)
+                dataArr = np.genfromtxt(StringIO(tmpstr, encoding='ascii'), dtype=dtype, delimiter=delimiter, **kwargs)
                 engine.execute(datatable.insert(),
                                [dict((name, np.asscalar(l[name])) for name in l.dtype.names)
                                 for l in dataArr])
                 tmpstr = ''
         # Clean up the last chunk
         if len(tmpstr) > 0:
-            dataArr = np.genfromtxt(StringIO(tmpstr), dtype=dtype, delimiter=delimiter, **kwargs)
+            dataArr = np.genfromtxt(StringIO(tmpstr, encoding='ascii'), dtype=dtype, delimiter=delimiter, **kwargs)
             try:
                 engine.execute(datatable.insert(),
                                [dict((name, np.asscalar(l[name])) for name in l.dtype.names)
