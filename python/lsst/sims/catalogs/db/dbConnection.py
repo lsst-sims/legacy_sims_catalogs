@@ -1,6 +1,7 @@
 from __future__ import print_function
 from future import standard_library
 standard_library.install_aliases()
+from past.builtins import str as past_str
 from builtins import zip
 from builtins import str
 from builtins import object
@@ -726,7 +727,7 @@ class CatalogDBObject(with_metaclass(CatalogDBObjectMeta, DBObject)):
         else:
             return results
 
-        dtype = numpy.dtype([(k,)+self.typeMap[k] for k in cols])
+        dtype = numpy.dtype([(past_str(k),)+self.typeMap[k] for k in cols])
 
         if len(set(cols)&set(self.dbDefaultValues)) > 0:
 
