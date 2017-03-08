@@ -27,7 +27,7 @@ def np_to_sql_type(input_type):
         return satypes.BIGINT()
     if name == 'int32':
         return satypes.Integer()
-    if name.startswith('string'):
+    if name.startswith('str'):
         return satypes.String(length=size)
 
     raise RuntimeError("Do not know how to map %s to SQL" % str(input_type))
