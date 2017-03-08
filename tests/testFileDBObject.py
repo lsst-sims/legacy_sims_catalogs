@@ -1,5 +1,5 @@
-from builtins import zip
 from __future__ import with_statement
+from builtins import zip
 import unittest
 import string
 import os

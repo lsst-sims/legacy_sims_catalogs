@@ -1,6 +1,6 @@
+from __future__ import with_statement
 from builtins import zip
 from builtins import object
-from __future__ import with_statement
 import os
 import numpy as np
 import unittest

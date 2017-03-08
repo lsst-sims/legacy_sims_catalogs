@@ -1,5 +1,5 @@
-from builtins import range
 from __future__ import with_statement
+from builtins import range
 import unittest
 import os
 import numpy as np
