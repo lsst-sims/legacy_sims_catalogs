@@ -1,7 +1,11 @@
 from __future__ import with_statement
 from __future__ import print_function
+from future import standard_library
+standard_library.install_aliases()
+from builtins import str
+from builtins import range
 import numpy as np
-from StringIO import StringIO
+from io import StringIO
 from sqlalchemy import (types as satypes, Column, Table, Index,
                         create_engine, MetaData)
 import string

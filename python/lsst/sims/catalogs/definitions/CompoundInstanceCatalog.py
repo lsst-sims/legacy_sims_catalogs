@@ -1,3 +1,6 @@
+from builtins import zip
+from builtins import range
+from builtins import object
 from __future__ import with_statement
 import numpy as np
 from lsst.sims.catalogs.db import CompoundCatalogDBObject

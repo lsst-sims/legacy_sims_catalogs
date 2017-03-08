@@ -1,3 +1,5 @@
+from builtins import next
+from builtins import range
 import unittest
 import sqlite3
 import os
@@ -96,7 +98,7 @@ class CachingTestCase(unittest.TestCase):
         results = db1.query_columns(colnames=['id', 'i1', 'i2', 'identification'])
         results = next(results)
         self.assertEqual(len(results), 5)
-        np.testing.assert_array_equal(results['id'], range(5))
+        np.testing.assert_array_equal(results['id'], list(range(5)))
         np.testing.assert_array_equal(results['id'], results['identification'])
         np.testing.assert_array_equal(results['id']**2, results['i1'])
         np.testing.assert_array_equal(results['id']*(-1), results['i2'])
@@ -104,7 +106,7 @@ class CachingTestCase(unittest.TestCase):
         results = db2.query_columns(colnames=['id', 'i1', 'i2', 'other'])
         results = next(results)
         self.assertEqual(len(results), 5)
-        np.testing.assert_array_equal(results['id'], range(5))
+        np.testing.assert_array_equal(results['id'], list(range(5)))
         np.testing.assert_array_equal(results['id']**2, results['i1'])
         np.testing.assert_array_equal(results['i1'], results['other'])
         np.testing.assert_array_equal(results['id']*(-1), results['i2'])

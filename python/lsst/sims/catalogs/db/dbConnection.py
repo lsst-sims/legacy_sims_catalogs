@@ -1,9 +1,14 @@
 from __future__ import print_function
+from future import standard_library
+standard_library.install_aliases()
+from builtins import zip
+from builtins import str
+from builtins import object
 import warnings
 import numpy
 import os
 import inspect
-from StringIO import StringIO
+from io import StringIO
 from collections import OrderedDict
 
 from .utils import loadData
@@ -20,6 +25,7 @@ from lsst.sims.utils.CodeUtilities import sims_clean_up
 #suggests using the cdecimal module.  Since it is not standard, import decimal.
 #TODO: test for cdecimal and use it if it exists.
 import decimal
+from future.utils import with_metaclass
 
 __all__ = ["ChunkIterator", "DBObject", "CatalogDBObject", "fileDBObject"]
 
@@ -66,7 +72,7 @@ class ChunkIterator(object):
     def __iter__(self):
         return self
 
-    def next(self):
+    def __next__(self):
         if self.chunk_size is None and not self.exec_query.closed:
             chunk = self.exec_query.fetchall()
             return self._postprocess_results(chunk)
@@ -169,7 +175,7 @@ class DBConnection(object):
             dbUrl = url.make_url(self._database)
             dialect = dbUrl.get_dialect()
             self._driver = dialect.name + '+' + dialect.driver if dialect.driver else dialect.name
-            for key, value in dbUrl.translate_connect_args().iteritems():
+            for key, value in dbUrl.translate_connect_args().items():
                 if value is not None:
                     setattr(self, '_'+key, value)
 
@@ -267,7 +273,7 @@ class DBObject(object):
                          port=port,
                          verbose=verbose)
 
-            for key, value in kwargDict.iteritems():
+            for key, value in kwargDict.items():
                 if value is not None or not hasattr(self, key):
                     setattr(self, key, value)
 
@@ -485,11 +491,10 @@ class CatalogDBObjectMeta(type):
         outstr += "+++++++++++++++++++++++++++++++++++++++++++++"
         return outstr
 
-class CatalogDBObject(DBObject):
+class CatalogDBObject(with_metaclass(CatalogDBObjectMeta, DBObject)):
     """Database Object base class
 
     """
-    __metaclass__ = CatalogDBObjectMeta
 
     epoch = 2000.0
     skipRegistration = False
@@ -517,7 +522,7 @@ class CatalogDBObject(DBObject):
     dbTypeMap = {'BIGINT':(int,), 'BOOLEAN':(bool,), 'FLOAT':(float,), 'INTEGER':(int,),
                  'NUMERIC':(float,), 'SMALLINT':(int,), 'TINYINT':(int,), 'VARCHAR':(str, 256),
                  'TEXT':(str, 256), 'CLOB':(str, 256), 'NVARCHAR':(str, 256),
-                 'NCLOB':(unicode, 256), 'NTEXT':(unicode, 256), 'CHAR':(str, 1), 'INT':(int,),
+                 'NCLOB':(str, 256), 'NTEXT':(str, 256), 'CHAR':(str, 1), 'INT':(int,),
                  'REAL':(float,), 'DOUBLE':(float,), 'STRING':(str, 256), 'DOUBLE_PRECISION':(float,),
                  'DECIMAL':(float,)}
 

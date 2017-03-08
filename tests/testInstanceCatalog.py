@@ -1,3 +1,6 @@
+from builtins import zip
+from builtins import str
+from builtins import range
 from __future__ import with_statement
 import os
 import numpy as np
@@ -32,7 +35,7 @@ def createCannotBeNullTestDB(filename=None, add_nans=True):
 
     rng = np.random.RandomState(32)
     dtype = np.dtype([('id', int), ('n1', np.float64), ('n2', np.float64), ('n3', np.float64),
-                      ('n4', (str, 40)), ('n5', (unicode, 40))])
+                      ('n4', (str, 40)), ('n5', (str, 40))])
     output = None
 
     if os.path.exists(dbName):
@@ -62,9 +65,9 @@ def createCannotBeNullTestDB(filename=None, add_nans=True):
 
         draw = rng.random_sample(1)
         if draw[0] < 0.5:
-            w2 = unicode('None')
+            w2 = str('None')
         else:
-            w2 = unicode('word')
+            w2 = str('word')
 
         if output is None:
             output = np.array([(ii, values[0], values[1], values[2], w1, w2)], dtype=dtype)
@@ -102,7 +105,7 @@ class myCannotBeNullDBObject(CatalogDBObject):
     tableid = 'testTable'
     objid = 'cannotBeNull'
     idColKey = 'id'
-    columns = [('n5', 'n5', unicode, 40)]
+    columns = [('n5', 'n5', str, 40)]
 
 
 class floatCannotBeNullCatalog(InstanceCatalog):
@@ -365,7 +368,7 @@ class InstanceCatalogCannotBeNullTest(unittest.TestCase):
                 fileName = os.path.join(scratch_dir, 'cannotBeNullTestFile.txt')
                 cat.write_catalog(fileName)
                 dtype = np.dtype([('id', int), ('n1', np.float64), ('n2', np.float64), ('n3', np.float64),
-                                  ('n4', (str, 40)), ('n5', (unicode, 40))])
+                                  ('n4', (str, 40)), ('n5', (str, 40))])
                 testData = np.genfromtxt(fileName, dtype=dtype, delimiter=',')
 
                 ct_good = 0  # a counter to keep track of the rows read in from the catalog
@@ -379,7 +382,7 @@ class InstanceCatalogCannotBeNullTest(unittest.TestCase):
                     validLine = True
                     for col_name in cat.cannot_be_null:
                         if (isinstance(self.baselineOutput[col_name][i], str) or
-                            isinstance(self.baselineOutput[col_name][i], unicode)):
+                            isinstance(self.baselineOutput[col_name][i], str)):
 
                             if self.baselineOutput[col_name][i].strip().lower() == 'none':
                                 validLine = False
@@ -472,7 +475,7 @@ class InstanceCatalogCannotBeNullTest(unittest.TestCase):
             fileName = os.path.join(scratch_dir, 'canBeNullTestFile.txt')
             cat.write_catalog(fileName)
             dtype = np.dtype([('id', int), ('n1', np.float64), ('n2', np.float64), ('n3', np.float64),
-                              ('n4', (str, 40)), ('n5', (unicode, 40))])
+                              ('n4', (str, 40)), ('n5', (str, 40))])
             testData = np.genfromtxt(fileName, dtype=dtype, delimiter=',')
 
             for i in range(len(self.baselineOutput)):

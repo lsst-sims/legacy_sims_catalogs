@@ -1,3 +1,6 @@
+from builtins import next
+from builtins import str
+from builtins import range
 import sqlite3
 import numpy as np
 import json
@@ -24,7 +27,7 @@ def writeResult(result, fname):
         if first:
             fh.write(",".join([str(el) for el in chunk.dtype.names])+"\n")
             first = False
-        for i in xrange(len(chunk)):
+        for i in range(len(chunk)):
             fh.write(",".join([str(chunk[name][i]) for name in chunk.dtype.names])+"\n")
     fh.close()
 
@@ -163,7 +166,7 @@ def makeGalTestDB(filename='testDatabase.db', size=1000, seedVal=None,
     imag = rmag - rmi
     zmag = imag - imz
     ymag = zmag - zmy
-    for i in xrange(size):
+    for i in range(size):
         period = rng.random_sample(1)[0]*490. + 10.
         amp = rng.random_sample(1)[0]*5. + 0.2
         varParam = {'varMethodName': 'testVar', 'pars': {'period': period, 'amplitude': amp}}
@@ -264,7 +267,7 @@ def makeStarTestDB(filename='testDatabase.db', size=1000, seedVal=None,
     pmRa = rng.random_sample(size)*4./(1000*3600.)  # deg/yr
     pmDec = rng.random_sample(size)*4./(1000*3600.)  # deg/yr
     parallax = rng.random_sample(size)*1.0  # milliarcseconds per year
-    for i in xrange(size):
+    for i in range(size):
         period = rng.random_sample(1)[0]*490. + 10.
         amp = rng.random_sample(1)[0]*5. + 0.2
         varParam = {'varMethodName': 'testVar', 'pars': {'period': period, 'amplitude': amp}}
