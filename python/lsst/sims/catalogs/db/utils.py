@@ -52,7 +52,7 @@ def guessDtype(dataPath, numGuess, delimiter, **kwargs):
         while cnt < numGuess:
             teststr += fh.readline()
             cnt += 1
-    dataArr = np.genfromtxt(StringIO(teststr), dtype=None, names=True, delimiter=delimiter, **kwargs)
+    dataArr = np.genfromtxt(StringIO(str(teststr)), dtype=None, names=True, delimiter=delimiter, **kwargs)
     return dataArr.dtype
 
 
@@ -105,7 +105,7 @@ def loadTable(datapath, datatable, delimiter, dtype, engine,
                 tmpstr = ''
         # Clean up the last chunk
         if len(tmpstr) > 0:
-            dataArr = np.genfromtxt(StringIO(tmpstr), dtype=dtype, delimiter=delimiter, **kwargs)
+            dataArr = np.genfromtxt(StringIO(str(tmpstr)), dtype=dtype, delimiter=delimiter, **kwargs)
             try:
                 engine.execute(datatable.insert(),
                                [dict((name, np.asscalar(l[name])) for name in l.dtype.names)

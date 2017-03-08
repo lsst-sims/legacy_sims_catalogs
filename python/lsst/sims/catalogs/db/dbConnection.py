@@ -377,7 +377,7 @@ class DBObject(object):
                     dataString+=','
                 dataString += str(xx)
             names = [str(ww) for ww in results[0].keys()]
-            dataArr = numpy.genfromtxt(StringIO(dataString), dtype=None, names=names, delimiter=',')
+            dataArr = numpy.genfromtxt(StringIO(str(dataString)), dtype=None, names=names, delimiter=',')
             self.dtype = dataArr.dtype
 
         if len(results) == 0:
