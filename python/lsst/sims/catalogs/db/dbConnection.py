@@ -394,7 +394,12 @@ class DBObject(object):
         the code will guess the datatype and assign generic names to the columns
         """
 
-        if not isinstance(query,str):
+        try:
+            is_string = isinstance(query, basestring)
+        except:
+            is_string = isinstance(query, str)
+
+        if not is_string:
             raise RuntimeError("DBObject execute must be called with a string query")
 
         unacceptableCommands = ["delete","drop","insert","update"]
