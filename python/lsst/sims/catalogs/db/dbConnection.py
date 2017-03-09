@@ -3,10 +3,20 @@ from future import standard_library
 standard_library.install_aliases()
 import sys
 from builtins import str
+
+# 2017 March 9
+# str_cast exists because numpy.dtype does
+# not like unicode-like things as the names
+# of columns.  Unfortunately, in python 2,
+# builtins.str looks unicode-like.  We will
+# use str_cast in python 2 to maintain
+# both python 3 compatibility and our use of
+# numpy dtype
 str_cast = str
 if sys.version_info.major == 2:
     from past.builtins import str as past_str
     str_cast = past_str
+
 from builtins import zip
 from builtins import object
 import warnings
