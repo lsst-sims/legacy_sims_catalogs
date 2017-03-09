@@ -2,10 +2,12 @@ from __future__ import print_function
 from future import standard_library
 standard_library.install_aliases()
 import sys
+from builtins import str
+str_cast = str
 if sys.version_info.major == 2:
     from past.builtins import str as past_str
+    str_cast = past_str
 from builtins import zip
-from builtins import str
 from builtins import object
 import warnings
 import numpy
@@ -338,11 +340,11 @@ class DBObject(object):
             if tableName not in tableNameList:
                 return []
             else:
-                return [str(xx['name']) for xx in reflection.Inspector.from_engine(self.connection.engine).get_columns(tableName)]
+                return [str_cast(xx['name']) for xx in reflection.Inspector.from_engine(self.connection.engine).get_columns(tableName)]
         else:
             columnDict = {}
             for name in tableNameList:
-                columnList = [str(xx['name']) for xx in reflection.Inspector.from_engine(self.connection.engine).get_columns(name)]
+                columnList = [str_cast(xx['name']) for xx in reflection.Inspector.from_engine(self.connection.engine).get_columns(name)]
                 columnDict[name] = columnList
             return columnDict
 
@@ -379,10 +381,7 @@ class DBObject(object):
                 if dataString is not '':
                     dataString+=','
                 dataString += str(xx)
-            if sys.version_info.major == 2:
-                names = [past_str(ww) for ww in results[0].keys()]
-            else:
-                names = [str(ww) for ww in results[0].keys()]
+            names = [str_cast(ww) for ww in results[0].keys()]
             dataArr = numpy.genfromtxt(BytesIO(dataString.encode()), dtype=None, names=names, delimiter=',')
             self.dtype = dataArr.dtype
 
