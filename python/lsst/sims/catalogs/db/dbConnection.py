@@ -398,7 +398,8 @@ class DBObject(object):
                 type_name = str(dataArr.dtype[name])
                 sub_list = [name]
                 if type_name.startswith('S') or type_name.startswith('|S'):
-                    sub_list.append(str)
+                    sub_list.append(str_cast)
+                    sub_list.append(int(type_name.replace('S','').replace('|','')))
                 else:
                     sub_list.append(dataArr.dtype[name])
                 dt_list.append(tuple(sub_list))
