@@ -615,7 +615,7 @@ class CatalogDBObject(with_metaclass(CatalogDBObjectMeta, DBObject)):
                 message += " https://confluence.lsstcorp.org/display/SIM/Accessing+the+UW+CATSIM+Database "
             else:
                 message = ''
-            raise RuntimeError("Failed to connect to %s: sqlalchemy.%s %s" % (self.connection.engine, e.message, message))
+            raise RuntimeError("Failed to connect to %s: sqlalchemy.%s %s" % (self.connection.engine, e.args[0], message))
 
         #Need to do this after the table is instantiated so that
         #the default columns can be filled from the table object.
