@@ -393,7 +393,17 @@ class DBObject(object):
                 dataString += str(xx)
             names = [str_cast(ww) for ww in results[0].keys()]
             dataArr = numpy.genfromtxt(BytesIO(dataString.encode()), dtype=None, names=names, delimiter=',')
-            self.dtype = dataArr.dtype
+            dt_list = []
+            for name in dataArr.dtype.names:
+                type_name = str(dataArr.dtype[name])
+                sub_list = [name]
+                if type_name.startswith('S') or type_name.startswith('|S'):
+                    sub_list.append(str)
+                else:
+                    sub_list.append(dataArr.dtype[name])
+                dt_list.append(tuple(sub_list))
+
+            self.dtype = numpy.dtype(dt_list)
 
         if len(results) == 0:
             return numpy.recarray((0,), dtype = self.dtype)

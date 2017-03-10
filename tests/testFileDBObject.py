@@ -58,7 +58,7 @@ class FileDBObjectTestCase(unittest.TestCase):
             i_row = row[0]
             self.assertAlmostEqual(f_list[i_row], row[1], 13)
             self.assertEqual(i_list[i_row], row[2])
-            self.assertEqual(word_list[i_row], row[3].decode())
+            self.assertEqual(word_list[i_row], row[3])
 
         if os.path.exists(txt_file_name):
             os.unlink(txt_file_name)
