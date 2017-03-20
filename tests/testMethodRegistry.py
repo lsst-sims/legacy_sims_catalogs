@@ -1,4 +1,5 @@
 from __future__ import with_statement
+from builtins import object
 import unittest
 import lsst.utils.tests
 from lsst.sims.catalogs.decorators import register_class, register_method

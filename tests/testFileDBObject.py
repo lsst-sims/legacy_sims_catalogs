@@ -1,6 +1,6 @@
 from __future__ import with_statement
+from builtins import zip
 import unittest
-import string
 import os
 import numpy as np
 import lsst.utils.tests
@@ -33,18 +33,19 @@ class FileDBObjectTestCase(unittest.TestCase):
                                      "filedbojb_ingest_test.txt")
 
         rng = np.random.RandomState(8821)
+        alphabet = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
         n_rows = 34
         n_letters = 72
         f_list = rng.random_sample(n_rows)
         i_list = rng.randint(0, 2**50, n_rows)
-        word_dex_list = rng.randint(0, len(string.letters)-1, (n_rows, n_letters))
+        word_dex_list = rng.randint(0, len(alphabet)-1, (n_rows, n_letters))
         word_list = []
         with open(txt_file_name, 'w') as output_file:
             output_file.write("# a header\n")
             for ix, (ff, ii, ww) in enumerate(zip(f_list, i_list, word_dex_list)):
                 word = ''
                 for wwdex in ww:
-                    word += string.letters[wwdex]
+                    word += alphabet[wwdex]
                 word_list.append(word)
                 self.assertEqual(len(word), n_letters)
                 output_file.write('%d %.13f %ld %s\n' % (ix, ff, ii, word))

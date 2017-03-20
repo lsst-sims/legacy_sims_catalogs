@@ -1,8 +1,29 @@
+from __future__ import print_function
+from future import standard_library
+standard_library.install_aliases()
+import sys
+from builtins import str
+
+# 2017 March 9
+# str_cast exists because numpy.dtype does
+# not like unicode-like things as the names
+# of columns.  Unfortunately, in python 2,
+# builtins.str looks unicode-like.  We will
+# use str_cast in python 2 to maintain
+# both python 3 compatibility and our use of
+# numpy dtype
+str_cast = str
+if sys.version_info.major == 2:
+    from past.builtins import str as past_str
+    str_cast = past_str
+
+from builtins import zip
+from builtins import object
 import warnings
 import numpy
 import os
 import inspect
-from StringIO import StringIO
+from io import BytesIO
 from collections import OrderedDict
 
 from .utils import loadData
@@ -19,6 +40,7 @@ from lsst.sims.utils.CodeUtilities import sims_clean_up
 #suggests using the cdecimal module.  Since it is not standard, import decimal.
 #TODO: test for cdecimal and use it if it exists.
 import decimal
+from future.utils import with_metaclass
 
 __all__ = ["ChunkIterator", "DBObject", "CatalogDBObject", "fileDBObject"]
 
@@ -65,7 +87,7 @@ class ChunkIterator(object):
     def __iter__(self):
         return self
 
-    def next(self):
+    def __next__(self):
         if self.chunk_size is None and not self.exec_query.closed:
             chunk = self.exec_query.fetchall()
             return self._postprocess_results(chunk)
@@ -168,7 +190,7 @@ class DBConnection(object):
             dbUrl = url.make_url(self._database)
             dialect = dbUrl.get_dialect()
             self._driver = dialect.name + '+' + dialect.driver if dialect.driver else dialect.name
-            for key, value in dbUrl.translate_connect_args().iteritems():
+            for key, value in dbUrl.translate_connect_args().items():
                 if value is not None:
                     setattr(self, '_'+key, value)
 
@@ -266,7 +288,7 @@ class DBObject(object):
                          port=port,
                          verbose=verbose)
 
-            for key, value in kwargDict.iteritems():
+            for key, value in kwargDict.items():
                 if value is not None or not hasattr(self, key):
                     setattr(self, key, value)
 
@@ -328,11 +350,11 @@ class DBObject(object):
             if tableName not in tableNameList:
                 return []
             else:
-                return [str(xx['name']) for xx in reflection.Inspector.from_engine(self.connection.engine).get_columns(tableName)]
+                return [str_cast(xx['name']) for xx in reflection.Inspector.from_engine(self.connection.engine).get_columns(tableName)]
         else:
             columnDict = {}
             for name in tableNameList:
-                columnList = [str(xx['name']) for xx in reflection.Inspector.from_engine(self.connection.engine).get_columns(name)]
+                columnList = [str_cast(xx['name']) for xx in reflection.Inspector.from_engine(self.connection.engine).get_columns(name)]
                 columnDict[name] = columnList
             return columnDict
 
@@ -369,9 +391,20 @@ class DBObject(object):
                 if dataString is not '':
                     dataString+=','
                 dataString += str(xx)
-            names = [str(ww) for ww in results[0].keys()]
-            dataArr = numpy.genfromtxt(StringIO(dataString), dtype=None, names=names, delimiter=',')
-            self.dtype = dataArr.dtype
+            names = [str_cast(ww) for ww in results[0].keys()]
+            dataArr = numpy.genfromtxt(BytesIO(dataString.encode()), dtype=None, names=names, delimiter=',')
+            dt_list = []
+            for name in dataArr.dtype.names:
+                type_name = str(dataArr.dtype[name])
+                sub_list = [name]
+                if type_name.startswith('S') or type_name.startswith('|S'):
+                    sub_list.append(str_cast)
+                    sub_list.append(int(type_name.replace('S','').replace('|','')))
+                else:
+                    sub_list.append(dataArr.dtype[name])
+                dt_list.append(tuple(sub_list))
+
+            self.dtype = numpy.dtype(dt_list)
 
         if len(results) == 0:
             return numpy.recarray((0,), dtype = self.dtype)
@@ -387,7 +420,12 @@ class DBObject(object):
         the code will guess the datatype and assign generic names to the columns
         """
 
-        if not isinstance(query,str):
+        try:
+            is_string = isinstance(query, basestring)
+        except:
+            is_string = isinstance(query, str)
+
+        if not is_string:
             raise RuntimeError("DBObject execute must be called with a string query")
 
         unacceptableCommands = ["delete","drop","insert","update"]
@@ -484,11 +522,10 @@ class CatalogDBObjectMeta(type):
         outstr += "+++++++++++++++++++++++++++++++++++++++++++++"
         return outstr
 
-class CatalogDBObject(DBObject):
+class CatalogDBObject(with_metaclass(CatalogDBObjectMeta, DBObject)):
     """Database Object base class
 
     """
-    __metaclass__ = CatalogDBObjectMeta
 
     epoch = 2000.0
     skipRegistration = False
@@ -516,7 +553,7 @@ class CatalogDBObject(DBObject):
     dbTypeMap = {'BIGINT':(int,), 'BOOLEAN':(bool,), 'FLOAT':(float,), 'INTEGER':(int,),
                  'NUMERIC':(float,), 'SMALLINT':(int,), 'TINYINT':(int,), 'VARCHAR':(str, 256),
                  'TEXT':(str, 256), 'CLOB':(str, 256), 'NVARCHAR':(str, 256),
-                 'NCLOB':(unicode, 256), 'NTEXT':(unicode, 256), 'CHAR':(str, 1), 'INT':(int,),
+                 'NCLOB':(str, 256), 'NTEXT':(str, 256), 'CHAR':(str, 1), 'INT':(int,),
                  'REAL':(float,), 'DOUBLE':(float,), 'STRING':(str, 256), 'DOUBLE_PRECISION':(float,),
                  'DECIMAL':(float,)}
 
@@ -580,7 +617,7 @@ class CatalogDBObject(DBObject):
 
         try:
             self._get_table()
-        except sa_exc.OperationalError, e:
+        except sa_exc.OperationalError as e:
             if self.driver == 'mssql+pymssql':
                 message = "\n To connect to the UW CATSIM database: "
                 message += " Check that you have valid connection parameters, an open ssh tunnel "
@@ -589,7 +626,7 @@ class CatalogDBObject(DBObject):
                 message += " https://confluence.lsstcorp.org/display/SIM/Accessing+the+UW+CATSIM+Database "
             else:
                 message = ''
-            raise RuntimeError("Failed to connect to %s: sqlalchemy.%s %s" % (self.connection.engine, e.message, message))
+            raise RuntimeError("Failed to connect to %s: sqlalchemy.%s %s" % (self.connection.engine, e.args[0], message))
 
         #Need to do this after the table is instantiated so that
         #the default columns can be filled from the table object.
@@ -601,11 +638,11 @@ class CatalogDBObject(DBObject):
 
     def show_mapped_columns(self):
         for col in self.columnMap.keys():
-            print "%s -- %s"%(col, self.typeMap[col][0].__name__)
+            print("%s -- %s"%(col, self.typeMap[col][0].__name__))
 
     def show_db_columns(self):
         for col in self.table.c.keys():
-            print "%s -- %s"%(col, self.table.c[col].type.__visit_name__)
+            print("%s -- %s"%(col, self.table.c[col].type.__visit_name__))
 
 
     def getCatalog(self, ftype, *args, **kwargs):
@@ -715,7 +752,23 @@ class CatalogDBObject(DBObject):
         else:
             return results
 
-        dtype = numpy.dtype([(k,)+self.typeMap[k] for k in cols])
+        if sys.version_info.major == 2:
+            dt_list = []
+            for k in cols:
+                sub_list = [past_str(k)]
+                if self.typeMap[k][0] is not str:
+                    for el in self.typeMap[k]:
+                        sub_list.append(el)
+                else:
+                    sub_list.append(past_str)
+                    for el in self.typeMap[k][1:]:
+                        sub_list.append(el)
+                dt_list.append(tuple(sub_list))
+
+            dtype = numpy.dtype(dt_list)
+
+        else:
+            dtype = numpy.dtype([(k,)+self.typeMap[k] for k in cols])
 
         if len(set(cols)&set(self.dbDefaultValues)) > 0:
 

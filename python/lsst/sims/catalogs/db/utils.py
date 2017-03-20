@@ -1,6 +1,11 @@
 from __future__ import with_statement
+from __future__ import print_function
+from future import standard_library
+standard_library.install_aliases()
+from builtins import str
+from builtins import range
 import numpy as np
-from StringIO import StringIO
+from io import BytesIO
 from sqlalchemy import (types as satypes, Column, Table, Index,
                         create_engine, MetaData)
 import string
@@ -22,7 +27,7 @@ def np_to_sql_type(input_type):
         return satypes.BIGINT()
     if name == 'int32':
         return satypes.Integer()
-    if name.startswith('string'):
+    if name.startswith('str') or str(input_type).startswith('S') or str(input_type).startswith('|S'):
         return satypes.String(length=size)
 
     raise RuntimeError("Do not know how to map %s to SQL" % str(input_type))
@@ -47,7 +52,7 @@ def guessDtype(dataPath, numGuess, delimiter, **kwargs):
         while cnt < numGuess:
             teststr += fh.readline()
             cnt += 1
-    dataArr = np.genfromtxt(StringIO(teststr), dtype=None, names=True, delimiter=delimiter, **kwargs)
+    dataArr = np.genfromtxt(BytesIO(teststr.encode()), dtype=None, names=True, delimiter=delimiter, **kwargs)
     return dataArr.dtype
 
 
@@ -92,15 +97,15 @@ def loadTable(datapath, datatable, delimiter, dtype, engine,
             tmpstr += l
             cnt += 1
             if cnt%chunkSize == 0:
-                print "Loading chunk #%i"%(int(cnt/chunkSize))
-                dataArr = np.genfromtxt(StringIO(tmpstr), dtype=dtype, delimiter=delimiter, **kwargs)
+                print("Loading chunk #%i"%(int(cnt/chunkSize)))
+                dataArr = np.genfromtxt(BytesIO(tmpstr.encode()), dtype=dtype, delimiter=delimiter, **kwargs)
                 engine.execute(datatable.insert(),
                                [dict((name, np.asscalar(l[name])) for name in l.dtype.names)
                                 for l in dataArr])
                 tmpstr = ''
         # Clean up the last chunk
         if len(tmpstr) > 0:
-            dataArr = np.genfromtxt(StringIO(tmpstr), dtype=dtype, delimiter=delimiter, **kwargs)
+            dataArr = np.genfromtxt(BytesIO(tmpstr.encode()), dtype=dtype, delimiter=delimiter, **kwargs)
             try:
                 engine.execute(datatable.insert(),
                                [dict((name, np.asscalar(l[name])) for name in l.dtype.names)
@@ -112,11 +117,11 @@ def loadTable(datapath, datatable, delimiter, dtype, engine,
 
     for col in indexCols:
         if hasattr(col, "__iter__"):
-            print "Creating index on %s"%(",".join(col))
+            print("Creating index on %s"%(",".join(col)))
             colArr = (datatable.c[c] for c in col)
             i = Index('%sidx'%''.join(col), *colArr)
         else:
-            print "Creating index on %s"%(col)
+            print("Creating index on %s"%(col))
             i = Index('%sidx'%col, datatable.c[col])
 
         i.create(engine)

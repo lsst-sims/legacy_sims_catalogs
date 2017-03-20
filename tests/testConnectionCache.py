@@ -1,3 +1,5 @@
+from builtins import next
+from builtins import range
 import unittest
 import sqlite3
 import os
@@ -77,34 +79,34 @@ class CachingTestCase(unittest.TestCase):
 
         db1 = DbClass1()
         db2 = DbClass2()
-        self.assertEqual(db1.connection, db2.connection)
+        self.assertEqual(id(db1.connection), id(db2.connection))
         self.assertEqual(len(CatalogDBObject._connection_cache), 1)
 
         db3 = DBObject(database=self.db_name, driver='sqlite', host=None, port=None)
-        self.assertNotEqual(db1.connection, db3.connection)
+        self.assertNotEqual(id(db1.connection), id(db3.connection))
 
         self.assertEqual(len(CatalogDBObject._connection_cache), 1)
 
         # check that if we had passed db1.connection to a DBObject,
         # the connections would be identical
         db4 = DBObject(connection=db1.connection)
-        self.assertEqual(db4.connection, db1.connection)
+        self.assertEqual(id(db4.connection), id(db1.connection))
 
         self.assertEqual(len(CatalogDBObject._connection_cache), 1)
 
         # verify that db1 and db2 are both useable
         results = db1.query_columns(colnames=['id', 'i1', 'i2', 'identification'])
-        results = results.next()
+        results = next(results)
         self.assertEqual(len(results), 5)
-        np.testing.assert_array_equal(results['id'], range(5))
+        np.testing.assert_array_equal(results['id'], list(range(5)))
         np.testing.assert_array_equal(results['id'], results['identification'])
         np.testing.assert_array_equal(results['id']**2, results['i1'])
         np.testing.assert_array_equal(results['id']*(-1), results['i2'])
 
         results = db2.query_columns(colnames=['id', 'i1', 'i2', 'other'])
-        results = results.next()
+        results = next(results)
         self.assertEqual(len(results), 5)
-        np.testing.assert_array_equal(results['id'], range(5))
+        np.testing.assert_array_equal(results['id'], list(range(5)))
         np.testing.assert_array_equal(results['id']**2, results['i1'])
         np.testing.assert_array_equal(results['i1'], results['other'])
         np.testing.assert_array_equal(results['id']*(-1), results['i2'])

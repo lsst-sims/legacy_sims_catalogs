@@ -1,3 +1,6 @@
+from builtins import zip
+from builtins import str
+from builtins import range
 from lsst.sims.catalogs.db import CatalogDBObject
 
 __all__ = ["CompoundCatalogDBObject"]

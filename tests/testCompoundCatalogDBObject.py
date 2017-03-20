@@ -1,4 +1,6 @@
 from __future__ import with_statement
+from builtins import zip
+from builtins import range
 import unittest
 import numpy
 import os
@@ -184,7 +186,7 @@ class CompoundCatalogDBObjectTestCase(unittest.TestCase):
             CompoundCatalogDBObject([db1, db2])
 
         self.assertIn("['%s', '%s']" % (self.otherDbName, self.dbName),
-                      context.exception.message)
+                      context.exception.args[0])
 
         # test case where they are querying the same database, but different
         # tables
@@ -200,7 +202,7 @@ class CompoundCatalogDBObjectTestCase(unittest.TestCase):
         with self.assertRaises(RuntimeError) as context:
             CompoundCatalogDBObject([testDbClass3, testDbClass4])
 
-        self.assertIn("['otherTest', 'test']", context.exception.message)
+        self.assertIn("['otherTest', 'test']", context.exception.args[0])
 
         # test case where the CatalogDBObjects have the same objid
         class testDbClass5(dbClass4):
@@ -216,7 +218,7 @@ class CompoundCatalogDBObjectTestCase(unittest.TestCase):
         with self.assertRaises(RuntimeError) as context:
             CompoundCatalogDBObject([testDbClass5, testDbClass6])
 
-        self.assertIn("objid dummy is duplicated", context.exception.message)
+        self.assertIn("objid dummy is duplicated", context.exception.args[0])
 
         # test case where CompoundCatalogDBObject does not support the
         # tables being queried
@@ -232,7 +234,7 @@ class CompoundCatalogDBObjectTestCase(unittest.TestCase):
             specificCompoundObj_otherTest([testDbClass7, testDbClass8])
 
         msg = "This CompoundCatalogDBObject does not support the table 'test'"
-        self.assertIn(msg, context.exception.message)
+        self.assertIn(msg, context.exception.args[0])
 
     def testCompoundCatalogDBObject(self):
         """

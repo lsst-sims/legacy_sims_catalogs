@@ -1,3 +1,5 @@
+from builtins import next
+from builtins import range
 import os
 import sqlite3
 
@@ -215,7 +217,7 @@ class DBObjectTestCase(unittest.TestCase):
         self.assertEqual(len(results), 200)
 
         results = dbobj.get_chunk_iterator(query, chunk_size=10, dtype=dtype)
-        results.next()
+        next(results)
         for chunk in results:
             self.assertEqual(chunk.dtype, dtype)
 

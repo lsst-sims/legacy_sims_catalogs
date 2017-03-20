@@ -1,4 +1,7 @@
 from __future__ import with_statement
+from __future__ import print_function
+from builtins import zip
+from builtins import str
 import os
 import sqlite3
 
@@ -138,7 +141,7 @@ class CatalogDBObjectTestCase(unittest.TestCase):
     def setUpClass(cls):
         # Delete the test database if it exists and start fresh.
         if os.path.exists('testCatalogDBObjectDatabase.db'):
-            print "deleting database"
+            print("deleting database")
             os.unlink('testCatalogDBObjectDatabase.db')
         tu.makeStarTestDB(filename='testCatalogDBObjectDatabase.db', size=5000, seedVal=1)
         tu.makeGalTestDB(filename='testCatalogDBObjectDatabase.db', size=5000, seedVal=1)

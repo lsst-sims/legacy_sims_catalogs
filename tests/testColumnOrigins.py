@@ -1,3 +1,6 @@
+from builtins import str
+from builtins import range
+from builtins import object
 import os
 import numpy as np
 import unittest
@@ -31,7 +34,7 @@ def makeTestDB(name, size=10, **kwargs):
 #    except Exception:
 #        raise RuntimeError("Error creating database.")
 
-    for i in xrange(size):
+    for i in range(size):
 
         ra = np.random.sample()*360.0
         dec = (np.random.sample()-0.5)*180.0
