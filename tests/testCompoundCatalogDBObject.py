@@ -188,7 +188,7 @@ class CompoundCatalogDBObjectTestCase(unittest.TestCase):
         try:
             self.assertIn("['%s', '%s']" % (self.otherDbName, self.dbName),
                           context.exception.args[0])
-        except:
+        except AssertionError:
             # in the pybind11 stack, the database names get added to the
             # exception message as unicode
             self.assertIn("[u'%s', u'%s']" % (self.otherDbName, self.dbName),
