@@ -185,8 +185,14 @@ class CompoundCatalogDBObjectTestCase(unittest.TestCase):
         with self.assertRaises(RuntimeError) as context:
             CompoundCatalogDBObject([db1, db2])
 
-        self.assertIn("['%s', '%s']" % (self.otherDbName, self.dbName),
-                      context.exception.args[0])
+        try:
+            self.assertIn("['%s', '%s']" % (self.otherDbName, self.dbName),
+                          context.exception.args[0])
+        except AssertionError:
+            # in the pybind11 stack, the database names get added to the
+            # exception message as unicode
+            self.assertIn("[u'%s', u'%s']" % (self.otherDbName, self.dbName),
+                          context.exception.args[0])
 
         # test case where they are querying the same database, but different
         # tables
