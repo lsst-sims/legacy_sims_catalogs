@@ -232,7 +232,7 @@ def makeStarTestDB(filename='testDatabase.db', size=1000, seedVal=None,
                      (id int, ra real, decl real, umag real, gmag real, rmag real,
                      imag real, zmag real, ymag real, mag_norm real,
                      radialVelocity real, properMotionDec real, properMotionRa real, parallax real,
-                     varParamStr text)''')
+                     varParamStr text, ebv real)''')
         conn.commit()
     except:
         raise RuntimeError("Error creating database.")
@@ -267,16 +267,17 @@ def makeStarTestDB(filename='testDatabase.db', size=1000, seedVal=None,
     pmRa = rng.random_sample(size)*4./(1000*3600.)  # deg/yr
     pmDec = rng.random_sample(size)*4./(1000*3600.)  # deg/yr
     parallax = rng.random_sample(size)*1.0  # milliarcseconds per year
+    ebv = rng.random_sample(size)*3.0
     for i in range(size):
         period = rng.random_sample(1)[0]*490. + 10.
         amp = rng.random_sample(1)[0]*5. + 0.2
         varParam = {'varMethodName': 'testVar', 'pars': {'period': period, 'amplitude': amp}}
         paramStr = json.dumps(varParam)
         qstr = '''INSERT INTO stars VALUES (%i, %f, %f, %f, %f, %f, %f,
-               %f, %f, %f, %f, %.15f, %.15f, %.15f, '%s')''' % \
+               %f, %f, %f, %f, %.15f, %.15f, %.15f, '%s', %f)''' % \
                (i, np.degrees(ra[i]), np.degrees(dec[i]), umag[i], gmag[i], rmag[i],
                 imag[i], zmag[i], ymag[i], mag_norm[i], radVel[i], pmRa[i], pmDec[i], parallax[i],
-                paramStr)
+                paramStr, ebv[i])
 
         c.execute(qstr)
 
