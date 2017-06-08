@@ -634,7 +634,7 @@ class InstanceCatalog(with_metaclass(InstanceCatalogMeta, object)):
         list_of_transform_keys = list(self.transformations.keys())
 
         for chunk in query_result:
-            self._set_current_chunk(chunk)
+            self._filter_chunk(chunk)
             chunk_cols = [self.transformations[col](self.column_by_name(col))
                           if col in list_of_transform_keys else
                           self.column_by_name(col)
@@ -653,7 +653,7 @@ class InstanceCatalog(with_metaclass(InstanceCatalogMeta, object)):
         list_of_transform_keys = list(self.transformations.keys())
 
         for chunk in query_result:
-            self._set_current_chunk(chunk)
+            self._filter_chunk(chunk)
             chunk_cols = [self.transformations[col](self.column_by_name(col))
                           if col in list_of_transform_keys else
                           self.column_by_name(col)
