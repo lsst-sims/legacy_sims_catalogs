@@ -133,6 +133,7 @@ class InstanceCatalogTestCase(unittest.TestCase):
             os.unlink(cls.starTextName)
 
     def setUp(self):
+        self.scratch_dir = os.path.join(getPackageDir('sims_catalogs'), 'tests', 'scratchSpace')
         self.obsMd = ObservationMetaData(boundType = 'circle', pointingRA = 210.0, pointingDec = -60.0,
                                          boundLength=20.0, mjd=52000., bandpassName='r')
 
@@ -285,6 +286,34 @@ class InstanceCatalogTestCase(unittest.TestCase):
 
         if os.path.exists(catName):
             os.unlink(catName)
+
+    def test_iter_catalog(self):
+        """
+        Test that iter_catalog returns the same results as write_catalog
+        """
+
+        obs = ObservationMetaData(pointingRA=10.0, pointingDec=-20.0,
+                                  boundLength=50.0, boundType='circle')
+
+        cat = BasicCatalog(self.starDB, obs_metadata=obs)
+        cat_name = os.path.join(self.scratch_dir, 'iter_catalog_control.txt')
+        cat.write_catalog(cat_name)
+        with open(cat_name, 'r') as in_file:
+            in_lines = in_file.readlines()
+        self.assertGreater(len(in_lines), 1)
+        self.assertLess(len(in_lines), len(self.starControlData))
+
+        cat = BasicCatalog(self.starDB, obs_metadata=obs)
+        line_ct = 0
+        for line in cat.iter_catalog():
+            str_line = '%d, %.12f, %.12f, %.12f, %.12f, %.12f, %.12f, %.12f, %.12f\n' % \
+            (line[0], line[1], line[2], line[3], line[4], line[5], line[6], line[7], line[8])
+            self.assertIn(str_line, in_lines)
+            line_ct += 1
+        self.assertEqual(line_ct, len(in_lines)-1)
+
+        if os.path.exists(cat_name):
+            os.unlink(cat_name)
 
 
 class boundingBoxTest(unittest.TestCase):
