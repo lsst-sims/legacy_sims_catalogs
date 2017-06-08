@@ -315,6 +315,39 @@ class InstanceCatalogTestCase(unittest.TestCase):
         if os.path.exists(cat_name):
             os.unlink(cat_name)
 
+    def test_iter_catalog_chunks(self):
+        """
+        Test that iter_catalog_chunks returns the same results as write_catalog
+        """
+
+        obs = ObservationMetaData(pointingRA=10.0, pointingDec=-20.0,
+                                  boundLength=50.0, boundType='circle')
+
+        cat = BasicCatalog(self.starDB, obs_metadata=obs)
+        cat_name = os.path.join(self.scratch_dir, 'iter_catalog_chunks_control.txt')
+        cat.write_catalog(cat_name)
+        with open(cat_name, 'r') as in_file:
+            in_lines = in_file.readlines()
+        self.assertGreater(len(in_lines), 1)
+        self.assertLess(len(in_lines), len(self.starControlData))
+
+        cat = BasicCatalog(self.starDB, obs_metadata=obs)
+        line_ct = 0
+        for chunk, chunk_map in cat.iter_catalog_chunks(chunk_size=7):
+            for ix in range(len(chunk[0])):
+                str_line = '%d, %.12f, %.12f, %.12f, %.12f, %.12f, %.12f, %.12f, %.12f\n' % \
+                (chunk[0][ix], chunk[1][ix], chunk[2][ix], chunk[3][ix], chunk[4][ix],
+                 chunk[5][ix], chunk[6][ix], chunk[7][ix], chunk[8][ix])
+
+                self.assertIn(str_line, in_lines)
+                line_ct += 1
+
+        self.assertEqual(line_ct, len(in_lines)-1)
+
+        if os.path.exists(cat_name):
+            os.unlink(cat_name)
+
+
 
 class boundingBoxTest(unittest.TestCase):
 
