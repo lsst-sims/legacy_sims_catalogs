@@ -624,6 +624,15 @@ class InstanceCatalog(with_metaclass(InstanceCatalogMeta, object)):
         self._write_current_chunk(file_handle)
 
     def iter_catalog(self, chunk_size=None):
+        """
+        Iterate over the lines of a catalog.
+
+        chunk_size controls the number of rows returned at a
+        time from the database (smaller chunk_size will result
+        in less memory usage but slower performance).
+
+        Catalog rows will be returned as lists.
+        """
         self.db_required_columns()
 
         query_result = self.db_obj.query_columns(colnames=self._active_columns,
