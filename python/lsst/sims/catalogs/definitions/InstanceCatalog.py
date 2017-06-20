@@ -624,6 +624,15 @@ class InstanceCatalog(with_metaclass(InstanceCatalogMeta, object)):
         self._write_current_chunk(file_handle)
 
     def iter_catalog(self, chunk_size=None):
+        """
+        Iterate over the lines of a catalog.
+
+        chunk_size controls the number of rows returned at a
+        time from the database (smaller chunk_size will result
+        in less memory usage but slower performance).
+
+        Catalog rows will be returned as lists.
+        """
         self.db_required_columns()
 
         query_result = self.db_obj.query_columns(colnames=self._active_columns,
@@ -634,7 +643,7 @@ class InstanceCatalog(with_metaclass(InstanceCatalogMeta, object)):
         list_of_transform_keys = list(self.transformations.keys())
 
         for chunk in query_result:
-            self._set_current_chunk(chunk)
+            self._filter_chunk(chunk)
             chunk_cols = [self.transformations[col](self.column_by_name(col))
                           if col in list_of_transform_keys else
                           self.column_by_name(col)
@@ -643,6 +652,28 @@ class InstanceCatalog(with_metaclass(InstanceCatalogMeta, object)):
                 yield line
 
     def iter_catalog_chunks(self, chunk_size=None):
+        """
+        Iterate over catalog contents one chunk at a time.
+
+        chunk_size controls the number of catalog rows contained
+        in each chunk.
+
+        The iterator will return a chunk of the database (a list of lists
+        containing the contents of the datbase chunk).  The first dimension
+        of the chunk corresponds to the columns of the catalog, i.e. chunk[0]
+        is a list containing the 0th column of the catalog.
+
+        The iterator will also yield a colMap, which is a dict mapping the
+        names of the columns to their index value in the chunk.
+
+        Usage:
+
+        for chunk, colMap in cat.iter_catalog_chunks(chunk_size=1000):
+            for ix in range(len(chunk[0])):
+                print chunk[0][ix], chunk[1][ix], chunk[2][ix]
+
+        will print out the first three columns of the catalog, row by row
+        """
         self.db_required_columns()
 
         query_result = self.db_obj.query_columns(colnames=self._active_columns,
@@ -653,7 +684,7 @@ class InstanceCatalog(with_metaclass(InstanceCatalogMeta, object)):
         list_of_transform_keys = list(self.transformations.keys())
 
         for chunk in query_result:
-            self._set_current_chunk(chunk)
+            self._filter_chunk(chunk)
             chunk_cols = [self.transformations[col](self.column_by_name(col))
                           if col in list_of_transform_keys else
                           self.column_by_name(col)

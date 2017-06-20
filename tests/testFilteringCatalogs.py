@@ -85,6 +85,26 @@ class InstanceCatalogTestCase(unittest.TestCase):
                 self.assertEqual(line,
                                  '%d, %d, %d, %d\n' % (ii, ii+1, ii+2, ii+3))
 
+        # test that iter_catalog returns the same result
+        cat = FilteredCat(self.db)
+        line_ct = 0
+        for line in cat.iter_catalog():
+            str_line = '%d, %d, %d, %d\n' % (line[0], line[1], line[2], line[3])
+            line_ct += 1
+            self.assertIn(str_line, input_lines)
+        self.assertEqual(line_ct, len(input_lines)-1)
+
+        # test that iter_catalog_chunks returns the same result
+        cat = FilteredCat(self.db)
+        line_ct = 0
+        for chunk, chunk_map in cat.iter_catalog_chunks(chunk_size=2):
+            for ix in range(len(chunk[0])):
+                str_line = '%d, %d, %d, %d\n' % \
+                (chunk[0][ix], chunk[1][ix], chunk[2][ix], chunk[3][ix])
+                line_ct += 1
+            self.assertIn(str_line, input_lines)
+        self.assertEqual(line_ct, len(input_lines)-1)
+
         if os.path.exists(cat_name):
             os.unlink(cat_name)
 
@@ -130,6 +150,26 @@ class InstanceCatalogTestCase(unittest.TestCase):
                 self.assertEqual(line,
                                  '%d, %d, %d, %d\n' % (ii, ip1, ip2, ip3))
 
+        # test that iter_catalog returns the same result
+        cat = FilteredCat2(self.db)
+        line_ct = 0
+        for line in cat.iter_catalog():
+            str_line = '%d, %d, %d, %d\n' % (line[0], line[1], line[2], line[3])
+            line_ct += 1
+            self.assertIn(str_line, input_lines)
+        self.assertEqual(line_ct, len(input_lines)-1)
+
+        # test that iter_catalog_chunks returns the same result
+        cat = FilteredCat2(self.db)
+        line_ct = 0
+        for chunk, chunk_map in cat.iter_catalog_chunks(chunk_size=2):
+            for ix in range(len(chunk[0])):
+                str_line = '%d, %d, %d, %d\n' % \
+                (chunk[0][ix], chunk[1][ix], chunk[2][ix], chunk[3][ix])
+                line_ct += 1
+            self.assertIn(str_line, input_lines)
+        self.assertEqual(line_ct, len(input_lines)-1)
+
         if os.path.exists(cat_name):
             os.unlink(cat_name)
 
@@ -173,6 +213,26 @@ class InstanceCatalogTestCase(unittest.TestCase):
                 self.assertEqual((ii+3) % 3, 0)
                 self.assertEqual(line,
                                  '%d, %d, %d, %d\n' % (ii, ip1, ip2, ip3))
+
+        # test that iter_catalog returns the same result
+        cat = FilteredCat3(self.db, cannot_be_null=['ip2t', 'ip3t'])
+        line_ct = 0
+        for line in cat.iter_catalog():
+            str_line = '%d, %d, %d, %d\n' % (line[0], line[1], line[2], line[3])
+            line_ct += 1
+            self.assertIn(str_line, input_lines)
+        self.assertEqual(line_ct, len(input_lines)-1)
+
+        # test that iter_catalog_chunks returns the same result
+        cat = FilteredCat3(self.db, cannot_be_null=['ip2t', 'ip3t'])
+        line_ct = 0
+        for chunk, chunk_map in cat.iter_catalog_chunks(chunk_size=2):
+            for ix in range(len(chunk[0])):
+                str_line = '%d, %d, %d, %d\n' % \
+                (chunk[0][ix], chunk[1][ix], chunk[2][ix], chunk[3][ix])
+                line_ct += 1
+            self.assertIn(str_line, input_lines)
+        self.assertEqual(line_ct, len(input_lines)-1)
 
         if os.path.exists(cat_name):
             os.unlink(cat_name)
@@ -219,6 +279,29 @@ class InstanceCatalogTestCase(unittest.TestCase):
                 self.assertEqual(line, '%d, %d, %d, %d, %.1f\n'
                                         % (ii, ip3*ip3, ip3*ip3*ip3, ip3*ip3*ip3*ip3, 0.5*(ip3*ip3)))
 
+
+        # test that iter_catalog returns the same result
+        cat = FilteredCat4(self.db)
+        line_ct = 0
+        for line in cat.iter_catalog():
+            str_line = '%d, %d, %d, %d, %.1f\n' % (line[0], line[1], line[2],
+                                                   line[3], line[4])
+            line_ct += 1
+            self.assertIn(str_line, input_lines)
+        self.assertEqual(line_ct, len(input_lines)-1)
+
+        # test that iter_catalog_chunks returns the same result
+        cat = FilteredCat4(self.db)
+        line_ct = 0
+        for chunk, chunk_map in cat.iter_catalog_chunks(chunk_size=2):
+            for ix in range(len(chunk[0])):
+                str_line = '%d, %d, %d, %d, %.1f\n' % \
+                (chunk[0][ix], chunk[1][ix], chunk[2][ix], chunk[3][ix],
+                 chunk[4][ix])
+                line_ct += 1
+            self.assertIn(str_line, input_lines)
+        self.assertEqual(line_ct, len(input_lines)-1)
+
         if os.path.exists(cat_name):
             os.unlink(cat_name)
 
@@ -260,6 +343,27 @@ class InstanceCatalogTestCase(unittest.TestCase):
                 self.assertEqual((ip3**4) % 3, 0)
                 self.assertEqual(line, '%d, %d, %d, %d\n'
                                         % (ii, ip3*ip3, ip3*ip3*ip3, ip3*ip3*ip3*ip3))
+
+        # test that iter_catalog returns the same result
+        cat = FilteredCat5(self.db)
+        line_ct = 0
+        for line in cat.iter_catalog():
+            str_line = '%d, %d, %d, %d\n' % (line[0], line[1], line[2], line[3])
+            line_ct += 1
+            self.assertIn(str_line, input_lines)
+        self.assertEqual(line_ct, len(input_lines)-1)
+
+        # test that iter_catalog_chunks returns the same result
+        cat = FilteredCat5(self.db)
+        line_ct = 0
+        for chunk, chunk_map in cat.iter_catalog_chunks(chunk_size=2):
+            for ix in range(len(chunk[0])):
+                str_line = '%d, %d, %d, %d\n' % \
+                (chunk[0][ix], chunk[1][ix], chunk[2][ix], chunk[3][ix])
+                line_ct += 1
+            self.assertIn(str_line, input_lines)
+        self.assertEqual(line_ct, len(input_lines)-1)
+
 
         if os.path.exists(cat_name):
             os.unlink(cat_name)
@@ -303,6 +407,27 @@ class InstanceCatalogTestCase(unittest.TestCase):
                 self.assertEqual(line, '%d, %d, %d\n'
                                         % (ii, ip3*ip3, ip3*ip3*ip3))
 
+        # test that iter_catalog returns the same result
+        cat = FilteredCat5b(self.db)
+        line_ct = 0
+        for line in cat.iter_catalog():
+            str_line = '%d, %d, %d\n' % (line[0], line[1], line[2])
+            line_ct += 1
+            self.assertIn(str_line, input_lines)
+        self.assertEqual(line_ct, len(input_lines)-1)
+
+        # test that iter_catalog_chunks returns the same result
+        cat = FilteredCat5b(self.db)
+        line_ct = 0
+        for chunk, chunk_map in cat.iter_catalog_chunks(chunk_size=2):
+            for ix in range(len(chunk[0])):
+                str_line = '%d, %d, %d\n' % \
+                (chunk[0][ix], chunk[1][ix], chunk[2][ix])
+                line_ct += 1
+            self.assertIn(str_line, input_lines)
+        self.assertEqual(line_ct, len(input_lines)-1)
+
+
         if os.path.exists(cat_name):
             os.unlink(cat_name)
 
@@ -341,6 +466,27 @@ class InstanceCatalogTestCase(unittest.TestCase):
                 self.assertGreater(ii+1, 5)
                 self.assertEqual(line, '%d, %d\n' % (ii, ii+1))
 
+        # test that iter_catalog returns the same result
+        cat = FilteredCat6(self.db)
+        line_ct = 0
+        for line in cat.iter_catalog():
+            str_line = '%d, %d\n' % (line[0], line[1])
+            line_ct += 1
+            self.assertIn(str_line, input_lines)
+        self.assertEqual(line_ct, len(input_lines)-1)
+
+        # test that iter_catalog_chunks returns the same result
+        cat = FilteredCat6(self.db)
+        line_ct = 0
+        for chunk, chunk_map in cat.iter_catalog_chunks(chunk_size=2):
+            for ix in range(len(chunk[0])):
+                str_line = '%d, %d\n' % \
+                (chunk[0][ix], chunk[1][ix])
+                line_ct += 1
+            self.assertIn(str_line, input_lines)
+        self.assertEqual(line_ct, len(input_lines)-1)
+
+
         if os.path.exists(cat_name):
             os.unlink(cat_name)
 
@@ -374,6 +520,27 @@ class InstanceCatalogTestCase(unittest.TestCase):
                 ii = i_line - 1
                 self.assertLess(ii+3, 7)
                 self.assertEqual(line, '%d, %d\n' % (ii, ii+1))
+
+        # test that iter_catalog returns the same result
+        cat = FilteredCat7(self.db)
+        line_ct = 0
+        for line in cat.iter_catalog():
+            str_line = '%d, %d\n' % (line[0], line[1])
+            line_ct += 1
+            self.assertIn(str_line, input_lines)
+        self.assertEqual(line_ct, len(input_lines)-1)
+
+        # test that iter_catalog_chunks returns the same result
+        cat = FilteredCat7(self.db)
+        line_ct = 0
+        for chunk, chunk_map in cat.iter_catalog_chunks(chunk_size=2):
+            for ix in range(len(chunk[0])):
+                str_line = '%d, %d\n' % \
+                (chunk[0][ix], chunk[1][ix])
+                line_ct += 1
+            self.assertIn(str_line, input_lines)
+        self.assertEqual(line_ct, len(input_lines)-1)
+
 
         if os.path.exists(cat_name):
             os.unlink(cat_name)
@@ -415,6 +582,27 @@ class InstanceCatalogTestCase(unittest.TestCase):
                 self.assertEqual((ii+2) % 2, 0)
                 self.assertGreater(ii+3, 8)
                 self.assertEqual(line, '%d, %d\n' % (ii, ii+1))
+
+        # test that iter_catalog returns the same result
+        cat = FilteredCat8(self.db, cannot_be_null=['filter2'])
+        line_ct = 0
+        for line in cat.iter_catalog():
+            str_line = '%d, %d\n' % (line[0], line[1])
+            line_ct += 1
+            self.assertIn(str_line, input_lines)
+        self.assertEqual(line_ct, len(input_lines)-1)
+
+        # test that iter_catalog_chunks returns the same result
+        cat = FilteredCat8(self.db, cannot_be_null=['filter2'])
+        line_ct = 0
+        for chunk, chunk_map in cat.iter_catalog_chunks(chunk_size=2):
+            for ix in range(len(chunk[0])):
+                str_line = '%d, %d\n' % \
+                (chunk[0][ix], chunk[1][ix])
+                line_ct += 1
+            self.assertIn(str_line, input_lines)
+        self.assertEqual(line_ct, len(input_lines)-1)
+
 
         if os.path.exists(cat_name):
             os.unlink(cat_name)
