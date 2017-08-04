@@ -367,6 +367,23 @@ class DBObjectTestCase(unittest.TestCase):
         self.assertEqual(str(results.dtype['val']), 'float64')
         self.assertEqual(str(results.dtype['sentence']), '|S22')
 
+        # now test that it works when getting a ChunkIterator
+        chunk_iter = db.get_arbitrary_chunk_iterator(query, chunk_size=3)
+        ct = 0
+        for chunk in chunk_iter:
+
+            self.assertEqual(str(chunk.dtype['id']), 'int64')
+            self.assertEqual(str(chunk.dtype['val']), 'float64')
+            self.assertEqual(str(chunk.dtype['sentence']), '|S22')
+
+            for line in chunk:
+                ct += 1
+                self.assertEqual(line['sentence'], 'this, has; punctuation')
+                self.assertAlmostEqual(line['val'], line['id']*5.234, 5)
+                self.assertEqual(line['id']%2, 0)
+
+        self.assertEqual(ct, 5)
+
         if os.path.exists(db_name):
             os.unlink(db_name)
 
