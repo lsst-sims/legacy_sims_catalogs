@@ -7,6 +7,7 @@ import numpy as np
 import unittest
 import warnings
 import lsst.utils.tests
+from lsst.utils import getPackageDir
 from lsst.sims.catalogs.db import DBObject
 
 
@@ -14,87 +15,80 @@ def setup_module(module):
     lsst.utils.tests.init()
 
 
-def createDB():
-    """
-    Create a database with two tables of meaningless data to make sure that JOIN queries
-    can be executed using DBObject
-    """
-    if os.path.exists('testDBObjectDB.db'):
-        os.unlink('testDBObjectDB.db')
-
-    conn = sqlite3.connect('testDBObjectDB.db')
-    c = conn.cursor()
-    try:
-        c.execute('''CREATE TABLE intTable (id int, twice int, thrice int)''')
-        conn.commit()
-    except:
-        raise RuntimeError("Error creating database.")
-
-    for ii in range(100):
-        ll = 2*ii
-        jj = 2*ll
-        kk = 3*ll
-        cmd = '''INSERT INTO intTable VALUES (%s, %s, %s)''' % (ll, jj, kk)
-        c.execute(cmd)
-
-    conn.commit()
-
-    c = conn.cursor()
-    try:
-        c.execute('''CREATE TABLE doubleTable (id int, sqrt float, log float)''')
-        conn.commit()
-    except:
-        raise RuntimeError("Error creating database (double).")
-    for ii in range(200):
-        ll = ii + 1
-        nn = np.sqrt(float(ll))
-        mm = np.log(float(ll))
-
-        cmd = '''INSERT INTO doubleTable VALUES (%s, %s, %s)''' % (ll, nn, mm)
-        c.execute(cmd)
-    conn.commit()
-
-    try:
-        c.execute('''CREATE TABLE junkTable (id int, sqrt float, log float)''')
-        conn.commit()
-    except:
-        raise RuntimeError("Error creating database (double).")
-    for ii in range(200):
-        ll = ii + 1
-        nn = np.sqrt(float(ll))
-        mm = np.log(float(ll))
-
-        cmd = '''INSERT INTO junkTable VALUES (%s, %s, %s)''' % (ll, nn, mm)
-        c.execute(cmd)
-
-    conn.commit()
-    conn.close()
-
-
 class DBObjectTestCase(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        createDB()
+        """
+        Create a database with two tables of meaningless data to make sure that JOIN queries
+        can be executed using DBObject
+        """
+        scratch_dir = os.path.join(getPackageDir('sims_catalogs'), 'tests', 'scratchSpace')
+        cls.db_name = os.path.join(scratch_dir, 'testDBObjectDB.db')
+        if os.path.exists(cls.db_name):
+            os.unlink(cls.db_name)
+
+        conn = sqlite3.connect(cls.db_name)
+        c = conn.cursor()
+        try:
+            c.execute('''CREATE TABLE intTable (id int, twice int, thrice int)''')
+            conn.commit()
+        except:
+            raise RuntimeError("Error creating database.")
+
+        for ii in range(100):
+            ll = 2*ii
+            jj = 2*ll
+            kk = 3*ll
+            cmd = '''INSERT INTO intTable VALUES (%s, %s, %s)''' % (ll, jj, kk)
+            c.execute(cmd)
+
+        conn.commit()
+
+        c = conn.cursor()
+        try:
+            c.execute('''CREATE TABLE doubleTable (id int, sqrt float, log float)''')
+            conn.commit()
+        except:
+            raise RuntimeError("Error creating database (double).")
+        for ii in range(200):
+            ll = ii + 1
+            nn = np.sqrt(float(ll))
+            mm = np.log(float(ll))
+
+            cmd = '''INSERT INTO doubleTable VALUES (%s, %s, %s)''' % (ll, nn, mm)
+            c.execute(cmd)
+        conn.commit()
+
+        try:
+            c.execute('''CREATE TABLE junkTable (id int, sqrt float, log float)''')
+            conn.commit()
+        except:
+            raise RuntimeError("Error creating database (double).")
+        for ii in range(200):
+            ll = ii + 1
+            nn = np.sqrt(float(ll))
+            mm = np.log(float(ll))
+
+            cmd = '''INSERT INTO junkTable VALUES (%s, %s, %s)''' % (ll, nn, mm)
+            c.execute(cmd)
+
+        conn.commit()
+        conn.close()
 
     @classmethod
     def tearDownClass(cls):
-        if os.path.exists('testDBObjectDB.db'):
-            os.unlink('testDBObjectDB.db')
+        if os.path.exists(cls.db_name):
+            os.unlink(cls.db_name)
 
     def setUp(self):
         self.driver = 'sqlite'
-        self.database = 'testDBObjectDB.db'
-
-    def tearDown(self):
-        self.driver = 'sqlite'
-        self.database = 'testDBObjectDB.db'
 
     def testTableNames(self):
         """
         Test the method that returns the names of tables in a database
         """
-        dbobj = DBObject(driver=self.driver, database=self.database)
+        dbobj = DBObject(driver=self.driver, database=self.db_name)
         names = dbobj.get_table_names()
         self.assertEqual(len(names), 3)
         self.assertIn('doubleTable', names)
@@ -105,7 +99,7 @@ class DBObjectTestCase(unittest.TestCase):
         Test that the filters we placed on queries made with execute_aribtrary()
         work
         """
-        dbobj = DBObject(driver=self.driver, database=self.database)
+        dbobj = DBObject(driver=self.driver, database=self.db_name)
         controlQuery = 'SELECT doubleTable.id, intTable.id, doubleTable.log, intTable.thrice '
         controlQuery += 'FROM doubleTable, intTable WHERE doubleTable.id = intTable.id'
         dbobj.execute_arbitrary(controlQuery)
@@ -151,7 +145,7 @@ class DBObjectTestCase(unittest.TestCase):
         """
         Test the method that returns the names of columns in a table
         """
-        dbobj = DBObject(driver=self.driver, database=self.database)
+        dbobj = DBObject(driver=self.driver, database=self.db_name)
         names = dbobj.get_column_names('doubleTable')
         self.assertEqual(len(names), 3)
         self.assertIn('id', names)
@@ -182,7 +176,7 @@ class DBObjectTestCase(unittest.TestCase):
         """
         Test a query on a single table (using chunk iterator)
         """
-        dbobj = DBObject(driver=self.driver, database=self.database)
+        dbobj = DBObject(driver=self.driver, database=self.db_name)
         query = 'SELECT id, sqrt FROM doubleTable'
         results = dbobj.get_chunk_iterator(query)
 
@@ -205,7 +199,7 @@ class DBObjectTestCase(unittest.TestCase):
 
         (also test q query on a single table using .execute_arbitrary() directly
         """
-        dbobj = DBObject(driver=self.driver, database=self.database)
+        dbobj = DBObject(driver=self.driver, database=self.db_name)
         query = 'SELECT id, log FROM doubleTable'
         dtype = [('id', int), ('log', float)]
         results = dbobj.execute_arbitrary(query, dtype = dtype)
@@ -225,7 +219,7 @@ class DBObjectTestCase(unittest.TestCase):
         """
         Test a join
         """
-        dbobj = DBObject(driver=self.driver, database=self.database)
+        dbobj = DBObject(driver=self.driver, database=self.db_name)
         query = 'SELECT doubleTable.id, intTable.id, doubleTable.log, intTable.thrice '
         query += 'FROM doubleTable, intTable WHERE doubleTable.id = intTable.id'
         results = dbobj.get_chunk_iterator(query, chunk_size=10)
@@ -266,7 +260,7 @@ class DBObjectTestCase(unittest.TestCase):
         """
         Test queries on SQL functions by using the MIN and MAX functions
         """
-        dbobj = DBObject(driver=self.driver, database=self.database)
+        dbobj = DBObject(driver=self.driver, database=self.db_name)
         query = 'SELECT MAX(thrice), MIN(thrice) FROM intTable'
         results = dbobj.execute_arbitrary(query)
         self.assertEqual(results[0][0], 594)
@@ -280,7 +274,7 @@ class DBObjectTestCase(unittest.TestCase):
         Repeat the test from testJoin, but with a DBObject whose connection was passed
         directly from another DBObject, to make sure that passing a connection works
         """
-        dbobj_base = DBObject(driver=self.driver, database=self.database)
+        dbobj_base = DBObject(driver=self.driver, database=self.db_name)
         dbobj = DBObject(connection=dbobj_base.connection)
         query = 'SELECT doubleTable.id, intTable.id, doubleTable.log, intTable.thrice '
         query += 'FROM doubleTable, intTable WHERE doubleTable.id = intTable.id'
@@ -324,13 +318,13 @@ class DBObjectTestCase(unittest.TestCase):
 
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
-            DBObject('sqlite:///' + self.database)
+            DBObject('sqlite:///' + self.db_name)
             assert len(w) == 1
 
         # missing database
         self.assertRaises(AttributeError, DBObject, driver=self.driver)
         # missing driver
-        self.assertRaises(AttributeError, DBObject, database=self.database)
+        self.assertRaises(AttributeError, DBObject, database=self.db_name)
         # missing host
         self.assertRaises(AttributeError, DBObject, driver='mssql+pymssql')
         # missing port
