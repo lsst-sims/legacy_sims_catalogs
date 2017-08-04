@@ -23,8 +23,8 @@ class DBObjectTestCase(unittest.TestCase):
         Create a database with two tables of meaningless data to make sure that JOIN queries
         can be executed using DBObject
         """
-        scratch_dir = os.path.join(getPackageDir('sims_catalogs'), 'tests', 'scratchSpace')
-        cls.db_name = os.path.join(scratch_dir, 'testDBObjectDB.db')
+        cls.scratch_dir = os.path.join(getPackageDir('sims_catalogs'), 'tests', 'scratchSpace')
+        cls.db_name = os.path.join(cls.scratch_dir, 'testDBObjectDB.db')
         if os.path.exists(cls.db_name):
             os.unlink(cls.db_name)
 
@@ -330,6 +330,45 @@ class DBObjectTestCase(unittest.TestCase):
         # missing port
         self.assertRaises(AttributeError, DBObject, driver='mssql+pymssql', host='localhost')
 
+    def testDetectDtype(self):
+        """
+        Test that DBObject.execute_arbitrary can correctly detect the dtypes
+        of the rows it is returning
+        """
+        db_name = os.path.join(self.scratch_dir, 'testDBObject_dtype_DB.db')
+        if os.path.exists(db_name):
+            os.unlink(db_name)
+
+        conn = sqlite3.connect(db_name)
+        c = conn.cursor()
+        try:
+            c.execute('''CREATE TABLE testTable (id int, val real, sentence int)''')
+            conn.commit()
+        except:
+            raise RuntimeError("Error creating database.")
+
+        for ii in range(10):
+            cmd = '''INSERT INTO testTable VALUES (%d, %.5f, %s)''' % (ii, 5.234*ii, "'this, has; punctuation'")
+            c.execute(cmd)
+
+        conn.commit()
+        conn.close()
+
+        db = DBObject(database=db_name, driver='sqlite')
+        query = 'SELECT id, val, sentence FROM testTable WHERE id%2 = 0'
+        results = db.execute_arbitrary(query)
+
+        np.testing.assert_array_equal(results['id'], np.arange(0,9,2,dtype=int))
+        np.testing.assert_array_almost_equal(results['val'], 5.234*np.arange(0,9,2), decimal=5)
+        for sentence in results['sentence']:
+            self.assertEqual(sentence, 'this, has; punctuation')
+
+        self.assertEqual(str(results.dtype['id']), 'int64')
+        self.assertEqual(str(results.dtype['val']), 'float64')
+        self.assertEqual(str(results.dtype['sentence']), '|S22')
+
+        if os.path.exists(db_name):
+            os.unlink(db_name)
 
 class MemoryTestClass(lsst.utils.tests.MemoryTestCase):
     pass
