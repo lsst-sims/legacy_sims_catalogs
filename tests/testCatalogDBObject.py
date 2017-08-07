@@ -74,25 +74,29 @@ class myNonsenseFileDB(fileDBObject):
 class testCatalogDBObjectTestStars(myTestStars):
     objid = 'testCatalogDBObjectTeststars'
     driver = 'sqlite'
-    database = 'testCatalogDBObjectDatabase.db'
+    database = os.path.join(getPackageDir('sims_catalogs'), 'tests',
+                            'scratchSpace', 'testCatalogDBObjectDatabase.db')
 
 
 class testCatalogDBObjectTestGalaxies(myTestGals):
     objid = 'testCatalogDBObjectTestgals'
     driver = 'sqlite'
-    database = 'testCatalogDBObjectDatabase.db'
+    database = os.path.join(getPackageDir('sims_catalogs'), 'tests',
+                            'scratchSpace', 'testCatalogDBObjectDatabase.db')
 
 
 class CatalogDBObjectTestCase(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        cls.scratch_dir = os.path.join(getPackageDir('sims_catalogs'), 'tests', 'scratchSpace')
         # Delete the test database if it exists and start fresh.
-        if os.path.exists('testCatalogDBObjectDatabase.db'):
+        cls.dbo_db_name = os.path.join(cls.scratch_dir, 'testCatalogDBObjectDatabase.db')
+        if os.path.exists(cls.dbo_db_name):
             print("deleting database")
-            os.unlink('testCatalogDBObjectDatabase.db')
-        tu.makeStarTestDB(filename='testCatalogDBObjectDatabase.db', size=5000, seedVal=1)
-        tu.makeGalTestDB(filename='testCatalogDBObjectDatabase.db', size=5000, seedVal=1)
+            os.unlink(cls.dbo_db_name)
+        tu.makeStarTestDB(filename=cls.dbo_db_name, size=5000, seedVal=1)
+        tu.makeGalTestDB(filename=cls.dbo_db_name, size=5000, seedVal=1)
 
         #Create a database from generic data stored in testData/CatalogsGenerationTestData.txt
         #This will be used to make sure that circle and box spatial bounds yield the points
@@ -145,8 +149,8 @@ class CatalogDBObjectTestCase(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         sims_clean_up()
-        if os.path.exists('testCatalogDBObjectDatabase.db'):
-            os.unlink('testCatalogDBObjectDatabase.db')
+        if os.path.exists(cls.dbo_db_name):
+            os.unlink(cls.dbo_db_name)
         if os.path.exists('testCatalogDBObjectNonsenseDB.db'):
             os.unlink('testCatalogDBObjectNonsenseDB.db')
 
@@ -471,7 +475,7 @@ class CatalogDBObjectTestCase(unittest.TestCase):
         self.assertEqual(mystars.decColName, 'decl')
         self.assertEqual(mystars.idColKey, 'id')
         self.assertEqual(mystars.driver, 'sqlite')
-        self.assertEqual(mystars.database, 'testCatalogDBObjectDatabase.db')
+        self.assertEqual(mystars.database, self.dbo_db_name)
         self.assertEqual(mystars.appendint, 1023)
         self.assertEqual(mystars.tableid, 'stars')
         self.assertFalse(hasattr(mystars, 'spatialModel'),
@@ -482,7 +486,7 @@ class CatalogDBObjectTestCase(unittest.TestCase):
         self.assertEqual(mygalaxies.decColName, 'decl')
         self.assertEqual(mygalaxies.idColKey, 'id')
         self.assertEqual(mygalaxies.driver, 'sqlite')
-        self.assertEqual(mygalaxies.database, 'testCatalogDBObjectDatabase.db')
+        self.assertEqual(mygalaxies.database, self.dbo_db_name)
         self.assertEqual(mygalaxies.appendint, 1022)
         self.assertEqual(mygalaxies.tableid, 'galaxies')
         self.assertTrue(hasattr(mygalaxies, 'spatialModel'),
