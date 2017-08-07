@@ -386,6 +386,32 @@ class DBObjectTestCase(unittest.TestCase):
 
         self.assertEqual(ct, 5)
 
+        # test that doing a different query does not spoil dtype detection
+        query = 'SELECT id, sentence FROM testTable WHERE id%2 = 0'
+        results = db.execute_arbitrary(query)
+        self.assertGreater(len(results), 0)
+        self.assertEqual(len(results.dtype.names), 2)
+        self.assertEqual(str(results.dtype['id']), 'int64')
+        self.assertEqual(str(results.dtype['sentence']), '|S22')
+
+        query = 'SELECT id, val, sentence FROM testTable WHERE id%2 = 0'
+        chunk_iter = db.get_arbitrary_chunk_iterator(query, chunk_size=3)
+        ct = 0
+        for chunk in chunk_iter:
+
+            self.assertEqual(str(chunk.dtype['id']), 'int64')
+            self.assertEqual(str(chunk.dtype['val']), 'float64')
+            self.assertEqual(str(chunk.dtype['sentence']), '|S22')
+            self.assertEqual(len(chunk.dtype), 3)
+
+            for line in chunk:
+                ct += 1
+                self.assertEqual(line['sentence'], 'this, has; punctuation')
+                self.assertAlmostEqual(line['val'], line['id']*5.234, 5)
+                self.assertEqual(line['id']%2, 0)
+
+        self.assertEqual(ct, 5)
+
         if os.path.exists(db_name):
             os.unlink(db_name)
 
