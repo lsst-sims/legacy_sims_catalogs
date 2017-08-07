@@ -366,6 +366,7 @@ class DBObjectTestCase(unittest.TestCase):
         self.assertEqual(str(results.dtype['id']), 'int64')
         self.assertEqual(str(results.dtype['val']), 'float64')
         self.assertEqual(str(results.dtype['sentence']), '|S22')
+        self.assertEqual(len(results.dtype), 3)
 
         # now test that it works when getting a ChunkIterator
         chunk_iter = db.get_arbitrary_chunk_iterator(query, chunk_size=3)
@@ -375,6 +376,7 @@ class DBObjectTestCase(unittest.TestCase):
             self.assertEqual(str(chunk.dtype['id']), 'int64')
             self.assertEqual(str(chunk.dtype['val']), 'float64')
             self.assertEqual(str(chunk.dtype['sentence']), '|S22')
+            self.assertEqual(len(chunk.dtype), 3)
 
             for line in chunk:
                 ct += 1
