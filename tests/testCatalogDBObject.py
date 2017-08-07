@@ -24,7 +24,8 @@ def setup_module(module):
 class dbForQueryColumnsTest(CatalogDBObject):
     objid = 'queryColumnsNonsense'
     tableid = 'queryColumnsTest'
-    database = 'testCatalogDBObjectNonsenseDB.db'
+    database = os.path.join(getPackageDir('sims_catalogs'), 'tests',
+                            'scratchSpace', 'testCatalogDBObjectNonsenseDB.db')
     idColKey = 'i1'
     dbDefaultValues = {'i2': -1, 'i3': -2}
 
@@ -34,7 +35,8 @@ class myNonsenseDB(CatalogDBObject):
     tableid = 'test'
     idColKey = 'NonsenseId'
     driver = 'sqlite'
-    database = 'testCatalogDBObjectNonsenseDB.db'
+    database = os.path.join(getPackageDir('sims_catalogs'), 'tests',
+                            'scratchSpace', 'testCatalogDBObjectNonsenseDB.db')
     raColName = 'ra'
     decColName = 'dec'
     columns = [('NonsenseId', 'id', int),
@@ -102,10 +104,11 @@ class CatalogDBObjectTestCase(unittest.TestCase):
         #This will be used to make sure that circle and box spatial bounds yield the points
         #they are supposed to.
         dataDir = os.path.join(getPackageDir('sims_catalogs'), 'tests', 'testData')
-        if os.path.exists('testCatalogDBObjectNonsenseDB.db'):
-            os.unlink('testCatalogDBObjectNonsenseDB.db')
+        cls.nonsense_db_name = os.path.join(cls.scratch_dir, 'testCatalogDBObjectNonsenseDB.db')
+        if os.path.exists(cls.nonsense_db_name):
+            os.unlink(cls.nonsense_db_name)
 
-        conn = sqlite3.connect('testCatalogDBObjectNonsenseDB.db')
+        conn = sqlite3.connect(cls.nonsense_db_name)
         c = conn.cursor()
         try:
             c.execute('''CREATE TABLE test (id int, ra real, dec real, mag real)''')
@@ -151,8 +154,8 @@ class CatalogDBObjectTestCase(unittest.TestCase):
         sims_clean_up()
         if os.path.exists(cls.dbo_db_name):
             os.unlink(cls.dbo_db_name)
-        if os.path.exists('testCatalogDBObjectNonsenseDB.db'):
-            os.unlink('testCatalogDBObjectNonsenseDB.db')
+        if os.path.exists(cls.nonsense_db_name):
+            os.unlink(cls.nonsense_db_name)
 
     def setUp(self):
         self.obsMd = ObservationMetaData(pointingRA=210.0, pointingDec=-60.0, boundLength=1.75,
@@ -498,7 +501,7 @@ class CatalogDBObjectTestCase(unittest.TestCase):
         self.assertEqual(myNonsense.decColName, 'dec')
         self.assertEqual(myNonsense.idColKey, 'NonsenseId')
         self.assertEqual(myNonsense.driver, 'sqlite')
-        self.assertEqual(myNonsense.database, 'testCatalogDBObjectNonsenseDB.db')
+        self.assertEqual(myNonsense.database, self.nonsense_db_name)
         self.assertFalse(hasattr(myNonsense, 'appendint'),
                          msg="myNonsense has attr 'appendint', which it should not")
         self.assertEqual(myNonsense.tableid, 'test')
