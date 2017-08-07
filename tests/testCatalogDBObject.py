@@ -21,58 +21,6 @@ def setup_module(module):
     lsst.utils.tests.init()
 
 
-def createNonsenseDB():
-    """
-    Create a database from generic data store in testData/CatalogsGenerationTestData.txt
-    This will be used to make sure that circle and box spatial bounds yield the points
-    they are supposed to.
-    """
-    dataDir = os.path.join(getPackageDir('sims_catalogs'), 'tests', 'testData')
-    if os.path.exists('testCatalogDBObjectNonsenseDB.db'):
-        os.unlink('testCatalogDBObjectNonsenseDB.db')
-
-    conn = sqlite3.connect('testCatalogDBObjectNonsenseDB.db')
-    c = conn.cursor()
-    try:
-        c.execute('''CREATE TABLE test (id int, ra real, dec real, mag real)''')
-        conn.commit()
-    except:
-        raise RuntimeError("Error creating database table test.")
-
-    try:
-        c.execute('''CREATE TABLE test2 (id int, mag real)''')
-        conn.commit()
-    except:
-        raise RuntimeError("Error creating database table test2.")
-
-    with open(os.path.join(dataDir, 'CatalogsGenerationTestData.txt'), 'r') as inFile:
-        for line in inFile:
-            values = line.split()
-            cmd = '''INSERT INTO test VALUES (%s, %s, %s, %s)''' % \
-                  (values[0], values[1], values[2], values[3])
-            c.execute(cmd)
-            if int(values[0])%2 == 0:
-                cmd = '''INSERT INTO test2 VALUES (%s, %s)''' % (values[0], str(2.0*float(values[3])))
-                c.execute(cmd)
-
-        conn.commit()
-
-    try:
-        c.execute('''CREATE TABLE queryColumnsTest (i1 int, i2 int, i3 int)''')
-        conn.commit()
-    except:
-        raise RuntimeError("Error creating database table queryColumnsTest.")
-
-    with open(os.path.join(dataDir, 'QueryColumnsTestData.txt'), 'r') as inputFile:
-        for line in inputFile:
-            vv = line.split()
-            cmd = '''INSERT INTO queryColumnsTest VALUES (%s, %s, %s)''' % (vv[0], vv[1], vv[2])
-            c.execute(cmd)
-
-    conn.commit()
-    conn.close()
-
-
 class dbForQueryColumnsTest(CatalogDBObject):
     objid = 'queryColumnsNonsense'
     tableid = 'queryColumnsTest'
@@ -145,7 +93,54 @@ class CatalogDBObjectTestCase(unittest.TestCase):
             os.unlink('testCatalogDBObjectDatabase.db')
         tu.makeStarTestDB(filename='testCatalogDBObjectDatabase.db', size=5000, seedVal=1)
         tu.makeGalTestDB(filename='testCatalogDBObjectDatabase.db', size=5000, seedVal=1)
-        createNonsenseDB()
+
+        #Create a database from generic data stored in testData/CatalogsGenerationTestData.txt
+        #This will be used to make sure that circle and box spatial bounds yield the points
+        #they are supposed to.
+        dataDir = os.path.join(getPackageDir('sims_catalogs'), 'tests', 'testData')
+        if os.path.exists('testCatalogDBObjectNonsenseDB.db'):
+            os.unlink('testCatalogDBObjectNonsenseDB.db')
+
+        conn = sqlite3.connect('testCatalogDBObjectNonsenseDB.db')
+        c = conn.cursor()
+        try:
+            c.execute('''CREATE TABLE test (id int, ra real, dec real, mag real)''')
+            conn.commit()
+        except:
+            raise RuntimeError("Error creating database table test.")
+
+        try:
+            c.execute('''CREATE TABLE test2 (id int, mag real)''')
+            conn.commit()
+        except:
+            raise RuntimeError("Error creating database table test2.")
+
+        with open(os.path.join(dataDir, 'CatalogsGenerationTestData.txt'), 'r') as inFile:
+            for line in inFile:
+                values = line.split()
+                cmd = '''INSERT INTO test VALUES (%s, %s, %s, %s)''' % \
+                      (values[0], values[1], values[2], values[3])
+                c.execute(cmd)
+                if int(values[0])%2 == 0:
+                    cmd = '''INSERT INTO test2 VALUES (%s, %s)''' % (values[0], str(2.0*float(values[3])))
+                    c.execute(cmd)
+
+            conn.commit()
+
+        try:
+            c.execute('''CREATE TABLE queryColumnsTest (i1 int, i2 int, i3 int)''')
+            conn.commit()
+        except:
+            raise RuntimeError("Error creating database table queryColumnsTest.")
+
+        with open(os.path.join(dataDir, 'QueryColumnsTestData.txt'), 'r') as inputFile:
+            for line in inputFile:
+                vv = line.split()
+                cmd = '''INSERT INTO queryColumnsTest VALUES (%s, %s, %s)''' % (vv[0], vv[1], vv[2])
+                c.execute(cmd)
+
+        conn.commit()
+        conn.close()
 
     @classmethod
     def tearDownClass(cls):
