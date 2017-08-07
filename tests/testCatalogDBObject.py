@@ -4,6 +4,7 @@ from builtins import zip
 from builtins import str
 import os
 import sqlite3
+import sys
 
 import unittest
 import numpy as np
@@ -873,7 +874,10 @@ class CatalogDBObjectTestCase(unittest.TestCase):
             self.assertGreater(len(chunk), 0)
             self.assertEqual(str(chunk.dtype['ra']), 'float64')
             self.assertEqual(str(chunk.dtype['id']), 'int64')
-            self.assertEqual(str(chunk.dtype['varParamStr']), '|S256')
+            if sys.version_info.major == 2:
+                self.assertEqual(str(chunk.dtype['varParamStr']), '|S256')
+            else:
+                self.assertEqual(str(chunk.dtype['varParamStr']), '<U256')
             self.assertEqual(len(chunk.dtype.names), 3)
         self.assertGreater(n_chunks, 0)
 
@@ -900,7 +904,10 @@ class CatalogDBObjectTestCase(unittest.TestCase):
         # because, with execute_arbitrary(), the dtype detects the
         # exact length of the string.  With query_columns() it uses
         # a value that is encoded in CatalogDBObject
-        self.assertEqual(str(results.dtype['varParamStr']), '|S102')
+        if sys.version_info.major == 2:
+            self.assertEqual(str(results.dtype['varParamStr']), '|S102')
+        else:
+            self.assertEqual(str(results.dtype['varParamStr']), '<U101')
         self.assertEqual(str(results.dtype['umag']), 'float64')
         self.assertEqual(len(results.dtype.names), 4)
 

@@ -2,6 +2,7 @@ from builtins import next
 from builtins import range
 import os
 import sqlite3
+import sys
 
 import numpy as np
 import unittest
@@ -365,7 +366,10 @@ class DBObjectTestCase(unittest.TestCase):
 
         self.assertEqual(str(results.dtype['id']), 'int64')
         self.assertEqual(str(results.dtype['val']), 'float64')
-        self.assertEqual(str(results.dtype['sentence']), '|S22')
+        if sys.version_info.major == 2:
+            self.assertEqual(str(results.dtype['sentence']), '|S22')
+        else:
+            self.assertEqual(str(results.dtype['sentence']), '<U22')
         self.assertEqual(len(results.dtype), 3)
 
         # now test that it works when getting a ChunkIterator
@@ -375,7 +379,10 @@ class DBObjectTestCase(unittest.TestCase):
 
             self.assertEqual(str(chunk.dtype['id']), 'int64')
             self.assertEqual(str(chunk.dtype['val']), 'float64')
-            self.assertEqual(str(chunk.dtype['sentence']), '|S22')
+            if sys.version_info.major == 2:
+                self.assertEqual(str(results.dtype['sentence']), '|S22')
+            else:
+                self.assertEqual(str(results.dtype['sentence']), '<U22')
             self.assertEqual(len(chunk.dtype), 3)
 
             for line in chunk:
@@ -392,7 +399,10 @@ class DBObjectTestCase(unittest.TestCase):
         self.assertGreater(len(results), 0)
         self.assertEqual(len(results.dtype.names), 2)
         self.assertEqual(str(results.dtype['id']), 'int64')
-        self.assertEqual(str(results.dtype['sentence']), '|S22')
+        if sys.version_info.major == 2:
+            self.assertEqual(str(results.dtype['sentence']), '|S22')
+        else:
+            self.assertEqual(str(results.dtype['sentence']), '<U22')
 
         query = 'SELECT id, val, sentence FROM testTable WHERE id%2 = 0'
         chunk_iter = db.get_arbitrary_chunk_iterator(query, chunk_size=3)
@@ -401,7 +411,10 @@ class DBObjectTestCase(unittest.TestCase):
 
             self.assertEqual(str(chunk.dtype['id']), 'int64')
             self.assertEqual(str(chunk.dtype['val']), 'float64')
-            self.assertEqual(str(chunk.dtype['sentence']), '|S22')
+            if sys.version_info.major == 2:
+                self.assertEqual(str(results.dtype['sentence']), '|S22')
+            else:
+                self.assertEqual(str(results.dtype['sentence']), '<U22')
             self.assertEqual(len(chunk.dtype), 3)
 
             for line in chunk:
