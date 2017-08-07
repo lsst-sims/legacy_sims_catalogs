@@ -888,6 +888,60 @@ class CatalogDBObjectTestCase(unittest.TestCase):
             self.assertEqual(len(chunk.dtype.names), 3)
         self.assertGreater(n_chunks, 0)
 
+        # test that running query_columns() after execute_arbitrary()
+        # still gives the correct dtype
+        cmd = 'SELECT id, ra, varParamStr, umag FROM stars'
+        results = db.execute_arbitrary(cmd)
+        self.assertGreater(len(results), 0)
+        self.assertEqual(str(results.dtype['ra']), 'float64')
+        self.assertEqual(str(results.dtype['id']), 'int64')
+
+        # The specific dtype for varParamStr is different from above
+        # because, with execute_arbitrary(), the dtype detects the
+        # exact length of the string.  With query_columns() it uses
+        # a value that is encoded in CatalogDBObject
+        self.assertEqual(str(results.dtype['varParamStr']), '|S102')
+        self.assertEqual(str(results.dtype['umag']), 'float64')
+        self.assertEqual(len(results.dtype.names), 4)
+
+        results = db.query_columns(colnames=['zmag', 'id', 'rmag'], chunk_size=1000)
+        n_chunks = 0
+        for chunk in results:
+            n_chunks += 1
+            self.assertGreater(len(chunk), 0)
+            self.assertEqual(str(chunk.dtype['zmag']), 'float64')
+            self.assertEqual(str(chunk.dtype['id']), 'int64')
+            self.assertEqual(str(chunk.dtype['rmag']), 'float64')
+            self.assertEqual(len(chunk.dtype.names), 3)
+        self.assertGreater(n_chunks, 0)
+
+        # now try it specifying the dtype
+        dtype = np.dtype([('id', int), ('ra', float), ('varParamStr', 'S102'), ('umag', float)])
+        cmd = 'SELECT id, ra, varParamStr, umag FROM stars'
+        results = db.execute_arbitrary(cmd, dtype=dtype)
+        self.assertGreater(len(results), 0)
+        self.assertEqual(str(results.dtype['ra']), 'float64')
+        self.assertEqual(str(results.dtype['id']), 'int64')
+
+        # The specific dtype for varParamStr is different from above
+        # because, with execute_arbitrary(), the dtype detects the
+        # exact length of the string.  With query_columns() it uses
+        # a value that is encoded in CatalogDBObject
+        self.assertEqual(str(results.dtype['varParamStr']), '|S102')
+        self.assertEqual(str(results.dtype['umag']), 'float64')
+        self.assertEqual(len(results.dtype.names), 4)
+
+        results = db.query_columns(colnames=['zmag', 'id', 'rmag'], chunk_size=1000)
+        n_chunks = 0
+        for chunk in results:
+            n_chunks += 1
+            self.assertGreater(len(chunk), 0)
+            self.assertEqual(str(chunk.dtype['zmag']), 'float64')
+            self.assertEqual(str(chunk.dtype['id']), 'int64')
+            self.assertEqual(str(chunk.dtype['rmag']), 'float64')
+            self.assertEqual(len(chunk.dtype.names), 3)
+        self.assertGreater(n_chunks, 0)
+
 
 class fileDBObjectTestCase(unittest.TestCase):
     """
