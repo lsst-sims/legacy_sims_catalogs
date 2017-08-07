@@ -860,6 +860,34 @@ class CatalogDBObjectTestCase(unittest.TestCase):
                 ct += 1
         self.assertGreater(ct, 0)
 
+    def test_dtype_detection(self):
+        """
+        Test that, if we execute different queries on the same CatalogDBObject,
+        the dtype is correctly detected
+        """
+        db = testCatalogDBObjectTestStars()
+        results = db.query_columns(colnames=['ra', 'id', 'varParamStr'], chunk_size=1000)
+        n_chunks = 0
+        for chunk in results:
+            n_chunks += 1
+            self.assertGreater(len(chunk), 0)
+            self.assertEqual(str(chunk.dtype['ra']), 'float64')
+            self.assertEqual(str(chunk.dtype['id']), 'int64')
+            self.assertEqual(str(chunk.dtype['varParamStr']), '|S256')
+            self.assertEqual(len(chunk.dtype.names), 3)
+        self.assertGreater(n_chunks, 0)
+
+        results = db.query_columns(colnames=['ra', 'id', 'ebv'], chunk_size=1000)
+        n_chunks = 0
+        for chunk in results:
+            n_chunks += 1
+            self.assertGreater(len(chunk), 0)
+            self.assertEqual(str(chunk.dtype['ra']), 'float64')
+            self.assertEqual(str(chunk.dtype['id']), 'int64')
+            self.assertEqual(str(chunk.dtype['ebv']), 'float64')
+            self.assertEqual(len(chunk.dtype.names), 3)
+        self.assertGreater(n_chunks, 0)
+
 
 class fileDBObjectTestCase(unittest.TestCase):
     """
