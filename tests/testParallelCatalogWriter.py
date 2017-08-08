@@ -170,6 +170,10 @@ class ParallelWriterTestCase(unittest.TestCase):
         self.assertEqual(ct_in_3, len(data3['id']))
         self.assertEqual(ct, 100)
 
+        for file_name in class_dict:
+            if os.path.exists(file_name):
+                os.unlink(file_name)
+
     def test_parallel_writing_chunk_size(self):
         """
         Test that parallelCatalogWriter gets the right columns in it
@@ -243,6 +247,10 @@ class ParallelWriterTestCase(unittest.TestCase):
         self.assertEqual(ct_in_2, len(data2['id']))
         self.assertEqual(ct_in_3, len(data3['id']))
         self.assertEqual(ct, 100)
+
+        for file_name in class_dict:
+            if os.path.exists(file_name):
+                os.unlink(file_name)
 
 
 class MemoryTestClass(lsst.utils.tests.MemoryTestCase):

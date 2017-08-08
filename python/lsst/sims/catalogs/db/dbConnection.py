@@ -387,12 +387,34 @@ class DBObject(object):
             Store it in a global variable so we do not have to repeat on every chunk.
             """
             dataString = ''
+
+            # We are going to detect the dtype by reading in a single row
+            # of data with np.genfromtxt.  To do this, we must pass the
+            # row as a string delimited by a specified character.  Here we
+            # select a character that does not occur anywhere in the data.
+            delimit_char_list = [',', ';', '|', ':', '/', '\\']
+            delimit_char = None
+            for cc in delimit_char_list:
+                is_valid = True
+                for xx in results[0]:
+                    if cc in str(xx):
+                        is_valid = False
+                        break
+
+                if is_valid:
+                    delimit_char = cc
+                    break
+
+            if delimit_char is None:
+                raise RuntimeError("DBObject could not detect the dtype of your return rows\n"
+                                   "Please specify a dtype with the 'dtype' kwarg.")
+
             for xx in results[0]:
                 if dataString is not '':
-                    dataString+=','
+                    dataString += delimit_char
                 dataString += str(xx)
             names = [str_cast(ww) for ww in results[0].keys()]
-            dataArr = numpy.genfromtxt(BytesIO(dataString.encode()), dtype=None, names=names, delimiter=',')
+            dataArr = numpy.genfromtxt(BytesIO(dataString.encode()), dtype=None, names=names, delimiter=delimit_char)
             dt_list = []
             for name in dataArr.dtype.names:
                 type_name = str(dataArr.dtype[name])

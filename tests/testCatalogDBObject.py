@@ -4,6 +4,7 @@ from builtins import zip
 from builtins import str
 import os
 import sqlite3
+import sys
 
 import unittest
 import numpy as np
@@ -21,62 +22,11 @@ def setup_module(module):
     lsst.utils.tests.init()
 
 
-def createNonsenseDB():
-    """
-    Create a database from generic data store in testData/CatalogsGenerationTestData.txt
-    This will be used to make sure that circle and box spatial bounds yield the points
-    they are supposed to.
-    """
-    dataDir = os.path.join(getPackageDir('sims_catalogs'), 'tests', 'testData')
-    if os.path.exists('testCatalogDBObjectNonsenseDB.db'):
-        os.unlink('testCatalogDBObjectNonsenseDB.db')
-
-    conn = sqlite3.connect('testCatalogDBObjectNonsenseDB.db')
-    c = conn.cursor()
-    try:
-        c.execute('''CREATE TABLE test (id int, ra real, dec real, mag real)''')
-        conn.commit()
-    except:
-        raise RuntimeError("Error creating database table test.")
-
-    try:
-        c.execute('''CREATE TABLE test2 (id int, mag real)''')
-        conn.commit()
-    except:
-        raise RuntimeError("Error creating database table test2.")
-
-    with open(os.path.join(dataDir, 'CatalogsGenerationTestData.txt'), 'r') as inFile:
-        for line in inFile:
-            values = line.split()
-            cmd = '''INSERT INTO test VALUES (%s, %s, %s, %s)''' % \
-                  (values[0], values[1], values[2], values[3])
-            c.execute(cmd)
-            if int(values[0])%2 == 0:
-                cmd = '''INSERT INTO test2 VALUES (%s, %s)''' % (values[0], str(2.0*float(values[3])))
-                c.execute(cmd)
-
-        conn.commit()
-
-    try:
-        c.execute('''CREATE TABLE queryColumnsTest (i1 int, i2 int, i3 int)''')
-        conn.commit()
-    except:
-        raise RuntimeError("Error creating database table queryColumnsTest.")
-
-    with open(os.path.join(dataDir, 'QueryColumnsTestData.txt'), 'r') as inputFile:
-        for line in inputFile:
-            vv = line.split()
-            cmd = '''INSERT INTO queryColumnsTest VALUES (%s, %s, %s)''' % (vv[0], vv[1], vv[2])
-            c.execute(cmd)
-
-    conn.commit()
-    conn.close()
-
-
 class dbForQueryColumnsTest(CatalogDBObject):
     objid = 'queryColumnsNonsense'
     tableid = 'queryColumnsTest'
-    database = 'testCatalogDBObjectNonsenseDB.db'
+    database = os.path.join(getPackageDir('sims_catalogs'), 'tests',
+                            'scratchSpace', 'testCatalogDBObjectNonsenseDB.db')
     idColKey = 'i1'
     dbDefaultValues = {'i2': -1, 'i3': -2}
 
@@ -86,7 +36,8 @@ class myNonsenseDB(CatalogDBObject):
     tableid = 'test'
     idColKey = 'NonsenseId'
     driver = 'sqlite'
-    database = 'testCatalogDBObjectNonsenseDB.db'
+    database = os.path.join(getPackageDir('sims_catalogs'), 'tests',
+                            'scratchSpace', 'testCatalogDBObjectNonsenseDB.db')
     raColName = 'ra'
     decColName = 'dec'
     columns = [('NonsenseId', 'id', int),
@@ -126,34 +77,86 @@ class myNonsenseFileDB(fileDBObject):
 class testCatalogDBObjectTestStars(myTestStars):
     objid = 'testCatalogDBObjectTeststars'
     driver = 'sqlite'
-    database = 'testCatalogDBObjectDatabase.db'
+    database = os.path.join(getPackageDir('sims_catalogs'), 'tests',
+                            'scratchSpace', 'testCatalogDBObjectDatabase.db')
 
 
 class testCatalogDBObjectTestGalaxies(myTestGals):
     objid = 'testCatalogDBObjectTestgals'
     driver = 'sqlite'
-    database = 'testCatalogDBObjectDatabase.db'
+    database = os.path.join(getPackageDir('sims_catalogs'), 'tests',
+                            'scratchSpace', 'testCatalogDBObjectDatabase.db')
 
 
 class CatalogDBObjectTestCase(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        cls.scratch_dir = os.path.join(getPackageDir('sims_catalogs'), 'tests', 'scratchSpace')
         # Delete the test database if it exists and start fresh.
-        if os.path.exists('testCatalogDBObjectDatabase.db'):
+        cls.dbo_db_name = os.path.join(cls.scratch_dir, 'testCatalogDBObjectDatabase.db')
+        if os.path.exists(cls.dbo_db_name):
             print("deleting database")
-            os.unlink('testCatalogDBObjectDatabase.db')
-        tu.makeStarTestDB(filename='testCatalogDBObjectDatabase.db', size=5000, seedVal=1)
-        tu.makeGalTestDB(filename='testCatalogDBObjectDatabase.db', size=5000, seedVal=1)
-        createNonsenseDB()
+            os.unlink(cls.dbo_db_name)
+        tu.makeStarTestDB(filename=cls.dbo_db_name, size=5000, seedVal=1)
+        tu.makeGalTestDB(filename=cls.dbo_db_name, size=5000, seedVal=1)
+
+        #Create a database from generic data stored in testData/CatalogsGenerationTestData.txt
+        #This will be used to make sure that circle and box spatial bounds yield the points
+        #they are supposed to.
+        dataDir = os.path.join(getPackageDir('sims_catalogs'), 'tests', 'testData')
+        cls.nonsense_db_name = os.path.join(cls.scratch_dir, 'testCatalogDBObjectNonsenseDB.db')
+        if os.path.exists(cls.nonsense_db_name):
+            os.unlink(cls.nonsense_db_name)
+
+        conn = sqlite3.connect(cls.nonsense_db_name)
+        c = conn.cursor()
+        try:
+            c.execute('''CREATE TABLE test (id int, ra real, dec real, mag real)''')
+            conn.commit()
+        except:
+            raise RuntimeError("Error creating database table test.")
+
+        try:
+            c.execute('''CREATE TABLE test2 (id int, mag real)''')
+            conn.commit()
+        except:
+            raise RuntimeError("Error creating database table test2.")
+
+        with open(os.path.join(dataDir, 'CatalogsGenerationTestData.txt'), 'r') as inFile:
+            for line in inFile:
+                values = line.split()
+                cmd = '''INSERT INTO test VALUES (%s, %s, %s, %s)''' % \
+                      (values[0], values[1], values[2], values[3])
+                c.execute(cmd)
+                if int(values[0])%2 == 0:
+                    cmd = '''INSERT INTO test2 VALUES (%s, %s)''' % (values[0], str(2.0*float(values[3])))
+                    c.execute(cmd)
+
+            conn.commit()
+
+        try:
+            c.execute('''CREATE TABLE queryColumnsTest (i1 int, i2 int, i3 int)''')
+            conn.commit()
+        except:
+            raise RuntimeError("Error creating database table queryColumnsTest.")
+
+        with open(os.path.join(dataDir, 'QueryColumnsTestData.txt'), 'r') as inputFile:
+            for line in inputFile:
+                vv = line.split()
+                cmd = '''INSERT INTO queryColumnsTest VALUES (%s, %s, %s)''' % (vv[0], vv[1], vv[2])
+                c.execute(cmd)
+
+        conn.commit()
+        conn.close()
 
     @classmethod
     def tearDownClass(cls):
         sims_clean_up()
-        if os.path.exists('testCatalogDBObjectDatabase.db'):
-            os.unlink('testCatalogDBObjectDatabase.db')
-        if os.path.exists('testCatalogDBObjectNonsenseDB.db'):
-            os.unlink('testCatalogDBObjectNonsenseDB.db')
+        if os.path.exists(cls.dbo_db_name):
+            os.unlink(cls.dbo_db_name)
+        if os.path.exists(cls.nonsense_db_name):
+            os.unlink(cls.nonsense_db_name)
 
     def setUp(self):
         self.obsMd = ObservationMetaData(pointingRA=210.0, pointingDec=-60.0, boundLength=1.75,
@@ -476,7 +479,7 @@ class CatalogDBObjectTestCase(unittest.TestCase):
         self.assertEqual(mystars.decColName, 'decl')
         self.assertEqual(mystars.idColKey, 'id')
         self.assertEqual(mystars.driver, 'sqlite')
-        self.assertEqual(mystars.database, 'testCatalogDBObjectDatabase.db')
+        self.assertEqual(mystars.database, self.dbo_db_name)
         self.assertEqual(mystars.appendint, 1023)
         self.assertEqual(mystars.tableid, 'stars')
         self.assertFalse(hasattr(mystars, 'spatialModel'),
@@ -487,7 +490,7 @@ class CatalogDBObjectTestCase(unittest.TestCase):
         self.assertEqual(mygalaxies.decColName, 'decl')
         self.assertEqual(mygalaxies.idColKey, 'id')
         self.assertEqual(mygalaxies.driver, 'sqlite')
-        self.assertEqual(mygalaxies.database, 'testCatalogDBObjectDatabase.db')
+        self.assertEqual(mygalaxies.database, self.dbo_db_name)
         self.assertEqual(mygalaxies.appendint, 1022)
         self.assertEqual(mygalaxies.tableid, 'galaxies')
         self.assertTrue(hasattr(mygalaxies, 'spatialModel'),
@@ -499,7 +502,7 @@ class CatalogDBObjectTestCase(unittest.TestCase):
         self.assertEqual(myNonsense.decColName, 'dec')
         self.assertEqual(myNonsense.idColKey, 'NonsenseId')
         self.assertEqual(myNonsense.driver, 'sqlite')
-        self.assertEqual(myNonsense.database, 'testCatalogDBObjectNonsenseDB.db')
+        self.assertEqual(myNonsense.database, self.nonsense_db_name)
         self.assertFalse(hasattr(myNonsense, 'appendint'),
                          msg="myNonsense has attr 'appendint', which it should not")
         self.assertEqual(myNonsense.tableid, 'test')
@@ -857,6 +860,94 @@ class CatalogDBObjectTestCase(unittest.TestCase):
             for line in chunk:
                 ct += 1
         self.assertGreater(ct, 0)
+
+    def test_dtype_detection(self):
+        """
+        Test that, if we execute different queries on the same CatalogDBObject,
+        the dtype is correctly detected
+        """
+        db = testCatalogDBObjectTestStars()
+        results = db.query_columns(colnames=['ra', 'id', 'varParamStr'], chunk_size=1000)
+        n_chunks = 0
+        for chunk in results:
+            n_chunks += 1
+            self.assertGreater(len(chunk), 0)
+            self.assertEqual(str(chunk.dtype['ra']), 'float64')
+            self.assertEqual(str(chunk.dtype['id']), 'int64')
+            if sys.version_info.major == 2:
+                self.assertEqual(str(chunk.dtype['varParamStr']), '|S256')
+            else:
+                self.assertEqual(str(chunk.dtype['varParamStr']), '<U256')
+            self.assertEqual(len(chunk.dtype.names), 3)
+        self.assertGreater(n_chunks, 0)
+
+        results = db.query_columns(colnames=['ra', 'id', 'ebv'], chunk_size=1000)
+        n_chunks = 0
+        for chunk in results:
+            n_chunks += 1
+            self.assertGreater(len(chunk), 0)
+            self.assertEqual(str(chunk.dtype['ra']), 'float64')
+            self.assertEqual(str(chunk.dtype['id']), 'int64')
+            self.assertEqual(str(chunk.dtype['ebv']), 'float64')
+            self.assertEqual(len(chunk.dtype.names), 3)
+        self.assertGreater(n_chunks, 0)
+
+        # test that running query_columns() after execute_arbitrary()
+        # still gives the correct dtype
+        cmd = 'SELECT id, ra, varParamStr, umag FROM stars'
+        results = db.execute_arbitrary(cmd)
+        self.assertGreater(len(results), 0)
+        self.assertEqual(str(results.dtype['ra']), 'float64')
+        self.assertEqual(str(results.dtype['id']), 'int64')
+
+        # The specific dtype for varParamStr is different from above
+        # because, with execute_arbitrary(), the dtype detects the
+        # exact length of the string.  With query_columns() it uses
+        # a value that is encoded in CatalogDBObject
+        if sys.version_info.major == 2:
+            self.assertEqual(str(results.dtype['varParamStr']), '|S102')
+        else:
+            self.assertEqual(str(results.dtype['varParamStr']), '<U101')
+        self.assertEqual(str(results.dtype['umag']), 'float64')
+        self.assertEqual(len(results.dtype.names), 4)
+
+        results = db.query_columns(colnames=['zmag', 'id', 'rmag'], chunk_size=1000)
+        n_chunks = 0
+        for chunk in results:
+            n_chunks += 1
+            self.assertGreater(len(chunk), 0)
+            self.assertEqual(str(chunk.dtype['zmag']), 'float64')
+            self.assertEqual(str(chunk.dtype['id']), 'int64')
+            self.assertEqual(str(chunk.dtype['rmag']), 'float64')
+            self.assertEqual(len(chunk.dtype.names), 3)
+        self.assertGreater(n_chunks, 0)
+
+        # now try it specifying the dtype
+        dtype = np.dtype([('id', int), ('ra', float), ('varParamStr', 'S102'), ('umag', float)])
+        cmd = 'SELECT id, ra, varParamStr, umag FROM stars'
+        results = db.execute_arbitrary(cmd, dtype=dtype)
+        self.assertGreater(len(results), 0)
+        self.assertEqual(str(results.dtype['ra']), 'float64')
+        self.assertEqual(str(results.dtype['id']), 'int64')
+
+        # The specific dtype for varParamStr is different from above
+        # because, with execute_arbitrary(), the dtype detects the
+        # exact length of the string.  With query_columns() it uses
+        # a value that is encoded in CatalogDBObject
+        self.assertEqual(str(results.dtype['varParamStr']), '|S102')
+        self.assertEqual(str(results.dtype['umag']), 'float64')
+        self.assertEqual(len(results.dtype.names), 4)
+
+        results = db.query_columns(colnames=['zmag', 'id', 'rmag'], chunk_size=1000)
+        n_chunks = 0
+        for chunk in results:
+            n_chunks += 1
+            self.assertGreater(len(chunk), 0)
+            self.assertEqual(str(chunk.dtype['zmag']), 'float64')
+            self.assertEqual(str(chunk.dtype['id']), 'int64')
+            self.assertEqual(str(chunk.dtype['rmag']), 'float64')
+            self.assertEqual(len(chunk.dtype.names), 3)
+        self.assertGreater(n_chunks, 0)
 
 
 class fileDBObjectTestCase(unittest.TestCase):
