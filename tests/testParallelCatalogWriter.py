@@ -30,7 +30,7 @@ class DbClass(CatalogDBObject):
     idColKey = 'id'
 
 
-class CatClass1(InstanceCatalog):
+class ParallelCatClass1(InstanceCatalog):
     column_outputs = ['id', 'test1', 'ii']
     cannot_be_null = ['valid1']
 
@@ -41,7 +41,7 @@ class CatClass1(InstanceCatalog):
                          np.where(ii%2 == 1, ii, None)])
 
 
-class CatClass2(InstanceCatalog):
+class ParallelCatClass2(InstanceCatalog):
     column_outputs = ['id', 'test2', 'ii']
     cannot_be_null = ['valid2']
 
@@ -52,7 +52,7 @@ class CatClass2(InstanceCatalog):
                          np.where(ii%2 == 1, ii, None)])
 
 
-class CatClass3(InstanceCatalog):
+class ParallelCatClass3(InstanceCatalog):
     column_outputs = ['id', 'test3', 'ii']
     cannot_be_null = ['valid3']
 
@@ -104,9 +104,9 @@ class ParallelWriterTestCase(unittest.TestCase):
 
         db = DbClass()
 
-        class_dict = {os.path.join(self.scratch_dir, 'par_test1.txt'): CatClass1(db),
-                      os.path.join(self.scratch_dir, 'par_test2.txt'): CatClass2(db),
-                      os.path.join(self.scratch_dir, 'par_test3.txt'): CatClass3(db)}
+        class_dict = {os.path.join(self.scratch_dir, 'par_test1.txt'): ParallelCatClass1(db),
+                      os.path.join(self.scratch_dir, 'par_test2.txt'): ParallelCatClass2(db),
+                      os.path.join(self.scratch_dir, 'par_test3.txt'): ParallelCatClass3(db)}
 
         for file_name in class_dict:
             if os.path.exists(file_name):
@@ -182,9 +182,9 @@ class ParallelWriterTestCase(unittest.TestCase):
 
         db = DbClass()
 
-        class_dict = {os.path.join(self.scratch_dir, 'par_test1.txt'): CatClass1(db),
-                      os.path.join(self.scratch_dir, 'par_test2.txt'): CatClass2(db),
-                      os.path.join(self.scratch_dir, 'par_test3.txt'): CatClass3(db)}
+        class_dict = {os.path.join(self.scratch_dir, 'par_test1.txt'): ParallelCatClass1(db),
+                      os.path.join(self.scratch_dir, 'par_test2.txt'): ParallelCatClass2(db),
+                      os.path.join(self.scratch_dir, 'par_test3.txt'): ParallelCatClass3(db)}
 
         for file_name in class_dict:
             if os.path.exists(file_name):
