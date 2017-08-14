@@ -653,7 +653,7 @@ class CompoundInstanceCatalogTestCase(unittest.TestCase):
         each filter on a different condition gives the correct outputs.
         """
 
-        class CatClass1(InstanceCatalog):
+        class FilteringCatClass1(InstanceCatalog):
             column_outputs = ['id', 'ip1t']
             cannot_be_null = ['ip1t']
 
@@ -668,7 +668,7 @@ class CompoundInstanceCatalogTestCase(unittest.TestCase):
                         output.append(None)
                 return np.array(output)
 
-        class CatClass2(InstanceCatalog):
+        class FilteringCatClass2(InstanceCatalog):
             column_outputs = ['id', 'ip2t']
             cannot_be_null = ['ip2t']
 
@@ -678,7 +678,7 @@ class CompoundInstanceCatalogTestCase(unittest.TestCase):
                 ii = self.column_by_name('id')
                 return np.where(ii < 4, base, None)
 
-        class CatClass3(InstanceCatalog):
+        class FilteringCatClass3(InstanceCatalog):
             column_outputs = ['id', 'ip3t']
             cannot_be_null = ['ip3t']
 
@@ -706,7 +706,9 @@ class CompoundInstanceCatalogTestCase(unittest.TestCase):
         class DbClass3(DbClass):
             objid = 'silliness3'
 
-        cat = CompoundInstanceCatalog([CatClass1, CatClass2, CatClass3],
+        cat = CompoundInstanceCatalog([FilteringCatClass1,
+                                       FilteringCatClass2,
+                                       FilteringCatClass3],
                                       [DbClass1, DbClass2, DbClass3])
 
         cat_name = os.path.join(self.scratch_dir, "compound_filter_output.txt")
@@ -747,7 +749,7 @@ class CompoundInstanceCatalogTestCase(unittest.TestCase):
         Test filtering a CompoundInstanceCatalog on a compound column
         """
 
-        class CatClass4(InstanceCatalog):
+        class FilteringCatClass4(InstanceCatalog):
             column_outputs = ['id', 'a', 'b']
             cannot_be_null = ['a']
 
@@ -759,7 +761,7 @@ class CompoundInstanceCatalogTestCase(unittest.TestCase):
                 b = b*0.25
                 return np.array([np.where(a % 2 == 0, a, None), b])
 
-        class CatClass5(InstanceCatalog):
+        class FilteringCatClass5(InstanceCatalog):
             column_outputs = ['id', 'a', 'b', 'filter']
             cannot_be_null = ['b', 'filter']
 
@@ -792,7 +794,7 @@ class CompoundInstanceCatalogTestCase(unittest.TestCase):
         if os.path.exists(cat_name):
             os.unlink(cat_name)
 
-        cat = CompoundInstanceCatalog([CatClass4, CatClass5], [DbClass4, DbClass5])
+        cat = CompoundInstanceCatalog([FilteringCatClass4, FilteringCatClass5], [DbClass4, DbClass5])
         cat.write_catalog(cat_name)
 
         # now make sure that the catalog contains the expected data
