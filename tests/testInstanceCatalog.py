@@ -11,14 +11,17 @@ import os
 import numpy as np
 import sqlite3
 import unittest
+import tempfile
+import shutil
 import lsst.utils.tests
-from lsst.utils import getPackageDir
 from lsst.sims.utils.CodeUtilities import sims_clean_up
 from lsst.sims.utils import ObservationMetaData
 from lsst.sims.catalogs.db import CatalogDBObject
 from lsst.sims.catalogs.utils import myTestStars, makeStarTestDB
 from lsst.sims.catalogs.definitions import InstanceCatalog
 from lsst.sims.utils import Site
+
+ROOT = os.path.abspath(os.path.dirname(__file__))
 
 
 def setup_module(module):
@@ -176,19 +179,18 @@ class InstanceCatalogMetaDataTest(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        if os.path.exists('testInstanceCatalogDatabase.db'):
-            os.unlink('testInstanceCatalogDatabase.db')
-
-        makeStarTestDB(filename='testInstanceCatalogDatabase.db')
+        cls.scratch_dir = tempfile.mkdtemp(dir=ROOT, prefix="scratchSpace-")
+        cls.database = os.path.join(cls.scratch_dir, 'testInstanceCatalogDatabase.db')
+        makeStarTestDB(filename=cls.database)
 
     @classmethod
     def tearDownClass(cls):
         sims_clean_up()
-        if os.path.exists('testInstanceCatalogDatabase.db'):
-            os.unlink('testInstanceCatalogDatabase.db')
+        if os.path.exists(cls.scratch_dir):
+            shutil.rmtree(cls.scratch_dir)
 
     def setUp(self):
-        self.myDB = myTestStars(driver='sqlite', database='testInstanceCatalogDatabase.db')
+        self.myDB = myTestStars(driver='sqlite', database=self.database)
 
     def tearDown(self):
         del self.myDB
@@ -208,8 +210,6 @@ class InstanceCatalogMetaDataTest(unittest.TestCase):
         new column_outputs to an InstanceCatalog using its constructor
         works properly.
         """
-        scratch_dir = os.path.join(getPackageDir('sims_catalogs'), 'tests', 'scratchSpace')
-
         mjd = 5120.0
         RA = 1.5
         Dec = -1.1
@@ -269,7 +269,7 @@ class InstanceCatalogMetaDataTest(unittest.TestCase):
         self.assertEqual(len(columnsShouldBe), 0)
         self.assertEqual(len(generatedColumns), 4)
 
-        cat_name = os.path.join(scratch_dir, 'testArgCatalog.txt')
+        cat_name = os.path.join(self.scratch_dir, 'testArgCatalog.txt')
         testCat.write_catalog(cat_name)
         with open(cat_name, 'r') as inCat:
             lines = inCat.readlines()
@@ -298,8 +298,7 @@ class InstanceCatalogMetaDataTest(unittest.TestCase):
         for col in columns:
             self.assertIn(col, cat._actually_calculated_columns)
 
-        scratch_dir = os.path.join(getPackageDir('sims_catalogs'), 'tests', 'scratchSpace')
-        cat_name = os.path.join(scratch_dir, 'cartoonValCat.txt')
+        cat_name = os.path.join(self.scratch_dir, 'cartoonValCat.txt')
         cat.write_catalog(cat_name)
         testData = np.genfromtxt(cat_name, dtype=dtype, delimiter=',')
         for testLine, controlLine in zip(testData, baselineData):
@@ -340,24 +339,25 @@ class InstanceCatalogMetaDataTest(unittest.TestCase):
 class InstanceCatalogCannotBeNullTest(unittest.TestCase):
 
         @classmethod
-        def tearDownClass(self):
+        def tearDownClass(cls):
             sims_clean_up()
 
         def setUp(self):
+            self.scratch_dir = tempfile.mkdtemp(dir=ROOT, prefix='scratchSpace-')
             self.baselineOutput = createCannotBeNullTestDB()
 
         def tearDown(self):
             del self.baselineOutput
             if os.path.exists('cannotBeNullTest.db'):
                 os.unlink('cannotBeNullTest.db')
+            if os.path.exists(self.scratch_dir):
+                shutil.rmtree(self.scratch_dir)
 
         def testCannotBeNull(self):
             """
             Test to make sure that the code for filtering out rows with null values
             in key rows works.
             """
-
-            scratch_dir = os.path.join(getPackageDir('sims_catalogs'), 'tests', 'scratchSpace')
 
             # each of these classes flags a different column with a different datatype as cannot_be_null
             availableCatalogs = [floatCannotBeNullCatalog, strCannotBeNullCatalog, unicodeCannotBeNullCatalog,
@@ -370,7 +370,7 @@ class InstanceCatalogCannotBeNullTest(unittest.TestCase):
 
             for catClass in availableCatalogs:
                 cat = catClass(dbobj)
-                fileName = os.path.join(scratch_dir, 'cannotBeNullTestFile.txt')
+                fileName = os.path.join(self.scratch_dir, 'cannotBeNullTestFile.txt')
                 cat.write_catalog(fileName)
                 dtype = np.dtype([('id', int), ('n1', np.float64), ('n2', np.float64), ('n3', np.float64),
                                   ('n4', (str_type, 40)), ('n5', (str_type, 40))])
@@ -439,8 +439,6 @@ class InstanceCatalogCannotBeNullTest(unittest.TestCase):
             the same results as writing one with self._pre_screen = False.
             """
 
-            scratch_dir = os.path.join(getPackageDir('sims_catalogs'), 'tests', 'scratchSpace')
-
             # each of these classes flags a different column with a different datatype as cannot_be_null
             availableCatalogs = [floatCannotBeNullCatalog, strCannotBeNullCatalog, unicodeCannotBeNullCatalog,
                                  severalCannotBeNullCatalog]
@@ -450,8 +448,8 @@ class InstanceCatalogCannotBeNullTest(unittest.TestCase):
                 cat = catClass(dbobj)
                 cat._pre_screen = True
                 control_cat = catClass(dbobj)
-                fileName = os.path.join(scratch_dir, 'cannotBeNullTestFile_prescreen.txt')
-                control_fileName = os.path.join(scratch_dir, 'cannotBeNullTestFile_prescreen_control.txt')
+                fileName = os.path.join(self.scratch_dir, 'cannotBeNullTestFile_prescreen.txt')
+                control_fileName = os.path.join(self.scratch_dir, 'cannotBeNullTestFile_prescreen_control.txt')
                 cat.write_catalog(fileName)
                 control_cat.write_catalog(control_fileName)
 
@@ -474,10 +472,9 @@ class InstanceCatalogCannotBeNullTest(unittest.TestCase):
             Test to make sure that we can still write all rows to catalogs,
             even those with null values in key columns
             """
-            scratch_dir = os.path.join(getPackageDir('sims_catalogs'), 'tests', 'scratchSpace')
             dbobj = CatalogDBObject.from_objid('cannotBeNull')
             cat = dbobj.getCatalog('canBeNull')
-            fileName = os.path.join(scratch_dir, 'canBeNullTestFile.txt')
+            fileName = os.path.join(self.scratch_dir, 'canBeNullTestFile.txt')
             cat.write_catalog(fileName)
             dtype = np.dtype([('id', int), ('n1', np.float64), ('n2', np.float64), ('n3', np.float64),
                               ('n4', (str_type, 40)), ('n5', (str_type, 40))])

@@ -4,12 +4,15 @@ from builtins import range
 import unittest
 import numpy
 import os
+import tempfile
+import shutil
 import lsst.utils.tests
-from lsst.utils import getPackageDir
 
 from lsst.sims.utils.CodeUtilities import sims_clean_up
 from lsst.sims.utils import ObservationMetaData
 from lsst.sims.catalogs.db import fileDBObject, CompoundCatalogDBObject, CatalogDBObject
+
+ROOT = os.path.abspath(os.path.dirname(__file__))
 
 
 def setup_module(module):
@@ -113,10 +116,9 @@ class CompoundCatalogDBObjectTestCase(unittest.TestCase):
                                                   for aa, bb, cc, dd in zip(aList, bList, cList, dList)],
                                                  dtype=dtype)
 
-        baseDir = os.path.join(getPackageDir('sims_catalogs'),
-                               'tests', 'scratchSpace')
+        cls.baseDir = tempfile.mkdtemp(dir=ROOT, prefix='scratchSpace-')
 
-        cls.textFileName = os.path.join(baseDir, 'compound_test_data.txt')
+        cls.textFileName = os.path.join(cls.baseDir, 'compound_test_data.txt')
         if os.path.exists(cls.textFileName):
             os.unlink(cls.textFileName)
 
@@ -125,11 +127,11 @@ class CompoundCatalogDBObjectTestCase(unittest.TestCase):
             for ix, (aa, bb, cc, dd) in enumerate(zip(aList, bList, cList, dList)):
                 output.write('%d %e %e %e %s\n' % (ix, aa, bb, cc, dd))
 
-        cls.dbName = os.path.join(baseDir, 'compoundCatalogTestDB.db')
+        cls.dbName = os.path.join(cls.baseDir, 'compoundCatalogTestDB.db')
         if os.path.exists(cls.dbName):
             os.unlink(cls.dbName)
 
-        cls.otherDbName = os.path.join(baseDir, 'otherDb.db')
+        cls.otherDbName = os.path.join(cls.baseDir, 'otherDb.db')
         if os.path.exists(cls.otherDbName):
             os.unlink(cls.otherDbName)
 
@@ -162,6 +164,8 @@ class CompoundCatalogDBObjectTestCase(unittest.TestCase):
             os.unlink(cls.dbName)
         if os.path.exists(cls.otherDbName):
             os.unlink(cls.otherDbName)
+        if os.path.exists(cls.baseDir):
+            shutil.rmtree(cls.baseDir)
 
     def testExceptions(self):
         """
@@ -535,8 +539,7 @@ class CompoundWithObsMetaData(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.baseDir = os.path.join(getPackageDir('sims_catalogs'),
-                                   'tests', 'scratchSpace')
+        cls.baseDir = tempfile.mkdtemp(dir=ROOT, prefix='scratchSpace-')
 
         cls.textFileName = os.path.join(cls.baseDir, 'compound_obs_metadata_text_data.txt')
 
@@ -587,6 +590,9 @@ class CompoundWithObsMetaData(unittest.TestCase):
 
         if os.path.exists(cls.dbName):
             os.unlink(cls.dbName)
+
+        if os.path.exists(cls.baseDir):
+            shutil.rmtree(cls.baseDir)
 
     def testObsMetaData(self):
         """

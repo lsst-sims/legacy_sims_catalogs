@@ -3,13 +3,16 @@ from builtins import range
 import unittest
 import numpy as np
 import os
+import shutil
+import tempfile
 
 import lsst.utils.tests
-from lsst.utils import getPackageDir
 from lsst.sims.utils.CodeUtilities import sims_clean_up
 from lsst.sims.catalogs.definitions import InstanceCatalog, CompoundInstanceCatalog
 from lsst.sims.catalogs.db import fileDBObject, CatalogDBObject
 from lsst.sims.catalogs.decorators import cached, compound
+
+ROOT = os.path.abspath(os.path.dirname(__file__))
 
 
 def setup_module(module):
@@ -25,7 +28,7 @@ class InstanceCatalogTestCase(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.scratch_dir = os.path.join(getPackageDir('sims_catalogs'), 'tests', 'scratchSpace')
+        cls.scratch_dir = tempfile.mkdtemp(dir=ROOT, prefix="scratchSpace-")
 
         cls.db_src_name = os.path.join(cls.scratch_dir, 'inst_cat_filter_db.txt')
         if os.path.exists(cls.db_src_name):
@@ -49,6 +52,8 @@ class InstanceCatalogTestCase(unittest.TestCase):
 
         if os.path.exists(cls.db_src_name):
             os.unlink(cls.db_src_name)
+        if os.path.exists(cls.scratch_dir):
+            shutil.rmtree(cls.scratch_dir)
 
     def test_single_filter(self):
         """
@@ -617,7 +622,7 @@ class CompoundInstanceCatalogTestCase(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.scratch_dir = os.path.join(getPackageDir('sims_catalogs'), 'tests', 'scratchSpace')
+        cls.scratch_dir = tempfile.mkdtemp(dir=ROOT, prefix="scratchSpace-")
 
         cls.db_src_name = os.path.join(cls.scratch_dir, 'compound_cat_filter_db.txt')
         if os.path.exists(cls.db_src_name):
@@ -646,6 +651,9 @@ class CompoundInstanceCatalogTestCase(unittest.TestCase):
 
         if os.path.exists(cls.db_name):
             os.unlink(cls.db_name)
+
+        if os.path.exists(cls.scratch_dir):
+            shutil.rmtree(cls.scratch_dir)
 
     def test_compound_cat(self):
         """

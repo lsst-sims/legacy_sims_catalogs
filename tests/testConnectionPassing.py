@@ -3,12 +3,15 @@ from builtins import range
 import unittest
 import os
 import numpy as np
+import tempfile
+import shutil
 import lsst.utils.tests
 
-from lsst.utils import getPackageDir
 from lsst.sims.utils.CodeUtilities import sims_clean_up
 from lsst.sims.catalogs.db import fileDBObject, CatalogDBObject
 from lsst.sims.catalogs.definitions import InstanceCatalog
+
+ROOT = os.path.abspath(os.path.dirname(__file__))
 
 
 def setup_module(module):
@@ -31,8 +34,7 @@ class ConnectionPassingTest(unittest.TestCase):
         cls.star_umag = np.random.random_sample(cls.n_stars)*10.0 + 15.0
         cls.star_gmag = np.random.random_sample(cls.n_stars)*10.0 + 15.0
 
-        cls.star_txt_name = os.path.join(getPackageDir('sims_catalogs'),
-                                         'tests', 'scratchSpace',
+        cls.star_txt_name = os.path.join(cls.scratch_dir,
                                          'ConnectionPassingTestStars.txt')
 
         if os.path.exists(cls.star_txt_name):
@@ -55,8 +57,7 @@ class ConnectionPassingTest(unittest.TestCase):
         cls.gal_umag = np.random.random_sample(cls.n_galaxies)*10.0+21.0
         cls.gal_gmag = np.random.random_sample(cls.n_galaxies)*10.0+21.0
 
-        cls.gal_txt_name = os.path.join(getPackageDir('sims_catalogs'),
-                                        'tests', 'scratchSpace',
+        cls.gal_txt_name = os.path.join(cls.scratch_dir,
                                         'ConnectionPassingTestGal.txt')
 
         if os.path.exists(cls.gal_txt_name):
@@ -73,11 +74,11 @@ class ConnectionPassingTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
 
+        cls.scratch_dir = tempfile.mkdtemp(dir=ROOT, prefix="scratchSpace-")
         cls.write_star_txt()
         cls.write_galaxy_txt()
 
-        cls.dbName = os.path.join(getPackageDir('sims_catalogs'), 'tests',
-                                  'scratchSpace', 'ConnectionPassingTestDB.db')
+        cls.dbName = os.path.join(cls.scratch_dir, 'ConnectionPassingTestDB.db')
 
         if os.path.exists(cls.dbName):
             os.unlink(cls.dbName)
@@ -113,6 +114,9 @@ class ConnectionPassingTest(unittest.TestCase):
         if os.path.exists(cls.gal_txt_name):
             os.unlink(cls.gal_txt_name)
 
+        if os.path.exists(cls.scratch_dir):
+            shutil.rmtree(cls.scratch_dir)
+
     def test_passing(self):
         """
         Test that we can produce a catalog of multiple object types
@@ -144,8 +148,7 @@ class ConnectionPassingTest(unittest.TestCase):
 
             default_formats = {'f': '%.4f'}
 
-        catName = os.path.join(getPackageDir('sims_catalogs'),
-                               'tests', 'scratchSpace',
+        catName = os.path.join(self.scratch_dir,
                                'ConnectionPassingTestOutputCatalog.txt')
 
         if os.path.exists(catName):
