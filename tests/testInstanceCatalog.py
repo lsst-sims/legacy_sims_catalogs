@@ -288,27 +288,25 @@ class InstanceCatalogMetaDataTest(unittest.TestCase):
         """
         Test that columns added using the contructor ags return the correct value
         """
-        dbName = 'valueTestDB.db'
-        baselineData = createCannotBeNullTestDB(filename=dbName, add_nans=False)
-        db = myCannotBeNullDBObject(driver='sqlite', database=dbName)
-        dtype = np.dtype([('n1', float), ('n2', float), ('n3', float), ('difference', float)])
-        cat = cartoonValueCatalog(db, column_outputs = ['n3', 'difference'])
+        with lsst.utils.tests.getTempFilePath(".db") as dbName:
+            baselineData = createCannotBeNullTestDB(filename=dbName, add_nans=False)
+            db = myCannotBeNullDBObject(driver='sqlite', database=dbName)
+            dtype = np.dtype([('n1', float), ('n2', float), ('n3', float), ('difference', float)])
+            cat = cartoonValueCatalog(db, column_outputs = ['n3', 'difference'])
 
-        columns = ['n1', 'n2', 'n3', 'difference']
-        for col in columns:
-            self.assertIn(col, cat._actually_calculated_columns)
+            columns = ['n1', 'n2', 'n3', 'difference']
+            for col in columns:
+                self.assertIn(col, cat._actually_calculated_columns)
 
-        cat_name = os.path.join(self.scratch_dir, 'cartoonValCat.txt')
-        cat.write_catalog(cat_name)
-        testData = np.genfromtxt(cat_name, dtype=dtype, delimiter=',')
-        for testLine, controlLine in zip(testData, baselineData):
-            self.assertAlmostEqual(testLine[0], controlLine['n1'], 6)
-            self.assertAlmostEqual(testLine[1], controlLine['n2'], 6)
-            self.assertAlmostEqual(testLine[2], controlLine['n3'], 6)
-            self.assertAlmostEqual(testLine[3], controlLine['n1']-controlLine['n3'], 6)
+            cat_name = os.path.join(self.scratch_dir, 'cartoonValCat.txt')
+            cat.write_catalog(cat_name)
+            testData = np.genfromtxt(cat_name, dtype=dtype, delimiter=',')
+            for testLine, controlLine in zip(testData, baselineData):
+                self.assertAlmostEqual(testLine[0], controlLine['n1'], 6)
+                self.assertAlmostEqual(testLine[1], controlLine['n2'], 6)
+                self.assertAlmostEqual(testLine[2], controlLine['n3'], 6)
+                self.assertAlmostEqual(testLine[3], controlLine['n1']-controlLine['n3'], 6)
 
-        if os.path.exists(dbName):
-            os.unlink(dbName)
         if os.path.exists(cat_name):
             os.unlink(cat_name)
 
@@ -324,16 +322,13 @@ class InstanceCatalogMetaDataTest(unittest.TestCase):
                 n3 = self.column_by_name('n3')
                 return n1-n3
 
-        dbName = 'valueTestDB.db'
-        createCannotBeNullTestDB(filename=dbName, add_nans=False)
-        db = myCannotBeNullDBObject(driver='sqlite', database=dbName)
-        cat = otherCartoonValueCatalog(db)
-        columns = ['n1', 'n2', 'n3', 'difference']
-        for col in columns:
-            self.assertIn(col, cat._actually_calculated_columns)
-
-        if os.path.exists('valueTestDB.db'):
-            os.unlink('valueTestDB.db')
+        with lsst.utils.tests.getTempFilePath(".db") as dbName:
+            createCannotBeNullTestDB(filename=dbName, add_nans=False)
+            db = myCannotBeNullDBObject(driver='sqlite', database=dbName)
+            cat = otherCartoonValueCatalog(db)
+            columns = ['n1', 'n2', 'n3', 'difference']
+            for col in columns:
+                self.assertIn(col, cat._actually_calculated_columns)
 
 
 class InstanceCatalogCannotBeNullTest(unittest.TestCase):
