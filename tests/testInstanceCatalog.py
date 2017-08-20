@@ -28,16 +28,20 @@ def setup_module(module):
     lsst.utils.tests.init()
 
 
-def createCannotBeNullTestDB(filename=None, add_nans=True):
+def createCannotBeNullTestDB(filename=None, add_nans=True, dir=None):
     """
     Create a database to test the 'cannot_be_null' functionality in InstanceCatalog
 
     This method will return the contents of the database as a recarray for baseline comparison
     in the unit tests.
+    If the filename is not specified, it will be written in to directory "dir" if not
+    none, else it will be written to the current directory
     """
 
     if filename is None:
         dbName = 'cannotBeNullTest.db'
+        if dir is not None:
+            dbName = os.path.join(dir, dbName)
     else:
         dbName = filename
 
@@ -339,7 +343,10 @@ class InstanceCatalogCannotBeNullTest(unittest.TestCase):
 
         def setUp(self):
             self.scratch_dir = tempfile.mkdtemp(dir=ROOT, prefix='scratchSpace-')
-            self.baselineOutput = createCannotBeNullTestDB()
+            # Force the class to understand where the DB is meant to be
+            myCannotBeNullDBObject.database = os.path.join(self.scratch_dir,
+                                                           'cannotBeNullTest.db')
+            self.baselineOutput = createCannotBeNullTestDB(dir=self.scratch_dir)
 
         def tearDown(self):
             del self.baselineOutput
