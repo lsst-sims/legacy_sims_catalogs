@@ -2,6 +2,8 @@ from builtins import str
 from builtins import range
 from builtins import object
 import os
+import tempfile
+import shutil
 import numpy as np
 import unittest
 import sqlite3
@@ -9,6 +11,9 @@ import lsst.utils.tests
 from lsst.sims.catalogs.definitions import InstanceCatalog
 from lsst.sims.catalogs.decorators import cached, compound
 from lsst.sims.catalogs.db import CatalogDBObject
+
+
+ROOT = os.path.abspath(os.path.dirname(__file__))
 
 
 def setup_module(module):
@@ -137,16 +142,14 @@ class testColumnOrigins(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.dbName = 'colOriginsTestDatabase.db'
-        if os.path.exists(cls.dbName):
-            os.unlink(cls.dbName)
-
+        cls.scratch_dir = tempfile.mkdtemp(dir=ROOT, prefix='scratchSpace-')
+        cls.dbName = os.path.join(cls.scratch_dir, 'colOriginsTestDatabase.db')
         makeTestDB(cls.dbName)
 
     @classmethod
     def tearDownClass(cls):
-        if os.path.exists(cls.dbName):
-            os.unlink(cls.dbName)
+        if os.path.exists(cls.scratch_dir):
+            shutil.rmtree(cls.scratch_dir)
 
     def setUp(self):
         self.myDBobject = testDBObject(database=self.dbName)
@@ -300,16 +303,14 @@ class AllAvailableColumns(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.dbName = 'allGettersTestDatabase.db'
-        if os.path.exists(cls.dbName):
-            os.unlink(cls.dbName)
-
+        cls.scratch_dir = tempfile.mkdtemp(dir=ROOT, prefix='scratchSpace-')
+        cls.dbName = os.path.join(cls.scratch_dir, 'allGettersTestDatabase.db')
         makeTestDB(cls.dbName)
 
     @classmethod
     def tearDownClass(cls):
-        if os.path.exists(cls.dbName):
-            os.unlink(cls.dbName)
+        if os.path.exists(cls.scratch_dir):
+            shutil.rmtree(cls.scratch_dir)
 
     def setUp(self):
         self.db = testDBObject(database=self.dbName)
