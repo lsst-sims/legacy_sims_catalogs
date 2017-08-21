@@ -274,5 +274,5 @@ class MemoryTestClass(lsst.utils.tests.MemoryTestCase):
 
 if __name__ == "__main__":
     setup_module(None)
-    unittest.main()
+    unittest.main(exit=False)
     teardown_module(None)
