@@ -2,14 +2,16 @@ from __future__ import with_statement
 from __future__ import print_function
 from builtins import zip
 from builtins import str
+from builtins import super
 import os
 import sqlite3
 import sys
 
 import unittest
 import numpy as np
+import tempfile
+import shutil
 import lsst.utils.tests
-from lsst.utils import getPackageDir
 from lsst.sims.utils.CodeUtilities import sims_clean_up
 from lsst.sims.utils import ObservationMetaData
 from lsst.sims.catalogs.db import CatalogDBObject, fileDBObject
@@ -17,18 +19,31 @@ import lsst.sims.catalogs.utils.testUtils as tu
 from lsst.sims.catalogs.utils.testUtils import myTestStars, myTestGals
 from lsst.sims.utils import haversine
 
+ROOT = os.path.abspath(os.path.dirname(__file__))
+SCRATCH_DIR = None
+
 
 def setup_module(module):
+    global SCRATCH_DIR
     lsst.utils.tests.init()
+    SCRATCH_DIR = tempfile.mkdtemp(dir=ROOT, prefix="scratchSpace-")
+
+
+def teardown_module(module):
+    global SCRATCH_DIR
+    if os.path.exists(SCRATCH_DIR):
+        shutil.rmtree(SCRATCH_DIR)
 
 
 class dbForQueryColumnsTest(CatalogDBObject):
     objid = 'queryColumnsNonsense'
     tableid = 'queryColumnsTest'
-    database = os.path.join(getPackageDir('sims_catalogs'), 'tests',
-                            'scratchSpace', 'testCatalogDBObjectNonsenseDB.db')
     idColKey = 'i1'
     dbDefaultValues = {'i2': -1, 'i3': -2}
+
+    def __init__(self, **kwargs):
+        db = os.path.join(SCRATCH_DIR, 'testCatalogDBObjectNonsenseDB.db')
+        super().__init__(database=db, **kwargs)
 
 
 class myNonsenseDB(CatalogDBObject):
@@ -36,14 +51,16 @@ class myNonsenseDB(CatalogDBObject):
     tableid = 'test'
     idColKey = 'NonsenseId'
     driver = 'sqlite'
-    database = os.path.join(getPackageDir('sims_catalogs'), 'tests',
-                            'scratchSpace', 'testCatalogDBObjectNonsenseDB.db')
     raColName = 'ra'
     decColName = 'dec'
     columns = [('NonsenseId', 'id', int),
                ('NonsenseRaJ2000', 'ra*%f'%(np.pi/180.)),
                ('NonsenseDecJ2000', 'dec*%f'%(np.pi/180.)),
                ('NonsenseMag', 'mag', float)]
+
+    def __init__(self, **kwargs):
+        db = os.path.join(SCRATCH_DIR, 'testCatalogDBObjectNonsenseDB.db')
+        super().__init__(database=db, **kwargs)
 
 
 class myNonsenseDB_noConnection(CatalogDBObject):
@@ -77,22 +94,26 @@ class myNonsenseFileDB(fileDBObject):
 class testCatalogDBObjectTestStars(myTestStars):
     objid = 'testCatalogDBObjectTeststars'
     driver = 'sqlite'
-    database = os.path.join(getPackageDir('sims_catalogs'), 'tests',
-                            'scratchSpace', 'testCatalogDBObjectDatabase.db')
+
+    def __init__(self, **kwargs):
+        db = os.path.join(SCRATCH_DIR, 'testCatalogDBObjectDatabase.db')
+        super().__init__(database=db, **kwargs)
 
 
 class testCatalogDBObjectTestGalaxies(myTestGals):
     objid = 'testCatalogDBObjectTestgals'
     driver = 'sqlite'
-    database = os.path.join(getPackageDir('sims_catalogs'), 'tests',
-                            'scratchSpace', 'testCatalogDBObjectDatabase.db')
+
+    def __init__(self, **kwargs):
+        db = os.path.join(SCRATCH_DIR, 'testCatalogDBObjectDatabase.db')
+        super().__init__(database=db, **kwargs)
 
 
 class CatalogDBObjectTestCase(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.scratch_dir = os.path.join(getPackageDir('sims_catalogs'), 'tests', 'scratchSpace')
+        cls.scratch_dir = SCRATCH_DIR
         # Delete the test database if it exists and start fresh.
         cls.dbo_db_name = os.path.join(cls.scratch_dir, 'testCatalogDBObjectDatabase.db')
         if os.path.exists(cls.dbo_db_name):
@@ -104,7 +125,7 @@ class CatalogDBObjectTestCase(unittest.TestCase):
         #Create a database from generic data stored in testData/CatalogsGenerationTestData.txt
         #This will be used to make sure that circle and box spatial bounds yield the points
         #they are supposed to.
-        dataDir = os.path.join(getPackageDir('sims_catalogs'), 'tests', 'testData')
+        dataDir = os.path.join(ROOT, 'testData')
         cls.nonsense_db_name = os.path.join(cls.scratch_dir, 'testCatalogDBObjectNonsenseDB.db')
         if os.path.exists(cls.nonsense_db_name):
             os.unlink(cls.nonsense_db_name)
@@ -162,7 +183,7 @@ class CatalogDBObjectTestCase(unittest.TestCase):
         self.obsMd = ObservationMetaData(pointingRA=210.0, pointingDec=-60.0, boundLength=1.75,
                                          boundType='circle', mjd=52000., bandpassName='r')
 
-        self.filepath = os.path.join(getPackageDir('sims_catalogs'), 'tests',
+        self.filepath = os.path.join(ROOT,
                                      'testData', 'CatalogsGenerationTestData.txt')
 
         """
@@ -561,6 +582,7 @@ class CatalogDBObjectTestCase(unittest.TestCase):
         """
         Test that dbDefaultValues get properly applied when query_columns is called
         """
+
         db = dbForQueryColumnsTest(driver='sqlite')
         colnames = ['i1', 'i2', 'i3']
         results = db.query_columns(colnames)
@@ -964,9 +986,9 @@ class fileDBObjectTestCase(unittest.TestCase):
 
     def setUp(self):
         self.testDataFile = os.path.join(
-            getPackageDir('sims_catalogs'), 'tests', 'testData', 'CatalogsGenerationTestData.txt')
+            ROOT, 'testData', 'CatalogsGenerationTestData.txt')
         self.testHeaderFile = os.path.join(
-            getPackageDir('sims_catalogs'), 'tests', 'testData', 'CatalogsGenerationTestDataHeader.txt')
+            ROOT, 'testData', 'CatalogsGenerationTestDataHeader.txt')
 
         self.myNonsense = fileDBObject.from_objid('fileNonsense', self.testDataFile,
                                                   dtype = np.dtype([('id', int), ('ra', float),
@@ -1284,6 +1306,8 @@ class fileDBObjectTestCase(unittest.TestCase):
 class MemoryTestClass(lsst.utils.tests.MemoryTestCase):
     pass
 
+
 if __name__ == "__main__":
-    lsst.utils.tests.init()
-    unittest.main()
+    setup_module(None)
+    unittest.main(exit=False)
+    teardown_module(None)

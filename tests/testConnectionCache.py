@@ -4,11 +4,14 @@ import unittest
 import sqlite3
 import os
 import numpy as np
+import tempfile
+import shutil
 
 import lsst.utils.tests
-from lsst.utils import getPackageDir
 from lsst.sims.utils.CodeUtilities import sims_clean_up
 from lsst.sims.catalogs.db import CatalogDBObject, DBObject
+
+ROOT = os.path.abspath(os.path.dirname(__file__))
 
 
 def setup_module(module):
@@ -23,8 +26,7 @@ class CachingTestCase(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.scratch_dir = os.path.join(getPackageDir("sims_catalogs"),
-                                       "tests", "scratchSpace")
+        cls.scratch_dir = tempfile.mkdtemp(dir=ROOT, prefix="scratchSpace-")
         cls.db_name = os.path.join(cls.scratch_dir, "connection_cache_test_db.db")
         if os.path.exists(cls.db_name):
             os.unlink(cls.db_name)
@@ -42,6 +44,9 @@ class CachingTestCase(unittest.TestCase):
         sims_clean_up()
         if os.path.exists(cls.db_name):
             os.unlink(cls.db_name)
+        if os.path.exists(cls.scratch_dir):
+            shutil.rmtree(cls.scratch_dir)
+
 
     def test_catalog_db_object_cacheing(self):
         """

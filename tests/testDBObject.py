@@ -7,9 +7,12 @@ import sys
 import numpy as np
 import unittest
 import warnings
+import tempfile
+import shutil
 import lsst.utils.tests
-from lsst.utils import getPackageDir
 from lsst.sims.catalogs.db import DBObject
+
+ROOT = os.path.abspath(os.path.dirname(__file__))
 
 
 def setup_module(module):
@@ -24,7 +27,7 @@ class DBObjectTestCase(unittest.TestCase):
         Create a database with two tables of meaningless data to make sure that JOIN queries
         can be executed using DBObject
         """
-        cls.scratch_dir = os.path.join(getPackageDir('sims_catalogs'), 'tests', 'scratchSpace')
+        cls.scratch_dir = tempfile.mkdtemp(dir=ROOT, prefix='scratchSpace-')
         cls.db_name = os.path.join(cls.scratch_dir, 'testDBObjectDB.db')
         if os.path.exists(cls.db_name):
             os.unlink(cls.db_name)
@@ -81,6 +84,8 @@ class DBObjectTestCase(unittest.TestCase):
     def tearDownClass(cls):
         if os.path.exists(cls.db_name):
             os.unlink(cls.db_name)
+        if os.path.exists(cls.scratch_dir):
+            shutil.rmtree(cls.scratch_dir)
 
     def setUp(self):
         self.driver = 'sqlite'

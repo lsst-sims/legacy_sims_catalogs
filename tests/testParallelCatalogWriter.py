@@ -1,12 +1,14 @@
 from __future__ import with_statement
 from builtins import range
+from builtins import super
 import unittest
 import sqlite3
 import os
 import numpy as np
+import tempfile
+import shutil
 
 import lsst.utils.tests
-from lsst.utils import getPackageDir
 from lsst.sims.utils.CodeUtilities import sims_clean_up
 from lsst.sims.catalogs.definitions import parallelCatalogWriter
 from lsst.sims.catalogs.definitions import InstanceCatalog
@@ -14,20 +16,34 @@ from lsst.sims.catalogs.decorators import compound, cached
 from lsst.sims.catalogs.db import CatalogDBObject
 
 
+ROOT = os.path.abspath(os.path.dirname(__file__))
+SCRATCH_DIR = None
+
+
 def setup_module(module):
+    global SCRATCH_DIR
     lsst.utils.tests.init()
+    SCRATCH_DIR = tempfile.mkdtemp(dir=ROOT, prefix="scratchSpace-")
+
+
+def teardown_module(module):
+    global SCRATCH_DIR
+    if os.path.exists(SCRATCH_DIR):
+        shutil.rmtree(SCRATCH_DIR)
 
 
 class DbClass(CatalogDBObject):
     tableid = 'test'
-    database = os.path.join(getPackageDir('sims_catalogs'),
-                            'tests', 'scratchSpace', 'parallel_test_db.db')
 
     host = None
     port = None
     driver = 'sqlite'
     objid = 'parallel_writer_test_db'
     idColKey = 'id'
+
+    def __init__(self, **kwargs):
+        db = os.path.join(SCRATCH_DIR, 'parallel_test_db.db')
+        super().__init__(database=db, **kwargs)
 
 
 class ParallelCatClass1(InstanceCatalog):
@@ -74,8 +90,7 @@ class ParallelWriterTestCase(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.scratch_dir = os.path.join(getPackageDir('sims_catalogs'),
-                                       'tests', 'scratchSpace')
+        cls.scratch_dir = os.path.join(SCRATCH_DIR)
 
         cls.db_name = os.path.join(cls.scratch_dir, 'parallel_test_db.db')
         if os.path.exists(cls.db_name):
@@ -256,6 +271,8 @@ class ParallelWriterTestCase(unittest.TestCase):
 class MemoryTestClass(lsst.utils.tests.MemoryTestCase):
     pass
 
+
 if __name__ == "__main__":
-    lsst.utils.tests.init()
-    unittest.main()
+    setup_module(None)
+    unittest.main(exit=False)
+    teardown_module(None)

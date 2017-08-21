@@ -2,19 +2,32 @@ from __future__ import with_statement
 from builtins import zip
 from builtins import range
 from builtins import object
+from builtins import super
 import os
 import numpy as np
 import unittest
+import tempfile
+import shutil
 import lsst.utils.tests
-from lsst.utils import getPackageDir
 from lsst.sims.utils.CodeUtilities import sims_clean_up
 from lsst.sims.utils import ObservationMetaData
 from lsst.sims.catalogs.db import fileDBObject, CatalogDBObject, CompoundCatalogDBObject
 from lsst.sims.catalogs.definitions import InstanceCatalog, CompoundInstanceCatalog
 
+ROOT = os.path.abspath(os.path.dirname(__file__))
+SCRATCH_DIR = None
+
 
 def setup_module(module):
+    global SCRATCH_DIR
     lsst.utils.tests.init()
+    SCRATCH_DIR = tempfile.mkdtemp(dir=ROOT, prefix="scratchSpace-")
+
+
+def teardown_module(module):
+    global SCRATCH_DIR
+    if os.path.exists(SCRATCH_DIR):
+        shutil.rmtree(SCRATCH_DIR)
 
 
 class negativeRaCompound(CompoundCatalogDBObject):
@@ -40,10 +53,22 @@ class negativeDecCompound_table2(CompoundCatalogDBObject):
 
 
 class cartoonDBbase(object):
-
     driver = 'sqlite'
-    database = os.path.join(getPackageDir('sims_catalogs'),
-                            'tests', 'scratchSpace', 'compound_db.db')
+    database = None
+
+    def __init__(self, *args, **kwargs):
+        """This base class is designed to specify a shared database that
+        all subclasses can use. This can not be set in a static class attribute
+        because the actually location is determined dynamically from mkdtemp
+        in setup_module() so that when this code is run in parallel each
+        process can have a different scratch space. This requires the constructor
+        to dynamically set the database class attribute the first time it is
+        called.
+        """
+        if self.database is None:
+            type(self).database = os.path.join(SCRATCH_DIR, 'compound_db.db')
+        super().__init__(*args, **kwargs)
+
 
 
 class table1DB1(CatalogDBObject, cartoonDBbase):
@@ -151,8 +176,7 @@ class CompoundCatalogTest(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.baseDir = os.path.join(getPackageDir('sims_catalogs'),
-                                   'tests', 'scratchSpace')
+        cls.baseDir = SCRATCH_DIR
 
         cls.table1FileName = os.path.join(cls.baseDir, 'compound_table1.txt')
         cls.table2FileName = os.path.join(cls.baseDir, 'compound_table2.txt')
@@ -767,6 +791,8 @@ class CompoundCatalogTest(unittest.TestCase):
 class MemoryTestClass(lsst.utils.tests.MemoryTestCase):
     pass
 
+
 if __name__ == "__main__":
-    lsst.utils.tests.init()
-    unittest.main()
+    setup_module(None)
+    unittest.main(exit=False)
+    teardown_module(None)

@@ -3,9 +3,12 @@ from builtins import zip
 import unittest
 import os
 import numpy as np
+import shutil
+import tempfile
 import lsst.utils.tests
-from lsst.utils import getPackageDir
 from lsst.sims.catalogs.db import fileDBObject
+
+ROOT = os.path.abspath(os.path.dirname(__file__))
 
 
 def setup_module(module):
@@ -21,8 +24,12 @@ class FileDBObjectTestCase(unittest.TestCase):
     """
 
     def setUp(self):
-        self.scratch_dir = os.path.join(getPackageDir("sims_catalogs"),
-                                        "tests", "scratchSpace")
+        self.scratch_dir = tempfile.mkdtemp(dir=ROOT, prefix="scratchSpace-")
+
+
+    def tearDown(self):
+        if os.path.exists(self.scratch_dir):
+            shutil.rmtree(self.scratch_dir)
 
     def test_ingest(self):
         """
