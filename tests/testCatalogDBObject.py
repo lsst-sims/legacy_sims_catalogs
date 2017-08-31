@@ -20,19 +20,10 @@ from lsst.sims.catalogs.utils.testUtils import myTestStars, myTestGals
 from lsst.sims.utils import haversine
 
 ROOT = os.path.abspath(os.path.dirname(__file__))
-SCRATCH_DIR = None
 
 
 def setup_module(module):
-    global SCRATCH_DIR
     lsst.utils.tests.init()
-    SCRATCH_DIR = tempfile.mkdtemp(dir=ROOT, prefix="scratchSpace-")
-
-
-def teardown_module(module):
-    global SCRATCH_DIR
-    if os.path.exists(SCRATCH_DIR):
-        shutil.rmtree(SCRATCH_DIR)
 
 
 class dbForQueryColumnsTest(CatalogDBObject):
@@ -40,10 +31,6 @@ class dbForQueryColumnsTest(CatalogDBObject):
     tableid = 'queryColumnsTest'
     idColKey = 'i1'
     dbDefaultValues = {'i2': -1, 'i3': -2}
-
-    def __init__(self, **kwargs):
-        db = os.path.join(SCRATCH_DIR, 'testCatalogDBObjectNonsenseDB.db')
-        super().__init__(database=db, **kwargs)
 
 
 class myNonsenseDB(CatalogDBObject):
@@ -57,10 +44,6 @@ class myNonsenseDB(CatalogDBObject):
                ('NonsenseRaJ2000', 'ra*%f'%(np.pi/180.)),
                ('NonsenseDecJ2000', 'dec*%f'%(np.pi/180.)),
                ('NonsenseMag', 'mag', float)]
-
-    def __init__(self, **kwargs):
-        db = os.path.join(SCRATCH_DIR, 'testCatalogDBObjectNonsenseDB.db')
-        super().__init__(database=db, **kwargs)
 
 
 class myNonsenseDB_noConnection(CatalogDBObject):
@@ -95,25 +78,18 @@ class testCatalogDBObjectTestStars(myTestStars):
     objid = 'testCatalogDBObjectTeststars'
     driver = 'sqlite'
 
-    def __init__(self, **kwargs):
-        db = os.path.join(SCRATCH_DIR, 'testCatalogDBObjectDatabase.db')
-        super().__init__(database=db, **kwargs)
-
 
 class testCatalogDBObjectTestGalaxies(myTestGals):
     objid = 'testCatalogDBObjectTestgals'
     driver = 'sqlite'
-
-    def __init__(self, **kwargs):
-        db = os.path.join(SCRATCH_DIR, 'testCatalogDBObjectDatabase.db')
-        super().__init__(database=db, **kwargs)
 
 
 class CatalogDBObjectTestCase(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.scratch_dir = SCRATCH_DIR
+        cls.scratch_dir = tempfile.mkdtemp(dir=ROOT,
+                                           prefix='CatalogDBObjectTestCase')
         # Delete the test database if it exists and start fresh.
         cls.dbo_db_name = os.path.join(cls.scratch_dir, 'testCatalogDBObjectDatabase.db')
         if os.path.exists(cls.dbo_db_name):
@@ -178,6 +154,8 @@ class CatalogDBObjectTestCase(unittest.TestCase):
             os.unlink(cls.dbo_db_name)
         if os.path.exists(cls.nonsense_db_name):
             os.unlink(cls.nonsense_db_name)
+        if os.path.exists(cls.scratch_dir):
+            shutil.rmtree(cls.scratch_dir)
 
     def setUp(self):
         self.obsMd = ObservationMetaData(pointingRA=210.0, pointingDec=-60.0, boundLength=1.75,
@@ -206,15 +184,17 @@ class CatalogDBObjectTestCase(unittest.TestCase):
         self.assertAlmostEqual(self.obsMd.mjd.TAI, 52000., 6)
 
     def testDbObj(self):
-        mystars = CatalogDBObject.from_objid('testCatalogDBObjectTeststars')
-        mygals = CatalogDBObject.from_objid('testCatalogDBObjectTestgals')
+        db_name = os.path.join(self.scratch_dir, 'testCatalogDBObjectDatabase.db')
+        mystars = testCatalogDBObjectTestStars(database=db_name)
+        mygals = testCatalogDBObjectTestGalaxies(database=db_name)
         result = mystars.query_columns(obs_metadata=self.obsMd)
         tu.writeResult(result, "/dev/null")
         result = mygals.query_columns(obs_metadata=self.obsMd)
         tu.writeResult(result, "/dev/null")
 
     def testRealQueryConstraints(self):
-        mystars = CatalogDBObject.from_objid('testCatalogDBObjectTeststars')
+        db_name = os.path.join(self.scratch_dir, 'testCatalogDBObjectDatabase.db')
+        mystars = testCatalogDBObjectTestStars(database=db_name)
         mycolumns = ['id', 'raJ2000', 'decJ2000', 'umag', 'gmag', 'rmag', 'imag', 'zmag', 'ymag']
 
         # recall that ra and dec are stored in degrees in the data base
@@ -235,8 +215,8 @@ class CatalogDBObjectTestCase(unittest.TestCase):
         Test that a query performed on a circle bound gets all of the objects (and only all
         of the objects) within that circle
         """
-
-        myNonsense = CatalogDBObject.from_objid('Nonsense')
+        db_name = os.path.join(self.scratch_dir, 'testCatalogDBObjectNonsenseDB.db')
+        myNonsense = myNonsenseDB(database=db_name)
 
         radius = 20.0
         raCenter = 210.0
@@ -286,7 +266,8 @@ class CatalogDBObjectTestCase(unittest.TestCase):
         """
         Test a query performed only a subset of the available columns
         """
-        myNonsense = CatalogDBObject.from_objid('Nonsense')
+        db_name = os.path.join(self.scratch_dir, 'testCatalogDBObjectNonsenseDB.db')
+        myNonsense = myNonsenseDB(database=db_name)
 
         mycolumns = ['NonsenseId', 'NonsenseRaJ2000', 'NonsenseMag']
 
@@ -321,7 +302,8 @@ class CatalogDBObjectTestCase(unittest.TestCase):
         points) inside that box bound.
         """
 
-        myNonsense = CatalogDBObject.from_objid('Nonsense')
+        db_name = os.path.join(self.scratch_dir, 'testCatalogDBObjectNonsenseDB.db')
+        myNonsense = myNonsenseDB(database=db_name)
 
         raMin = 50.0
         raMax = 150.0
@@ -380,8 +362,8 @@ class CatalogDBObjectTestCase(unittest.TestCase):
         """
         Test a query with a user-specified constraint on the magnitude column
         """
-
-        myNonsense = CatalogDBObject.from_objid('Nonsense')
+        db_name = os.path.join(self.scratch_dir, 'testCatalogDBObjectNonsenseDB.db')
+        myNonsense = myNonsenseDB(database=db_name)
 
         raMin = 50.0
         raMax = 150.0
@@ -444,7 +426,8 @@ class CatalogDBObjectTestCase(unittest.TestCase):
         """
         Test method to directly execute an arbitrary SQL query (inherited from DBObject class)
         """
-        myNonsense = CatalogDBObject.from_objid('Nonsense')
+        db_name = os.path.join(self.scratch_dir, 'testCatalogDBObjectNonsenseDB.db')
+        myNonsense = myNonsenseDB(database=db_name)
         query = 'SELECT test.id, test.mag, test2.id, test2.mag FROM test, test2 WHERE test.id=test2.id'
         results = myNonsense.execute_arbitrary(query)
         self.assertEqual(len(results), 1250)
@@ -457,7 +440,8 @@ class CatalogDBObjectTestCase(unittest.TestCase):
         """
         Test method to create a ChunkIterator from an arbitrary SQL query (inherited from DBObject class)
         """
-        myNonsense = CatalogDBObject.from_objid('Nonsense')
+        db_name = os.path.join(self.scratch_dir, 'testCatalogDBObjectNonsenseDB.db')
+        myNonsense = myNonsenseDB(database=db_name)
         query = 'SELECT test.id, test.mag, test2.id, test2.mag FROM test, test2 WHERE test.id=test2.id'
         dtype = np.dtype([('id1', int), ('mag1', float), ('id2', int), ('mag2', float)])
         results = myNonsense.get_chunk_iterator(query, chunk_size=100, dtype=dtype)
@@ -473,8 +457,8 @@ class CatalogDBObjectTestCase(unittest.TestCase):
         """
         Test that a query with a specified chunk_size does, in fact, return chunks of that size
         """
-
-        mystars = CatalogDBObject.from_objid('testCatalogDBObjectTeststars')
+        db_name = os.path.join(self.scratch_dir, 'testCatalogDBObjectDatabase.db')
+        mystars = testCatalogDBObjectTestStars(database=db_name)
         mycolumns = ['id', 'raJ2000', 'decJ2000', 'umag', 'gmag']
         myquery = mystars.query_columns(colnames = mycolumns, chunk_size = 1000)
 
@@ -491,10 +475,12 @@ class CatalogDBObjectTestCase(unittest.TestCase):
         Make sure that the daughter classes of CatalogDBObject properly overwrite the member
         variables of CatalogDBObject
         """
+        db_name = os.path.join(self.scratch_dir, 'testCatalogDBObjectDatabase.db')
+        mystars = testCatalogDBObjectTestStars(database=db_name)
+        mygalaxies = testCatalogDBObjectTestGalaxies(database=db_name)
 
-        mystars = CatalogDBObject.from_objid('testCatalogDBObjectTeststars')
-        myNonsense = CatalogDBObject.from_objid('Nonsense')
-        mygalaxies = CatalogDBObject.from_objid('testCatalogDBObjectTestgals')
+        db_name = os.path.join(self.scratch_dir, 'testCatalogDBObjectNonsenseDB.db')
+        myNonsense = myNonsenseDB(database=db_name)
 
         self.assertEqual(mystars.raColName, 'ra')
         self.assertEqual(mystars.decColName, 'decl')
@@ -582,8 +568,9 @@ class CatalogDBObjectTestCase(unittest.TestCase):
         """
         Test that dbDefaultValues get properly applied when query_columns is called
         """
+        db_name = os.path.join(self.scratch_dir, 'testCatalogDBObjectNonsenseDB.db')
 
-        db = dbForQueryColumnsTest(driver='sqlite')
+        db = dbForQueryColumnsTest(database=db_name,driver='sqlite')
         colnames = ['i1', 'i2', 'i3']
         results = db.query_columns(colnames)
         controlArr = [(1, -1, 2), (3, 4, -2), (5, 6, 7)]
@@ -610,7 +597,9 @@ class CatalogDBObjectTestCase(unittest.TestCase):
         Pass connection directly in to the constructor.
         """
 
-        myNonsense_base = CatalogDBObject.from_objid('Nonsense')
+        db_name = os.path.join(self.scratch_dir, 'testCatalogDBObjectNonsenseDB.db')
+        myNonsense_base = myNonsenseDB(database=db_name)
+
         myNonsense = myNonsenseDB_noConnection(connection=myNonsense_base.connection)
 
         radius = 20.0
@@ -663,7 +652,9 @@ class CatalogDBObjectTestCase(unittest.TestCase):
 
         Pass connection directly in to the constructor.
         """
-        myNonsense_base = CatalogDBObject.from_objid('Nonsense')
+        db_name = os.path.join(self.scratch_dir, 'testCatalogDBObjectNonsenseDB.db')
+        myNonsense_base = myNonsenseDB(database=db_name)
+
         myNonsense = myNonsenseDB_noConnection(connection=myNonsense_base.connection)
 
         mycolumns = ['NonsenseId', 'NonsenseRaJ2000', 'NonsenseMag']
@@ -701,7 +692,8 @@ class CatalogDBObjectTestCase(unittest.TestCase):
         Pass connection directly in to the constructor.
         """
 
-        myNonsense_base = CatalogDBObject.from_objid('Nonsense')
+        db_name = os.path.join(self.scratch_dir, 'testCatalogDBObjectNonsenseDB.db')
+        myNonsense_base = myNonsenseDB(database=db_name)
         myNonsense = myNonsenseDB_noConnection(connection=myNonsense_base.connection)
 
         raMin = 50.0
@@ -762,8 +754,8 @@ class CatalogDBObjectTestCase(unittest.TestCase):
 
         Pass connection directly in to the constructor.
         """
-
-        myNonsense_base = CatalogDBObject.from_objid('Nonsense')
+        db_name = os.path.join(self.scratch_dir, 'testCatalogDBObjectNonsenseDB.db')
+        myNonsense_base = myNonsenseDB(database=db_name)
         myNonsense = myNonsenseDB_noConnection(connection=myNonsense_base.connection)
 
         raMin = 50.0
@@ -828,7 +820,8 @@ class CatalogDBObjectTestCase(unittest.TestCase):
 
         Pass connection directly in to the constructor.
         """
-        myNonsense_base = CatalogDBObject.from_objid('Nonsense')
+        db_name = os.path.join(self.scratch_dir, 'testCatalogDBObjectNonsenseDB.db')
+        myNonsense_base = myNonsenseDB(db_name)
         myNonsense = myNonsenseDB_noConnection(connection=myNonsense_base.connection)
         query = 'SELECT test.id, test.mag, test2.id, test2.mag FROM test, test2 WHERE test.id=test2.id'
         results = myNonsense.execute_arbitrary(query)
@@ -846,7 +839,8 @@ class CatalogDBObjectTestCase(unittest.TestCase):
 
         Pass connection directly in to the constructor.
         """
-        myNonsense_base = CatalogDBObject.from_objid('Nonsense')
+        db_name = os.path.join(self.scratch_dir, 'testCatalogDBObjectNonsenseDB.db')
+        myNonsense_base = myNonsenseDB(database=db_name)
         myNonsense = myNonsenseDB_noConnection(connection=myNonsense_base.connection)
         query = 'SELECT test.id, test.mag, test2.id, test2.mag FROM test, test2 WHERE test.id=test2.id'
         dtype = np.dtype([('id1', int), ('mag1', float), ('id2', int), ('mag2', float)])
@@ -864,8 +858,8 @@ class CatalogDBObjectTestCase(unittest.TestCase):
         Test that we can pass a DBConnection between DBObjects that connect to different
         tables on the same database
         """
-
-        dbo1 = testCatalogDBObjectTestStars()
+        db_name = os.path.join(self.scratch_dir, 'testCatalogDBObjectDatabase.db')
+        dbo1 = testCatalogDBObjectTestStars(database=db_name)
         cols = ['raJ2000', 'decJ2000', 'umag']
         results = dbo1.query_columns(cols)
         ct = 0
@@ -888,7 +882,8 @@ class CatalogDBObjectTestCase(unittest.TestCase):
         Test that, if we execute different queries on the same CatalogDBObject,
         the dtype is correctly detected
         """
-        db = testCatalogDBObjectTestStars()
+        db_name = os.path.join(self.scratch_dir, 'testCatalogDBObjectDatabase.db')
+        db = testCatalogDBObjectTestStars(database=db_name)
         results = db.query_columns(colnames=['ra', 'id', 'varParamStr'], chunk_size=1000)
         n_chunks = 0
         for chunk in results:
@@ -1309,5 +1304,4 @@ class MemoryTestClass(lsst.utils.tests.MemoryTestCase):
 
 if __name__ == "__main__":
     setup_module(None)
-    unittest.main(exit=False)
-    teardown_module(None)
+    unittest.main()
