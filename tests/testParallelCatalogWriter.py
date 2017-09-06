@@ -17,19 +17,10 @@ from lsst.sims.catalogs.db import CatalogDBObject
 
 
 ROOT = os.path.abspath(os.path.dirname(__file__))
-SCRATCH_DIR = None
 
 
 def setup_module(module):
-    global SCRATCH_DIR
     lsst.utils.tests.init()
-    SCRATCH_DIR = tempfile.mkdtemp(dir=ROOT, prefix="scratchSpace-")
-
-
-def teardown_module(module):
-    global SCRATCH_DIR
-    if os.path.exists(SCRATCH_DIR):
-        shutil.rmtree(SCRATCH_DIR)
 
 
 class DbClass(CatalogDBObject):
@@ -40,10 +31,6 @@ class DbClass(CatalogDBObject):
     driver = 'sqlite'
     objid = 'parallel_writer_test_db'
     idColKey = 'id'
-
-    def __init__(self, **kwargs):
-        db = os.path.join(SCRATCH_DIR, 'parallel_test_db.db')
-        super().__init__(database=db, **kwargs)
 
 
 class ParallelCatClass1(InstanceCatalog):
@@ -90,7 +77,7 @@ class ParallelWriterTestCase(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.scratch_dir = os.path.join(SCRATCH_DIR)
+        cls.scratch_dir = tempfile.mkdtemp(dir=ROOT, prefix="ParallelWriterTestCase")
 
         cls.db_name = os.path.join(cls.scratch_dir, 'parallel_test_db.db')
         if os.path.exists(cls.db_name):
@@ -111,13 +98,15 @@ class ParallelWriterTestCase(unittest.TestCase):
         sims_clean_up()
         if os.path.exists(cls.db_name):
             os.unlink(cls.db_name)
+        if os.path.exists(cls.scratch_dir):
+            shutil.rmtree(cls.scratch_dir)
 
     def test_parallel_writing(self):
         """
         Test that parallelCatalogWriter gets the right columns in it
         """
-
-        db = DbClass()
+        db_name = os.path.join(self.scratch_dir, 'parallel_test_db.db')
+        db = DbClass(database=db_name)
 
         class_dict = {os.path.join(self.scratch_dir, 'par_test1.txt'): ParallelCatClass1(db),
                       os.path.join(self.scratch_dir, 'par_test2.txt'): ParallelCatClass2(db),
@@ -194,8 +183,8 @@ class ParallelWriterTestCase(unittest.TestCase):
         Test that parallelCatalogWriter gets the right columns in it
         when chunk_size is not None (this is a repeat of test_parallel_writing)
         """
-
-        db = DbClass()
+        db_name = os.path.join(self.scratch_dir, 'parallel_test_db.db')
+        db = DbClass(database=db_name)
 
         class_dict = {os.path.join(self.scratch_dir, 'par_test1.txt'): ParallelCatClass1(db),
                       os.path.join(self.scratch_dir, 'par_test2.txt'): ParallelCatClass2(db),
@@ -274,5 +263,4 @@ class MemoryTestClass(lsst.utils.tests.MemoryTestCase):
 
 if __name__ == "__main__":
     setup_module(None)
-    unittest.main(exit=False)
-    teardown_module(None)
+    unittest.main()

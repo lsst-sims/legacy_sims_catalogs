@@ -15,19 +15,10 @@ from lsst.sims.catalogs.db import fileDBObject, CatalogDBObject, CompoundCatalog
 from lsst.sims.catalogs.definitions import InstanceCatalog, CompoundInstanceCatalog
 
 ROOT = os.path.abspath(os.path.dirname(__file__))
-SCRATCH_DIR = None
 
 
 def setup_module(module):
-    global SCRATCH_DIR
     lsst.utils.tests.init()
-    SCRATCH_DIR = tempfile.mkdtemp(dir=ROOT, prefix="scratchSpace-")
-
-
-def teardown_module(module):
-    global SCRATCH_DIR
-    if os.path.exists(SCRATCH_DIR):
-        shutil.rmtree(SCRATCH_DIR)
 
 
 class negativeRaCompound(CompoundCatalogDBObject):
@@ -55,20 +46,6 @@ class negativeDecCompound_table2(CompoundCatalogDBObject):
 class cartoonDBbase(object):
     driver = 'sqlite'
     database = None
-
-    def __init__(self, *args, **kwargs):
-        """This base class is designed to specify a shared database that
-        all subclasses can use. This can not be set in a static class attribute
-        because the actually location is determined dynamically from mkdtemp
-        in setup_module() so that when this code is run in parallel each
-        process can have a different scratch space. This requires the constructor
-        to dynamically set the database class attribute the first time it is
-        called.
-        """
-        if self.database is None:
-            type(self).database = os.path.join(SCRATCH_DIR, 'compound_db.db')
-        super().__init__(*args, **kwargs)
-
 
 
 class table1DB1(CatalogDBObject, cartoonDBbase):
@@ -176,10 +153,10 @@ class CompoundCatalogTest(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.baseDir = SCRATCH_DIR
+        cls.scratch_dir = tempfile.mkdtemp(dir=ROOT, prefix="CompoundCatalogTest")
 
-        cls.table1FileName = os.path.join(cls.baseDir, 'compound_table1.txt')
-        cls.table2FileName = os.path.join(cls.baseDir, 'compound_table2.txt')
+        cls.table1FileName = os.path.join(cls.scratch_dir, 'compound_table1.txt')
+        cls.table2FileName = os.path.join(cls.scratch_dir, 'compound_table2.txt')
 
         if os.path.exists(cls.table1FileName):
             os.unlink(cls.table1FileName)
@@ -247,7 +224,7 @@ class CompoundCatalogTest(unittest.TestCase):
             for ix, (r, d, m) in enumerate(zip(ra2List, dec2List, mag2List)):
                 output.write('%d %.12f %.12f %.12f\n' % (ix, r, d, m))
 
-        cls.dbName = cartoonDBbase().database
+        cls.dbName = os.path.join(cls.scratch_dir, 'compound_db.db')
         if os.path.exists(cls.dbName):
             os.unlink(cls.dbName)
 
@@ -268,12 +245,26 @@ class CompoundCatalogTest(unittest.TestCase):
             os.unlink(cls.table2FileName)
         if os.path.exists(cls.dbName):
             os.unlink(cls.dbName)
+        if os.path.exists(cls.scratch_dir):
+            shutil.rmtree(cls.scratch_dir)
+
+    def setUp(self):
+        table1DB1.database = self.dbName
+        table1DB2.database = self.dbName
+        table2DB1.database = self.dbName
+        table2DB2.database = self.dbName
+
+    def tearDown(self):
+        table1DB1.database = None
+        table1DB2.database = None
+        table2DB1.database = None
+        table2DB2.database = None
 
     def testCompoundCatalog(self):
         """
         Test that a CompoundInstanceCatalog produces the expected output
         """
-        fileName = os.path.join(self.baseDir, 'simplest_compound_catalog.txt')
+        fileName = os.path.join(self.scratch_dir, 'simplest_compound_catalog.txt')
 
         compoundCat = CompoundInstanceCatalog([Cat1, Cat2, Cat3], [table1DB1, table1DB2, table2DB1])
 
@@ -322,7 +313,7 @@ class CompoundCatalogTest(unittest.TestCase):
         Test that, if I set a transformations dict in the CompoundInstanceCatalog, that
         gets propagated to all of the InstanceCatalogs inside it.
         """
-        fileName = os.path.join(self.baseDir, 'transformed_compound_catalog.txt')
+        fileName = os.path.join(self.scratch_dir, 'transformed_compound_catalog.txt')
 
         class TransformedCompoundCatalog(CompoundInstanceCatalog):
             transformations = {'raObs': np.degrees, 'decObs': np.degrees}
@@ -376,7 +367,7 @@ class CompoundCatalogTest(unittest.TestCase):
         Test that CompoundInstanceCatalog handles ObservationMetaData
         properly
         """
-        fileName = os.path.join(self.baseDir, 'compound_obs_metadata_test_cat.txt')
+        fileName = os.path.join(self.scratch_dir, 'compound_obs_metadata_test_cat.txt')
         obs = ObservationMetaData(pointingRA = 180.0,
                                   pointingDec = 0.0,
                                   boundType = 'box',
@@ -465,7 +456,7 @@ class CompoundCatalogTest(unittest.TestCase):
         Test that CompoundInstanceCatalog handles constraint
         properly
         """
-        fileName = os.path.join(self.baseDir, 'compound_constraint_test_cat.txt')
+        fileName = os.path.join(self.scratch_dir, 'compound_constraint_test_cat.txt')
 
         compoundCat = CompoundInstanceCatalog([Cat1, Cat2, Cat3], [table1DB1, table1DB2, table2DB1],
                                               constraint='mag>20.0')
@@ -536,7 +527,7 @@ class CompoundCatalogTest(unittest.TestCase):
         Test that CompoundInstanceCatalog handles ObservationMetaData
         and a constraint properly
         """
-        fileName = os.path.join(self.baseDir, 'compound_obs_metadata_test_cat.txt')
+        fileName = os.path.join(self.scratch_dir, 'compound_obs_metadata_test_cat.txt')
         obs = ObservationMetaData(pointingRA = 180.0,
                                   pointingDec = 0.0,
                                   boundType = 'box',
@@ -631,7 +622,7 @@ class CompoundCatalogTest(unittest.TestCase):
         Test that CompoundInstanceCatalog behaves properly when passed a
         custom CompoundCatalogDBObject
         """
-        fileName = os.path.join(self.baseDir, 'simplest_compound_catalog.txt')
+        fileName = os.path.join(self.scratch_dir, 'simplest_compound_catalog.txt')
 
         compoundCat = CompoundInstanceCatalog([Cat1, Cat2, Cat3], [table1DB1, table1DB2, table2DB1],
                                               compoundDBclass=negativeRaCompound)
@@ -680,7 +671,7 @@ class CompoundCatalogTest(unittest.TestCase):
         """
         Test that CompoundInstanceCatalog can properly parse multiple CompoundCatalogDBobjects
         """
-        fileName = os.path.join(self.baseDir, 'simplest_compound_catalog.txt')
+        fileName = os.path.join(self.scratch_dir, 'simplest_compound_catalog.txt')
 
         # negativeDecComopound_table2 should not come into play, since the
         # multiple queries are directed at table1
@@ -734,7 +725,7 @@ class CompoundCatalogTest(unittest.TestCase):
         Test that CompoundInstanceCatalog behaves properly when there are
         two sets of multiple queries, one to table1, one to table2
         """
-        fileName = os.path.join(self.baseDir, 'simplest_compound_catalog.txt')
+        fileName = os.path.join(self.scratch_dir, 'simplest_compound_catalog.txt')
 
         compoundCat = CompoundInstanceCatalog([Cat1, Cat2, Cat3, Cat4],
                                               [table1DB1, table1DB2, table2DB1, table2DB2],
@@ -794,5 +785,4 @@ class MemoryTestClass(lsst.utils.tests.MemoryTestCase):
 
 if __name__ == "__main__":
     setup_module(None)
-    unittest.main(exit=False)
-    teardown_module(None)
+    unittest.main()

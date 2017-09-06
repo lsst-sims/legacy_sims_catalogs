@@ -337,10 +337,6 @@ class InstanceCatalogMetaDataTest(unittest.TestCase):
 
 class InstanceCatalogCannotBeNullTest(unittest.TestCase):
 
-        @classmethod
-        def tearDownClass(cls):
-            sims_clean_up()
-
         def setUp(self):
             self.scratch_dir = tempfile.mkdtemp(dir=ROOT, prefix='scratchSpace-')
             # Force the class to understand where the DB is meant to be
@@ -349,6 +345,7 @@ class InstanceCatalogCannotBeNullTest(unittest.TestCase):
             self.baselineOutput = createCannotBeNullTestDB(dir=self.scratch_dir)
 
         def tearDown(self):
+            sims_clean_up()
             del self.baselineOutput
             if os.path.exists('cannotBeNullTest.db'):
                 os.unlink('cannotBeNullTest.db')

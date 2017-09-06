@@ -135,6 +135,8 @@ class DBConnection(object):
         self._validate_conn_params()
         self._connect_to_engine()
 
+    def __del__(self):
+        self._session.close()
 
     def _connect_to_engine(self):
 

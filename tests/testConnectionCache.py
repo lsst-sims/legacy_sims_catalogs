@@ -58,6 +58,7 @@ class CachingTestCase(unittest.TestCase):
         its own connection.
         """
 
+        sims_clean_up()
         self.assertEqual(len(CatalogDBObject._connection_cache), 0)
 
         class DbClass1(CatalogDBObject):
