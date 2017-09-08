@@ -6,6 +6,7 @@ from builtins import super
 import os
 import sqlite3
 import sys
+import json
 
 import unittest
 import numpy as np
@@ -925,6 +926,13 @@ class CatalogDBObjectTestCase(unittest.TestCase):
             self.assertEqual(str(results.dtype['varParamStr']), '|S102')
         else:
             self.assertEqual(str(results.dtype['varParamStr']), '<U101')
+
+        # verify that json can load varParamStr as a dict (indicating that
+        # the whole string was loaded properly
+        for val in results['varParamStr']:
+            test_dict = json.loads(val)
+            self.assertIsInstance(test_dict, dict)
+
         self.assertEqual(str(results.dtype['umag']), 'float64')
         self.assertEqual(len(results.dtype.names), 4)
 
