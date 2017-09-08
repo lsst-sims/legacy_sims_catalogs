@@ -3,7 +3,6 @@ from builtins import str
 from builtins import range
 import sqlite3
 import numpy as np
-import json
 
 from lsst.sims.catalogs.db import CatalogDBObject
 
@@ -169,8 +168,7 @@ def makeGalTestDB(filename='testDatabase.db', size=1000, seedVal=None,
     for i in range(size):
         period = rng.random_sample(1)[0]*490. + 10.
         amp = rng.random_sample(1)[0]*5. + 0.2
-        varParam = {'varMethodName': 'testVar', 'pars': {'period': period, 'amplitude': amp}}
-        paramStr = json.dumps(varParam)
+        paramStr = '{"varMethodName": "testVar", "pars": {"period": %.6e, "amplitude": %.6e}}' % (period, amp)
         qstr = '''INSERT INTO galaxies VALUES (%i, %f, %f, %f,
                      %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f,
                      %f, %f, '%s')''' % \
@@ -271,8 +269,7 @@ def makeStarTestDB(filename='testDatabase.db', size=1000, seedVal=None,
     for i in range(size):
         period = rng.random_sample(1)[0]*490. + 10.
         amp = rng.random_sample(1)[0]*5. + 0.2
-        varParam = {'varMethodName': 'testVar', 'pars': {'period': period, 'amplitude': amp}}
-        paramStr = json.dumps(varParam)
+        paramStr = '{"varMethodName": "testVar", "pars": {"period": %.6e, "amplitude": %.6e}}' % (period, amp)
         qstr = '''INSERT INTO stars VALUES (%i, %f, %f, %f, %f, %f, %f,
                %f, %f, %f, %f, %.15f, %.15f, %.15f, '%s', %f)''' % \
                (i, np.degrees(ra[i]), np.degrees(dec[i]), umag[i], gmag[i], rmag[i],

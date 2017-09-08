@@ -923,9 +923,9 @@ class CatalogDBObjectTestCase(unittest.TestCase):
         # exact length of the string.  With query_columns() it uses
         # a value that is encoded in CatalogDBObject
         if sys.version_info.major == 2:
-            self.assertEqual(str(results.dtype['varParamStr']), '|S102')
+            self.assertEqual(str(results.dtype['varParamStr']), '|S89')
         else:
-            self.assertEqual(str(results.dtype['varParamStr']), '<U101')
+            self.assertEqual(str(results.dtype['varParamStr']), '<U89')
 
         # verify that json can load varParamStr as a dict (indicating that
         # the whole string was loaded properly
