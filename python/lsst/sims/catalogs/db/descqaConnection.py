@@ -63,6 +63,7 @@ class DESCQAObject(object):
 
     _id_col_key = None
     _object_type_id = None
+    verbose = False
 
     def __init__(self, yaml_file_name):
         """
