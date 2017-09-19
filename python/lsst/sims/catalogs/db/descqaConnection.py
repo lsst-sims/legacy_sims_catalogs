@@ -127,6 +127,14 @@ class DESCQAObject(object):
         return self.objectTypeId
 
     def _make_column_map(self):
+        """
+        Slightly different from the database case.
+        self.columnMap will be a dict keyed on the CatSim column name.
+        The values will be tuples.  The first element of the tuple is the
+        GCR column name corresponding to that CatSim column.  The second
+        element is an (optional) transformation applied to the GCR column
+        used to get it into units expected by CatSim.
+        """
         self.columnMap = OrderedDict([(name, (name,))
                                       for name in self._catalog.list_all_quantities()])
 
