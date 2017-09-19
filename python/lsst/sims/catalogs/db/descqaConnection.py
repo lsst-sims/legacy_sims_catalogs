@@ -5,6 +5,7 @@ DESCQA's generic-catalog-reader to load an arbitrary catalog
 
 from collections import OrderedDict
 import numpy as np
+import gc
 
 _GCR_IS_AVAILABLE = True
 
@@ -20,25 +21,45 @@ __all__ = ["DESCQAObject"]
 
 class DESCQAChunkIterator(object):
 
-    def __init__(self, descqa_obj, colnames, chunk_size):
+    def __init__(self, descqa_obj, column_map, colnames, chunk_size):
         self._descqa_obj = descqa_obj
-        self._colnames = colnames
+        self._catsim_colnames = colnames
         self._chunk_size = chunk_size
         self._data = None
         self._continue = True
+        self._column_map = column_map
 
     def __iter__(self):
         return self
 
     def __next__(self):
         if self._data is None and self._continue:
-            cat_data = self._descqa_obj.get_quantities(self._colnames)
-            dtype = np.dtype([(name, cat_data[name].dtype)
-                              for name in self._colnames])
+            gcr_col_names = np.array([self._column_map[catsim_name] for catsim_name in self._catsim_colnames])
+            gcr_col_names = np.unique(gcr_col_names)
+
+            print('gcr_col_names')
+            print('%s' % str(gcr_col_names))
+
+            gcr_cat_data = self._descqa_obj.get_quantities(gcr_col_names)
+            catsim_data = {}
+            for catsim_name in self._catsim_colnames:
+                gcr_name = self._column_map[catsim_name]
+                catsim_data[catsim_name] = gcr_cat_data[gcr_name]
+                #if len(self._column_map[catsim_name])>2:
+                #    cat_data[catsim_name] = self._column_map[catsim_name][2](cat_data[catsim_name])
+
+            dtype = np.dtype([(catsim_name, gcr_cat_data[self._column_map[catsim_name]].dtype)
+                              for catsim_name in self._catsim_colnames])
+
+            del gcr_cat_data
+            gc.collect()
+
             records = []
-            for i_rec in range(len(cat_data[self._colnames[0]])):
-                rec = (tuple([cat_data[name][i_rec] for name in self._colnames]))
+            for i_rec in range(len(catsim_data[self._catsim_colnames[0]])):
+                rec = (tuple([catsim_data[name][i_rec]
+                              for name in self._catsim_colnames]))
                 records.append(rec)
+
             self._data = np.rec.array(records, dtype=dtype)
             self._start_row = 0
 
@@ -85,6 +106,8 @@ class DESCQAObject(object):
 
         self.columnMap = None
         self._make_column_map()
+        print('column map')
+        print('%s' % str(self.columnMap))
 
     @property
     def idColKey(self):
@@ -112,6 +135,10 @@ class DESCQAObject(object):
         self.columnMap = OrderedDict([(name, name)
                                       for name in self._catalog.list_all_quantities()])
 
+        for column_tuple in self.columns:
+            if len(column_tuple)>1:
+                self.columnMap[column_tuple[0]] = column_tuple[1]
+
     def query_columns(self, colnames=None, chunk_size=None,
                       obs_metadata=None, constraint=None, limit=None):
         """
@@ -131,4 +158,4 @@ class DESCQAObject(object):
         if colnames is None:
             colnames = [k for k in self.columnMap]
 
-        return DESCQAChunkIterator(self._catalog, colnames, chunk_size)
+        return DESCQAChunkIterator(self._catalog, self.columnMap, colnames, chunk_size)
