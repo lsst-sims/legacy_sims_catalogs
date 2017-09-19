@@ -34,21 +34,18 @@ class DESCQAChunkIterator(object):
 
     def __next__(self):
         if self._data is None and self._continue:
-            gcr_col_names = np.array([self._column_map[catsim_name] for catsim_name in self._catsim_colnames])
+            gcr_col_names = np.array([self._column_map[catsim_name][0] for catsim_name in self._catsim_colnames])
             gcr_col_names = np.unique(gcr_col_names)
-
-            print('gcr_col_names')
-            print('%s' % str(gcr_col_names))
 
             gcr_cat_data = self._descqa_obj.get_quantities(gcr_col_names)
             catsim_data = {}
             for catsim_name in self._catsim_colnames:
-                gcr_name = self._column_map[catsim_name]
+                gcr_name = self._column_map[catsim_name][0]
                 catsim_data[catsim_name] = gcr_cat_data[gcr_name]
-                #if len(self._column_map[catsim_name])>2:
-                #    cat_data[catsim_name] = self._column_map[catsim_name][2](cat_data[catsim_name])
+                if len(self._column_map[catsim_name])>1:
+                    catsim_data[catsim_name] = self._column_map[catsim_name][1](catsim_data[catsim_name])
 
-            dtype = np.dtype([(catsim_name, gcr_cat_data[self._column_map[catsim_name]].dtype)
+            dtype = np.dtype([(catsim_name, gcr_cat_data[self._column_map[catsim_name][0]].dtype)
                               for catsim_name in self._catsim_colnames])
 
             del gcr_cat_data
@@ -106,8 +103,6 @@ class DESCQAObject(object):
 
         self.columnMap = None
         self._make_column_map()
-        print('column map')
-        print('%s' % str(self.columnMap))
 
     @property
     def idColKey(self):
@@ -132,12 +127,12 @@ class DESCQAObject(object):
         return self.objectTypeId
 
     def _make_column_map(self):
-        self.columnMap = OrderedDict([(name, name)
+        self.columnMap = OrderedDict([(name, (name,))
                                       for name in self._catalog.list_all_quantities()])
 
         for column_tuple in self.columns:
             if len(column_tuple)>1:
-                self.columnMap[column_tuple[0]] = column_tuple[1]
+                self.columnMap[column_tuple[0]] = column_tuple[1:]
 
     def query_columns(self, colnames=None, chunk_size=None,
                       obs_metadata=None, constraint=None, limit=None):
