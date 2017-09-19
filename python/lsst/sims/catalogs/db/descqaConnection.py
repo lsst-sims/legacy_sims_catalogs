@@ -86,12 +86,27 @@ class DESCQAObject(object):
         self.columnMap = None
         self._make_column_map()
 
-
-    def getIdColKey(self):
+    @property
+    def idColKey(self):
         return self._id_col_key
 
-    def getObjectTypeId(self):
+    @idColKey.setter
+    def idColKey(self, val):
+        self._id_col_key = val
+
+    @property
+    def objectTypeId(self):
         return self._object_type_id
+
+    @objectTypeId.setter
+    def objectTypeId(self, val):
+        self._object_type_id = val
+
+    def getIdColKey(self):
+        return self.idColKey
+
+    def getObjectTypeId(self):
+        return self.objectTypeId
 
     def _make_column_map(self):
         self.columnMap = OrderedDict([(name, name)
