@@ -25,35 +25,36 @@ class DESCQAChunkIterator(object):
         self._colnames = colnames
         self._chunk_size = chunk_size
         self._data = None
+        self._continue = True
 
     def __iter__(self):
         return self
 
     def __next__(self):
-        if self._data is None:
+        if self._data is None and self._continue:
             cat_data = self._descqa_obj.get_quantities(self._colnames)
             dtype = np.dtype([(name, cat_data[name].dtype)
                               for name in self._colnames])
-            print('dtype\n%s' % str(dtype))
             records = []
             for i_rec in range(len(cat_data[self._colnames[0]])):
                 rec = (tuple([cat_data[name][i_rec] for name in self._colnames]))
                 records.append(rec)
             self._data = np.rec.array(records, dtype=dtype)
-            print('shape %s ' % str(self._data.shape))
             self._start_row = 0
 
-        if self._chunk_size is None:
+        if self._chunk_size is None and self._continue:
             output = self._data
             self._data = None
+            self._continue = False
             return output
-        else:
+        elif self._continue:
             if self._start_row<len(self._data):
                 old_start = self._start_row
                 self._start_row += self._chunk_size
                 return self._data[old_start:self._start_row]
             else:
                 self._data = None
+                self._continue = False
                 raise StopIteration
 
         raise StopIteration
