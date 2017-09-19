@@ -6,6 +6,7 @@ DESCQA's generic-catalog-reader to load an arbitrary catalog
 from collections import OrderedDict
 import numpy as np
 import gc
+import numbers
 
 _GCR_IS_AVAILABLE = True
 
@@ -16,18 +17,21 @@ except ImportError:
     pass
 
 
+from lsst.sims.utils import _angularSeparation
+
 __all__ = ["DESCQAObject"]
 
 
 class DESCQAChunkIterator(object):
 
-    def __init__(self, descqa_obj, column_map, colnames, chunk_size):
+    def __init__(self, descqa_obj, column_map, obs_metadata, colnames, chunk_size):
         self._descqa_obj = descqa_obj
         self._catsim_colnames = colnames
         self._chunk_size = chunk_size
         self._data = None
         self._continue = True
         self._column_map = column_map
+        self._obs_metadata = obs_metadata
 
     def __iter__(self):
         return self
@@ -51,16 +55,37 @@ class DESCQAChunkIterator(object):
             del gcr_cat_data
             gc.collect()
 
+            # if an ObservationMetaData has been specified, cull
+            # the data to be within the field of view
+            if self._obs_metadata is not None:
+                if self._obs_metadata._boundLength is not None:
+                    if not isinstance(self._obs_metadata._boundLength, numbers.Number):
+                        radius_rad = max(self._obs_metadata._boundLength[0],
+                                         self._obs_metadata._boundLength[1])
+                    else:
+                        radius_rad = self._obs_metadata._boundLength
+
+                    valid = np.where(_angularSeparation(catsim_data['raJ2000'],
+                                                        catsim_data['decJ2000'],
+                                                        self._obs_metadata._pointingRA,
+                                                        self._obs_metadata._pointingDec) < radius_rad)
+
+                    for name in catsim_data:
+                        catsim_data[name] = catsim_data[name][valid]
+
             records = []
             for i_rec in range(len(catsim_data[self._catsim_colnames[0]])):
                 rec = (tuple([catsim_data[name][i_rec]
                               for name in self._catsim_colnames]))
                 records.append(rec)
 
-            self._data = np.rec.array(records, dtype=dtype)
+            if len(records) == 0:
+                self._data = np.recarray(shape=(0,len(catsim_data)), dtype=dtype)
+            else:
+                self._data = np.rec.array(records, dtype=dtype)
             self._start_row = 0
 
-        if self._chunk_size is None and self._continue:
+        if self._chunk_size is None and self._continue and len(self._data)>0:
             output = self._data
             self._data = None
             self._continue = False
@@ -161,4 +186,5 @@ class DESCQAObject(object):
         if colnames is None:
             colnames = [k for k in self.columnMap]
 
-        return DESCQAChunkIterator(self._catalog, self.columnMap, colnames, chunk_size)
+        return DESCQAChunkIterator(self._catalog, self.columnMap, obs_metadata,
+                                   colnames, chunk_size)
