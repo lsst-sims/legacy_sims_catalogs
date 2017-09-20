@@ -174,12 +174,12 @@ class DESCQAObject(object):
 
         for name in self._catalog.list_all_native_quantities():
             if name not in self.columnMap:
-                self.columnMap[name] = (name, (name,))
+                self.columnMap[name] = (name,)
 
         if hasattr(self, 'dbDefaultValues'):
             for name in self.dbDefaultValues:
                 if name not in self.columnMap:
-                    self.columnMap[name] = (name, (name,))
+                    self.columnMap[name] = (name,)
 
 
     def query_columns(self, colnames=None, chunk_size=None,
