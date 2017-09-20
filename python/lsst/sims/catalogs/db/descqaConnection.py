@@ -170,7 +170,7 @@ class DESCQAObject(object):
 
         for name in self._catalog.list_all_quantities():
             if name not in self.columnMap:
-                self.columnMap[name] = (name, (name,))
+                self.columnMap[name] = (name,)
 
         for name in self._catalog.list_all_native_quantities():
             if name not in self.columnMap:
