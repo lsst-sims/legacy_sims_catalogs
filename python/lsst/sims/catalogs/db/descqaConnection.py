@@ -122,8 +122,8 @@ class DESCQAObject(object):
         global _GCR_IS_AVAILABLE
         if not _GCR_IS_AVAILABLE:
             raise RuntimeError("You cannot use DESQAObject\n"
-                               "You do not have the generic catalog read "
-                               "installed")
+                               "You do not have the generic catalog reader "
+                               "installed and setup")
 
         self._catalog = load_catalog(yaml_file_name)
 
