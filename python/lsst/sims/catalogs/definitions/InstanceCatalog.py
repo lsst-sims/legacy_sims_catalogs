@@ -402,7 +402,6 @@ class InstanceCatalog(with_metaclass(InstanceCatalogMeta, object)):
 
         for col in cols:
             if col not in self.db_obj.columnMap:
-                print('appending %s to missing_cols' % col)
                 missing_cols.append(col)
             else:
                 self._active_columns.append(col)
@@ -422,8 +421,6 @@ class InstanceCatalog(with_metaclass(InstanceCatalogMeta, object)):
                     self._column_origins[col] = 'default column'
 
             if len(nodefault) > 0:
-                print('nodefault')
-                print(nodefault)
                 raise ValueError("Required columns missing from database: "
                                  "({0})".format(', '.join(nodefault)))
 

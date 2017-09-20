@@ -163,9 +163,10 @@ class DESCQAObject(object):
         self.columnMap = OrderedDict([(name, (name,))
                                       for name in self._catalog.list_all_quantities()])
 
-        for column_tuple in self.columns:
-            if len(column_tuple)>1:
-                self.columnMap[column_tuple[0]] = column_tuple[1:]
+        if hasattr(self, 'columns'):
+            for column_tuple in self.columns:
+                if len(column_tuple)>1:
+                    self.columnMap[column_tuple[0]] = column_tuple[1:]
 
     def query_columns(self, colnames=None, chunk_size=None,
                       obs_metadata=None, constraint=None, limit=None):
