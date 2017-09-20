@@ -24,7 +24,8 @@ __all__ = ["DESCQAObject"]
 
 class DESCQAChunkIterator(object):
 
-    def __init__(self, descqa_obj, column_map, obs_metadata, colnames, chunk_size):
+    def __init__(self, descqa_obj, column_map, obs_metadata,
+                 colnames, default_values chunk_size):
         self._descqa_obj = descqa_obj
         self._catsim_colnames = colnames
         self._chunk_size = chunk_size
@@ -32,21 +33,34 @@ class DESCQAChunkIterator(object):
         self._continue = True
         self._column_map = column_map
         self._obs_metadata = obs_metadata
+        self._default_values = default_values
 
     def __iter__(self):
         return self
 
     def __next__(self):
         if self._data is None and self._continue:
-            gcr_col_names = np.array([self._column_map[catsim_name][0] for catsim_name in self._catsim_colnames])
+            avail_qties = self._descqa_obj.list_all_quantities()
+            avail_native_qties = self._descqa_obj.list_all_native_quantities()
+
+            gcr_col_names = np.array([self._column_map[catsim_name][0] for catsim_name in self._catsim_colnames
+                                      if self._column_map[catsim_name][0] in avail_qties
+                                      or self._column_map[catsim_name][0] in avail_native_qties])
+
             gcr_col_names = np.unique(gcr_col_names)
 
             gcr_cat_data = self._descqa_obj.get_quantities(gcr_col_names)
+            n_rows = len(gcr_cat_data[gcr_col_names[0]])
             catsim_data = {}
             dtype_list = []
             for catsim_name in self._catsim_colnames:
                 gcr_name = self._column_map[catsim_name][0]
-                catsim_data[catsim_name] = gcr_cat_data[gcr_name]
+
+                if gcr_name in avail_qties or gcr_name in avail_native_qties:
+                    catsim_data[catsim_name] = gcr_cat_data[gcr_name]
+                else:
+                    catsim_data[catsim_name] = np.array([self._default_values[gcr_name]]*n_rows)
+
                 if len(self._column_map[catsim_name])>1:
                     catsim_data[catsim_name] = self._column_map[catsim_name][1](catsim_data[catsim_name])
                 dtype_list.append((catsim_name, catsim_data[catsim_name].dtype))
@@ -160,6 +174,12 @@ class DESCQAObject(object):
             if name not in self.columnMap:
                 self.columnMap[name] = (name, (name,))
 
+        if hasattr(self, 'dbDefaultValues'):
+            for name in self.dbDefaultValues:
+                if name not in self.columnMap:
+                    self.columnMap[name] = (name, (name,))
+
+
     def query_columns(self, colnames=None, chunk_size=None,
                       obs_metadata=None, constraint=None, limit=None):
         """
@@ -179,5 +199,10 @@ class DESCQAObject(object):
         if colnames is None:
             colnames = [k for k in self.columnMap]
 
+        if hasattr(self, 'dbDefaultValues'):
+            default = self.dbDefaultValues
+        else:
+            default = None
+
         return DESCQAChunkIterator(self._catalog, self.columnMap, obs_metadata,
-                                   colnames, chunk_size)
+                                   colnames, default, chunk_size)
