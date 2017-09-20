@@ -43,14 +43,15 @@ class DESCQAChunkIterator(object):
 
             gcr_cat_data = self._descqa_obj.get_quantities(gcr_col_names)
             catsim_data = {}
+            dtype_list = []
             for catsim_name in self._catsim_colnames:
                 gcr_name = self._column_map[catsim_name][0]
                 catsim_data[catsim_name] = gcr_cat_data[gcr_name]
                 if len(self._column_map[catsim_name])>1:
                     catsim_data[catsim_name] = self._column_map[catsim_name][1](catsim_data[catsim_name])
+                dtype_list.append((catsim_name, catsim_data[catsim_name].dtype))
 
-            dtype = np.dtype([(catsim_name, gcr_cat_data[self._column_map[catsim_name][0]].dtype)
-                              for catsim_name in self._catsim_colnames])
+            dtype = np.dtype(dtype_list)
 
             del gcr_cat_data
             gc.collect()
