@@ -62,8 +62,6 @@ class DESCQAChunkIterator(object):
                     catsim_data[catsim_name] = np.array([self._default_values[gcr_name]]*n_rows)
 
                 if len(self._column_map[catsim_name])>1:
-                    print('trying to apply')
-                    print('%s: %s' % (catsim_name, str(self._column_map[catsim_name])))
                     catsim_data[catsim_name] = self._column_map[catsim_name][1](catsim_data[catsim_name])
                 dtype_list.append((catsim_name, catsim_data[catsim_name].dtype))
 
