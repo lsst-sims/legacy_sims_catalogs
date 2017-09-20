@@ -107,8 +107,8 @@ class DESCQAChunkIterator(object):
 
 class DESCQAObject(object):
 
-    _id_col_key = None
-    _object_type_id = None
+    idColKey = None
+    objectTypeId = None
     verbose = False
 
     def __init__(self, yaml_file_name):
@@ -129,22 +129,6 @@ class DESCQAObject(object):
 
         self.columnMap = None
         self._make_column_map()
-
-    @property
-    def idColKey(self):
-        return self._id_col_key
-
-    @idColKey.setter
-    def idColKey(self, val):
-        self._id_col_key = val
-
-    @property
-    def objectTypeId(self):
-        return self._object_type_id
-
-    @objectTypeId.setter
-    def objectTypeId(self, val):
-        self._object_type_id = val
 
     def getIdColKey(self):
         return self.idColKey
