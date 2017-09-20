@@ -145,13 +145,20 @@ class DESCQAObject(object):
         element is an (optional) transformation applied to the GCR column
         used to get it into units expected by CatSim.
         """
-        self.columnMap = OrderedDict([(name, (name,))
-                                      for name in self._catalog.list_all_quantities()])
+        self.columnMap = OrderedDict()
 
         if hasattr(self, 'columns'):
             for column_tuple in self.columns:
                 if len(column_tuple)>1:
                     self.columnMap[column_tuple[0]] = column_tuple[1:]
+
+        for name in self._catalog.list_all_quantities():
+            if name not in self.columnMap:
+                self.columnMap[name] = (name, (name,))
+
+        for name in self._catalog.list_all_native_quantities():
+            if name not in self.columnMap:
+                self.columnMap[name] = (name, (name,))
 
     def query_columns(self, colnames=None, chunk_size=None,
                       obs_metadata=None, constraint=None, limit=None):
