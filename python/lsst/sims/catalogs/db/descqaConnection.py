@@ -25,7 +25,7 @@ __all__ = ["DESCQAObject"]
 class DESCQAChunkIterator(object):
 
     def __init__(self, descqa_obj, column_map, obs_metadata,
-                 colnames, default_values chunk_size):
+                 colnames, default_values, chunk_size):
         self._descqa_obj = descqa_obj
         self._catsim_colnames = colnames
         self._chunk_size = chunk_size
