@@ -184,23 +184,6 @@ class CatalogDBObjectTestCase(unittest.TestCase):
         self.assertEqual(self.obsMd.bandpass, 'r')
         self.assertAlmostEqual(self.obsMd.mjd.TAI, 52000., 6)
 
-    def test_get_catalog_column_names(self):
-        """
-        Test that get_catalog_column_names() returns the expected result
-        """
-        db_name = os.path.join(self.scratch_dir, 'testCatalogDBObjectNonsenseDB.db')
-        db = myNonsenseDB(database=db_name)
-        column_names = db.get_catalog_column_names()
-        self.assertEqual(len(column_names), 8)
-        self.assertIn('id', column_names)
-        self.assertIn('ra', column_names)
-        self.assertIn('dec', column_names)
-        self.assertIn('mag', column_names)
-        self.assertIn('NonsenseId', column_names)
-        self.assertIn('NonsenseRaJ2000', column_names)
-        self.assertIn('NonsenseDecJ2000', column_names)
-        self.assertIn('NonsenseMag', column_names)
-
     def testDbObj(self):
         db_name = os.path.join(self.scratch_dir, 'testCatalogDBObjectDatabase.db')
         mystars = testCatalogDBObjectTestStars(database=db_name)
