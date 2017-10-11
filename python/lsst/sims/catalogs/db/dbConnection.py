@@ -668,6 +668,14 @@ class CatalogDBObject(with_metaclass(CatalogDBObjectMeta, DBObject)):
         for col in self.table.c.keys():
             print("%s -- %s"%(col, self.table.c[col].type.__visit_name__))
 
+    def get_catalog_column_names(self):
+        """
+        Return a list of all of the column names available from this
+        CatalogDBObject, both those that are native to the database
+        and those that are cast by the columnMap associated with this
+        CatalogDBObject
+        """
+        return list([col for col in self.columnMap.keys()])
 
     def getCatalog(self, ftype, *args, **kwargs):
         try:
