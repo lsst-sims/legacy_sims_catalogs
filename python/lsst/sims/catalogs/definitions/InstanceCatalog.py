@@ -317,8 +317,6 @@ class InstanceCatalog(with_metaclass(InstanceCatalogMeta, object)):
                 if name not in self._compound_columns:
                     self._column_outputs.append(name)
 
-        self._check_requirements()
-
     def _set_current_chunk(self, chunk, column_cache=None):
         """Set the current chunk and clear the column cache"""
         self._current_chunk = chunk
@@ -502,7 +500,7 @@ class InstanceCatalog(with_metaclass(InstanceCatalogMeta, object)):
         @param [in] write_mode is 'w' if you want to overwrite the output file or
         'a' if you want to append to an existing output file (default: 'w')
         """
-
+        self._check_requirements()
         file_handle = open(filename, write_mode)
         if write_header:
             self.write_header(file_handle)
@@ -633,6 +631,7 @@ class InstanceCatalog(with_metaclass(InstanceCatalogMeta, object)):
 
         Catalog rows will be returned as lists.
         """
+        self._check_requirements()
         self.db_required_columns()
 
         query_result = self.db_obj.query_columns(colnames=self._active_columns,
@@ -674,6 +673,7 @@ class InstanceCatalog(with_metaclass(InstanceCatalogMeta, object)):
 
         will print out the first three columns of the catalog, row by row
         """
+        self._check_requirements()
         self.db_required_columns()
 
         query_result = self.db_obj.query_columns(colnames=self._active_columns,
