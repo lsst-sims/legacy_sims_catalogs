@@ -503,19 +503,17 @@ class InstanceCatalog(with_metaclass(InstanceCatalogMeta, object)):
         'a' if you want to append to an existing output file (default: 'w')
         """
 
-        file_handle = open(filename, write_mode)
-        if write_header:
-            self.write_header(file_handle)
+        with open(filename, write_mode) as file_handle:
+            if write_header:
+                self.write_header(file_handle)
 
-        query_result = self.db_obj.query_columns(colnames=self._active_columns,
-                                                 obs_metadata=obs_metadata,
-                                                 constraint=constraint,
-                                                 chunk_size=chunk_size)
+            query_result = self.db_obj.query_columns(colnames=self._active_columns,
+                                                     obs_metadata=obs_metadata,
+                                                     constraint=constraint,
+                                                     chunk_size=chunk_size)
 
-        for chunk in query_result:
-            self._write_recarray(chunk, file_handle)
-
-        file_handle.close()
+            for chunk in query_result:
+                self._write_recarray(chunk, file_handle)
 
     def _write_pre_process(self):
         """
