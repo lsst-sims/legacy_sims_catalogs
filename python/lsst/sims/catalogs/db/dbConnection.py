@@ -743,10 +743,10 @@ class CatalogDBObject(with_metaclass(CatalogDBObjectMeta, DBObject)):
             #Check if the column is a default column (col == val)
             if col == val:
                 #If column is in the table, use it.
-                query = query.add_column(self.table.c[col].label(col))
+                query = query.add_columns(self.table.c[col].label(col))
             else:
                 #If not assume the user specified the column correctly
-                query = query.add_column(expression.literal_column(val).label(col))
+                query = query.add_columns(expression.literal_column(val).label(col))
 
         return query
 
