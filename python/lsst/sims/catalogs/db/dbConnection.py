@@ -31,7 +31,7 @@ from sqlalchemy.orm import scoped_session, sessionmaker
 from sqlalchemy.sql import expression
 from sqlalchemy.engine import reflection, url
 from sqlalchemy import (create_engine, MetaData,
-                        Table, event)
+                        Table, event, text)
 from sqlalchemy import exc as sa_exc
 from lsst.daf.persistence import DbAuth
 from lsst.sims.utils.CodeUtilities import sims_clean_up
@@ -754,7 +754,7 @@ class CatalogDBObject(with_metaclass(CatalogDBObjectMeta, DBObject)):
         """Filter the query by the associated metadata"""
         if bounds is not None:
             on_clause = bounds.to_SQL(self.raColName,self.decColName)
-            query = query.filter(on_clause)
+            query = query.filter(text(on_clause))
         return query
 
     def _postprocess_results(self, results):
@@ -845,7 +845,7 @@ class CatalogDBObject(with_metaclass(CatalogDBObjectMeta, DBObject)):
             query = self.filter(query, obs_metadata.bounds)
 
         if constraint is not None:
-            query = query.filter(constraint)
+            query = query.filter(text(constraint))
 
         if limit is not None:
             query = query.limit(limit)
