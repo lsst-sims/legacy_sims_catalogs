@@ -88,7 +88,7 @@ class ParallelWriterTestCase(unittest.TestCase):
         c = conn.cursor()
         c.execute('''CREATE TABLE test (id int, ii int)''')
         for ii in range(100):
-            c.execute('''INSERT INTO test VALUES(%i, %i)''' % (ii, rng.random_integers(0, 100)))
+            c.execute('''INSERT INTO test VALUES(%i, %i)''' % (ii, rng.randint(0, 101)))
 
         conn.commit()
         conn.close()
