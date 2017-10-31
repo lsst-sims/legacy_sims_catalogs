@@ -136,9 +136,20 @@ class DBConnection(object):
         self._connect_to_engine()
 
     def __del__(self):
-        del self._metadata
-        del self._session
-        del self._engine
+        try:
+            del self._metadata
+        except AttributeError:
+            pass
+
+        try:
+            del self._session
+        except AttributeError:
+            pass
+
+        try:
+            del self._engine
+        except AttributeError:
+            pass
 
     def _connect_to_engine(self):
 
