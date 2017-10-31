@@ -136,7 +136,9 @@ class DBConnection(object):
         self._connect_to_engine()
 
     def __del__(self):
-        self._session.close()
+        del self._metadata
+        del self._session
+        del self._engine
 
     def _connect_to_engine(self):
 
