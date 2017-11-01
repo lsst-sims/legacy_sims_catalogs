@@ -147,11 +147,9 @@ class DBConnection(object):
             pass
 
         try:
-            self._session.expunge_all()
             del self._session
         except AttributeError:
             pass
-
 
     def _connect_to_engine(self):
 
