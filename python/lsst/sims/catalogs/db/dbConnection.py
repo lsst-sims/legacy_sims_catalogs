@@ -147,7 +147,7 @@ class DBConnection(object):
             pass
 
         try:
-            self._session.flush()
+            self._session.expunge_all()
             del self._session
         except AttributeError:
             pass
