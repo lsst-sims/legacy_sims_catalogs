@@ -142,14 +142,16 @@ class DBConnection(object):
             pass
 
         try:
-            del self._session
+            del self._engine
         except AttributeError:
             pass
 
         try:
-            del self._engine
+            self._session.flush()
+            del self._session
         except AttributeError:
             pass
+
 
     def _connect_to_engine(self):
 
