@@ -31,7 +31,7 @@ from sqlalchemy.orm import scoped_session, sessionmaker
 from sqlalchemy.sql import expression
 from sqlalchemy.engine import reflection, url
 from sqlalchemy import (create_engine, MetaData,
-                        Table, event)
+                        Table, event, text)
 from sqlalchemy import exc as sa_exc
 from lsst.daf.persistence import DbAuth
 from lsst.sims.utils.CodeUtilities import sims_clean_up
@@ -136,7 +136,20 @@ class DBConnection(object):
         self._connect_to_engine()
 
     def __del__(self):
-        self._session.close()
+        try:
+            del self._metadata
+        except AttributeError:
+            pass
+
+        try:
+            del self._engine
+        except AttributeError:
+            pass
+
+        try:
+            del self._session
+        except AttributeError:
+            pass
 
     def _connect_to_engine(self):
 
@@ -260,7 +273,7 @@ class DBConnection(object):
 class DBObject(object):
 
     def __init__(self, database=None, driver=None, host=None, port=None, verbose=False,
-                 connection=None):
+                 connection=None, cache_connection=True):
         """
         Initialize DBObject.
 
@@ -277,6 +290,9 @@ class DBObject(object):
         @param [in] connection is an optional instance of DBConnection, in the event that
         this DBObject can share a database connection with another DBObject.  This is only
         necessary or even possible in a few specialized cases and should be used carefully.
+
+        @param [in] cache_connection is a boolean.  If True, DBObject will use a cache of
+        DBConnections (if available) to get the connection to this database.
         """
 
         self.dtype = None
@@ -294,7 +310,8 @@ class DBObject(object):
                 if value is not None or not hasattr(self, key):
                     setattr(self, key, value)
 
-            self.connection = self._get_connection(self.database, self.driver, self.host, self.port)
+            self.connection = self._get_connection(self.database, self.driver, self.host, self.port,
+                                                   use_cache=cache_connection)
 
         else:
             self.connection = connection
@@ -304,7 +321,7 @@ class DBObject(object):
             self.port = connection.port
             self.verbose = connection.verbose
 
-    def _get_connection(self, database, driver, host, port):
+    def _get_connection(self, database, driver, host, port, use_cache=True):
         """
         Search self._connection_cache (if it exists; it won't for DBObject, but
         will for CatalogDBObject) for a DBConnection matching the specified
@@ -320,9 +337,13 @@ class DBObject(object):
         host is the URL of the remote host, if appropriate
 
         port is the port on the remote host to connect to, if appropriate
+
+        use_cache is a boolean specifying whether or not we try to use the
+        cache of database connections (you don't want to if opening many
+        connections in many threads).
         """
 
-        if hasattr(self, '_connection_cache'):
+        if use_cache and hasattr(self, '_connection_cache'):
             for conn in self._connection_cache:
                 if str(conn.database) == str(database):
                     if str(conn.driver) == str(driver):
@@ -332,7 +353,7 @@ class DBObject(object):
 
         conn = DBConnection(database=database, driver=driver, host=host, port=port)
 
-        if hasattr(self, '_connection_cache'):
+        if use_cache and hasattr(self, '_connection_cache'):
             self._connection_cache.append(conn)
 
         return conn
@@ -592,7 +613,8 @@ class CatalogDBObject(with_metaclass(CatalogDBObjectMeta, DBObject)):
         return cls(*args, **kwargs)
 
     def __init__(self, database=None, driver=None, host=None, port=None, verbose=False,
-                 table=None, objid=None, idColKey=None, connection=None):
+                 table=None, objid=None, idColKey=None, connection=None,
+                 cache_connection=True):
         if not verbose:
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore", category=sa_exc.SAWarning)
@@ -637,7 +659,7 @@ class CatalogDBObject(with_metaclass(CatalogDBObjectMeta, DBObject)):
                           "possible.")
 
         super(CatalogDBObject, self).__init__(database=database, driver=driver, host=host, port=port,
-                                              verbose=verbose, connection=connection)
+                                              verbose=verbose, connection=connection, cache_connection=True)
 
         try:
             self._get_table()
@@ -743,10 +765,10 @@ class CatalogDBObject(with_metaclass(CatalogDBObjectMeta, DBObject)):
             #Check if the column is a default column (col == val)
             if col == val:
                 #If column is in the table, use it.
-                query = query.add_column(self.table.c[col].label(col))
+                query = query.add_columns(self.table.c[col].label(col))
             else:
                 #If not assume the user specified the column correctly
-                query = query.add_column(expression.literal_column(val).label(col))
+                query = query.add_columns(expression.literal_column(val).label(col))
 
         return query
 
@@ -754,7 +776,7 @@ class CatalogDBObject(with_metaclass(CatalogDBObjectMeta, DBObject)):
         """Filter the query by the associated metadata"""
         if bounds is not None:
             on_clause = bounds.to_SQL(self.raColName,self.decColName)
-            query = query.filter(on_clause)
+            query = query.filter(text(on_clause))
         return query
 
     def _postprocess_results(self, results):
@@ -845,7 +867,7 @@ class CatalogDBObject(with_metaclass(CatalogDBObjectMeta, DBObject)):
             query = self.filter(query, obs_metadata.bounds)
 
         if constraint is not None:
-            query = query.filter(constraint)
+            query = query.filter(text(constraint))
 
         if limit is not None:
             query = query.limit(limit)

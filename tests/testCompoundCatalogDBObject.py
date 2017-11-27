@@ -62,7 +62,7 @@ class dbClass4(CatalogDBObject):
 
 
 class dbClass5(CatalogDBObject):
-    objid = 'class4'
+    objid = 'class5'
     idColKey = 'id'
     tableid = 'otherTest'
     columns = [('aa', 'c-3.0'),

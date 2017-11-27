@@ -11,6 +11,7 @@ import tempfile
 import shutil
 import lsst.utils.tests
 from lsst.sims.catalogs.db import DBObject
+from lsst.sims.utils.CodeUtilities import sims_clean_up
 
 ROOT = os.path.abspath(os.path.dirname(__file__))
 
@@ -82,6 +83,7 @@ class DBObjectTestCase(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
+        sims_clean_up()
         if os.path.exists(cls.db_name):
             os.unlink(cls.db_name)
         if os.path.exists(cls.scratch_dir):
