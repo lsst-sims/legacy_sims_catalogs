@@ -827,7 +827,8 @@ class CatalogDBObject(with_metaclass(CatalogDBObjectMeta, DBObject)):
                                      ])
 
         else:
-            results_array = results
+            results_array = [tuple(rr) for rr in results]
+
         retresults = numpy.rec.fromrecords(results_array, dtype=dtype)
         return self._final_pass(retresults)
 
