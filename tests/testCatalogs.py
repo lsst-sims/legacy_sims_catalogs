@@ -119,6 +119,8 @@ def write_star_file_db(file_name):
 
 class InstanceCatalogTestCase(unittest.TestCase):
 
+    longMessage = True
+
     @classmethod
     def setUpClass(cls):
 
@@ -196,7 +198,11 @@ class InstanceCatalogTestCase(unittest.TestCase):
             self.assertLess(np.degrees(dl), self.obsMd.boundLength)
 
         # examine the lines that did not fall in the catalog
-        lines_not_in_catalog = np.where(self.starControlData['id'] not in testData['id'])[0]
+        lines_not_in_catalog = []
+        for id_val in self.starControlData['id']:
+            if id_val not in testData['id']:
+                lines_not_in_catalog.append(id_val)
+        lines_not_in_catalog = np.array(lines_not_in_catalog)
 
         self.assertGreater(len(lines_not_in_catalog), 0)
 
@@ -206,7 +212,9 @@ class InstanceCatalogTestCase(unittest.TestCase):
                            np.radians(self.starControlData['raJ2000'][ic]),
                            np.radians(self.starControlData['decJ2000'][ic]))
 
-            self.assertGreater(np.degrees(dl), self.obsMd.boundLength)
+            msg = '\nRA %e Dec %e\n' % (self.starControlData['raJ2000'][ic], self.starControlData['decJ2000'][ic])
+            msg += 'pointing RA %e Dec %e\n' % (self.obsMd.pointingRA, self.obsMd.pointingDec)
+            self.assertGreater(np.degrees(dl), self.obsMd.boundLength, msg=msg)
 
         if os.path.exists(catName):
             os.unlink(catName)
@@ -250,7 +258,11 @@ class InstanceCatalogTestCase(unittest.TestCase):
             self.assertLess(np.degrees(dl), self.obsMd.boundLength)
 
         # examine the lines that did not fall in the catalog
-        lines_not_in_catalog = np.where(self.starControlData['id'] not in testData['id'])[0]
+        lines_not_in_catalog = []
+        for id_val in self.starControlData['id']:
+            if id_val not in testData['id']:
+                lines_not_in_catalog.append(id_val)
+        lines_not_in_catalog = np.array(lines_not_in_catalog)
 
         self.assertGreater(len(lines_not_in_catalog), 0)
 
