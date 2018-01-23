@@ -69,7 +69,6 @@ class CompoundInstanceCatalog(object):
         self._dbo_list = catalogDBObjectClassList
         self._ic_list = instanceCatalogClassList
         self._constraint = constraint
-        self._active_connections = []
 
         assigned = [False]*len(self._dbo_list)
         self._dbObjectGroupList = []
@@ -142,54 +141,6 @@ class CompoundInstanceCatalog(object):
             return False
         return True
 
-    def find_a_connection(self, dboClass):
-        """
-        Find an active database connection for a DBObject
-
-        @param [in] dbo is a DBObject class that needs to be connected
-
-        @param [out] returns a connection of self._active_connections
-        that suits the DBObject.  Returns None otherwise.
-        """
-
-        if hasattr(dboClass, 'database'):
-            desired_database = dboClass.database
-        else:
-            desired_database = None
-
-        if hasattr(dboClass, 'driver'):
-            desired_driver = dboClass.driver
-        else:
-            desired_driver = None
-
-        if hasattr(dboClass, 'host'):
-            desired_host = dboClass.host
-        else:
-            desired_host = None
-
-        if hasattr(dboClass, 'port'):
-            desired_port = dboClass.port
-        else:
-            desired_port = None
-
-        if hasattr(dboClass, 'verbose'):
-            desired_verbose = dboClass.verbose
-        else:
-            desired_verbose = False
-
-        best_connection = None
-
-        for cc in self._active_connections:
-            if cc.database is desired_database and \
-               cc.driver is desired_driver and \
-               cc.host is desired_host and \
-               cc.port is desired_port and \
-               cc.verbose is desired_verbose:
-
-                best_connection = cc
-                break
-
-        return best_connection
 
     def write_catalog(self, filename, chunk_size=None, write_header=True, write_mode='w'):
         """
@@ -214,12 +165,7 @@ class CompoundInstanceCatalog(object):
         # first, loop over all of the InstanceCatalog and CatalogDBObject classes, pre-processing
         # them (i.e. verifying that they have access to all of the columns they need)
         for ix, (icClass, dboClass) in enumerate(zip(self._ic_list, self._dbo_list)):
-            best_connection = self.find_a_connection(dboClass)
-            if best_connection is None:
-                dbo = dboClass()
-                self._active_connections.append(dbo.connection)
-            else:
-                dbo = dboClass(connection=best_connection)
+            dbo = dboClass()
 
             ic = icClass(dbo, obs_metadata=self._obs_metadata)
 
@@ -266,12 +212,8 @@ class CompoundInstanceCatalog(object):
                 for cat in catList:
                     cat._pre_screen = True
 
-                # if a connection is already open to the database, use
-                # it rather than opening a new connection
-                best_connection = self.find_a_connection(dbObjClassList[0])
-
                 if self._compoundDBclass is None:
-                    compound_dbo = CompoundCatalogDBObject(dbObjClassList, connection=best_connection)
+                    compound_dbo = CompoundCatalogDBObject(dbObjClassList)
                 elif not hasattr(self._compoundDBclass, '__getitem__'):
                     # if self._compoundDBclass is not a list
                     try:
