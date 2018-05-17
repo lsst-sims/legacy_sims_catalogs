@@ -622,7 +622,7 @@ class boundingBoxTest(unittest.TestCase):
 
         cat.write_catalog(cat_name)
         cat_data = np.genfromtxt(cat_name, dtype=cat_dtype)
-        #np.testing.assert_array_equal(cat_data['cat_id'], valid_id)
+        np.testing.assert_array_equal(cat_data['cat_id'], valid_id)
         np.testing.assert_array_almost_equal(cat_data['ra'], valid_ra, decimal=3)
         np.testing.assert_array_almost_equal(cat_data['dec'], valid_dec, decimal=3)
 
