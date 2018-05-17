@@ -561,18 +561,39 @@ class boundingBoxTest(unittest.TestCase):
         valid = np.where(angularSeparation(pra, pdec, ra, dec)<boundLength)
         self.assertGreater(len(valid[0]), 0)
         self.assertLess(len(valid[0]), n_samples)
-        valid_across = np.where(np.logical_and(angularSeparation(pra, pdec, ra, dec)<boundLength,
-                                               ra<1.0))
-        self.assertGreater(len(valid_across[0]), 0)
+        valid_pos = np.where(np.logical_and(angularSeparation(pra, pdec, ra, dec)<boundLength,
+                                             ra>0.0))
+        valid_neg = np.where(np.logical_and(angularSeparation(pra, pdec, ra, dec)<boundLength,
+                                             ra<0.0))
+        self.assertGreater(len(valid_pos[0]), 0)
+        self.assertGreater(len(valid_neg[0]), 0)
+        self.assertLess(len(valid_pos[0]), len(valid[0]))
         valid_id = id_val[valid]
         valid_ra = ra[valid]
         valid_dec = dec[valid]
 
-        dtype = np.dtype([('cat_id', int), ('ra', float), ('dec', float)])
-        cat_data = np.genfromtxt(cat_name, dtype=dtype)
+        cat_dtype = np.dtype([('cat_id', int), ('ra', float), ('dec', float)])
+        cat_data = np.genfromtxt(cat_name, dtype=cat_dtype)
         np.testing.assert_array_equal(cat_data['cat_id'], valid_id)
         np.testing.assert_array_almost_equal(cat_data['ra'], valid_ra, decimal=3)
         np.testing.assert_array_almost_equal(cat_data['dec'], valid_dec, decimal=3)
+
+        # now try it when RA is specified as negative
+        pra = -0.1
+        pdec = 0.0
+        obs = ObservationMetaData(pointingRA=pra, pointingDec=pdec,
+                                  boundType='circle', boundLength=boundLength)
+
+        cat = negativeRaCatalogClass(db, obs_metadata=obs)
+        cat_name = tempfile.mkstemp(dir=self.scratch_dir, prefix='negRa', suffix='.txt')[1]
+
+        cat.write_catalog(cat_name)
+
+        cat_data = np.genfromtxt(cat_name, dtype=cat_dtype)
+        np.testing.assert_array_equal(cat_data['cat_id'], valid_id)
+        np.testing.assert_array_almost_equal(cat_data['ra'], valid_ra, decimal=3)
+        np.testing.assert_array_almost_equal(cat_data['dec'], valid_dec, decimal=3)
+
 
 
 class MemoryTestClass(lsst.utils.tests.MemoryTestCase):
