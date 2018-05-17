@@ -640,6 +640,134 @@ class boundingBoxTest(unittest.TestCase):
         np.testing.assert_array_almost_equal(cat_data['ra'], valid_ra, decimal=3)
         np.testing.assert_array_almost_equal(cat_data['dec'], valid_dec, decimal=3)
 
+    def test_very_positive_RA(self):
+        """
+        Test that spatial queries behave correctly around RA=0 (when RA>350)
+        """
+        rng = np.random.RandomState(81234122)
+        db_name = tempfile.mkstemp(dir=self.scratch_dir, prefix='posRA', suffix='.db')[1]
+        with sqlite3.connect(db_name) as connection:
+            cursor = connection.cursor()
+            cursor.execute('''CREATE TABLE neg_ra_table
+                           (cat_id int, ra real, dec real)''')
+
+            connection.commit()
+            n_samples = 1000
+            id_val = np.arange(n_samples, dtype=int) + 1
+            ra = 10.0*(rng.random_sample(n_samples)-0.5)
+            neg_dex = np.where(ra<0.0)
+            ra[neg_dex] += 360.0
+            dec = rng.random_sample(n_samples)-0.5
+            values = ((int(ii), rr, dd) for ii, rr, dd in zip(id_val, ra, dec))
+            cursor.executemany('''INSERT INTO neg_ra_table VALUES (?, ?, ?)''', values)
+            connection.commit()
+
+        class veryPositiveRaCatalogDBClass(CatalogDBObject):
+            tableid = 'neg_ra_table'
+            idColKey = 'cat_id'
+            raColName = 'ra'
+            decColName = 'dec'
+            objectTypeId = 126
+
+        class veryPositiveRaCatalogClass(InstanceCatalog):
+            column_outputs = ['cat_id', 'ra', 'dec']
+            delimiter = ' '
+
+        db = veryPositiveRaCatalogDBClass(database=db_name, driver='sqlite')
+
+        boundLength=0.2
+        pra = 359.9
+        pdec = 0.0
+        obs = ObservationMetaData(pointingRA=pra, pointingDec=pdec,
+                                  boundType='circle', boundLength=boundLength)
+
+
+        cat = veryPositiveRaCatalogClass(db, obs_metadata=obs)
+        cat_name = tempfile.mkstemp(dir=self.scratch_dir, prefix='posRa', suffix='.txt')[1]
+
+        cat.write_catalog(cat_name)
+        valid = np.where(angularSeparation(pra, pdec, ra, dec)<boundLength)
+        self.assertGreater(len(valid[0]), 0)
+        self.assertLess(len(valid[0]), n_samples)
+        valid_pos = np.where(np.logical_and(angularSeparation(pra, pdec, ra, dec)<boundLength,
+                                             ra<350.0))
+        valid_neg = np.where(np.logical_and(angularSeparation(pra, pdec, ra, dec)<boundLength,
+                                             ra>350.0))
+        self.assertGreater(len(valid_pos[0]), 0)
+        self.assertGreater(len(valid_neg[0]), 0)
+        self.assertLess(len(valid_pos[0]), len(valid[0]))
+        valid_id = id_val[valid]
+        valid_ra = ra[valid]
+        valid_dec = dec[valid]
+
+        cat_dtype = np.dtype([('cat_id', int), ('ra', float), ('dec', float)])
+        cat_data = np.genfromtxt(cat_name, dtype=cat_dtype)
+        np.testing.assert_array_equal(cat_data['cat_id'], valid_id)
+        np.testing.assert_array_almost_equal(cat_data['ra'], valid_ra, decimal=3)
+        np.testing.assert_array_almost_equal(cat_data['dec'], valid_dec, decimal=3)
+
+        # now try it when RA is specified as negative
+        pra = -0.1
+        pdec = 0.0
+        obs = ObservationMetaData(pointingRA=pra, pointingDec=pdec,
+                                  boundType='circle', boundLength=boundLength)
+
+        cat = veryPositiveRaCatalogClass(db, obs_metadata=obs)
+        cat_name = tempfile.mkstemp(dir=self.scratch_dir, prefix='posRa', suffix='.txt')[1]
+
+        cat.write_catalog(cat_name)
+
+        cat_data = np.genfromtxt(cat_name, dtype=cat_dtype)
+        np.testing.assert_array_equal(cat_data['cat_id'], valid_id)
+        np.testing.assert_array_almost_equal(cat_data['ra'], valid_ra, decimal=3)
+        np.testing.assert_array_almost_equal(cat_data['dec'], valid_dec, decimal=3)
+
+        # test it on a box
+        pra = 359.9
+        pdec = 0.0
+        obs = ObservationMetaData(pointingRA=pra, pointingDec=pdec,
+                                  boundType='box', boundLength=boundLength)
+
+        cat = veryPositiveRaCatalogClass(db, obs_metadata=obs)
+        cat_name = tempfile.mkstemp(dir=self.scratch_dir, prefix='posRa', suffix='.txt')[1]
+
+        dec_min = pdec-boundLength
+        dec_max = pdec+boundLength
+
+        valid_id = []
+        valid_ra = []
+        valid_dec = []
+        for rr, dd, ii in zip(ra, dec, id_val):
+            if dd>dec_max or dd<dec_min:
+                continue
+            if np.abs(rr-359.9)<boundLength  or (rr+0.1)<boundLength:
+                valid_id.append(ii)
+                valid_ra.append(rr)
+                valid_dec.append(dd)
+        valid_id = np.array(valid_id)
+        valid_ra = np.array(valid_ra)
+        valid_dec = np.array(valid_dec)
+
+        cat.write_catalog(cat_name)
+        cat_data = np.genfromtxt(cat_name, dtype=cat_dtype)
+        np.testing.assert_array_equal(cat_data['cat_id'], valid_id)
+        np.testing.assert_array_almost_equal(cat_data['ra'], valid_ra, decimal=3)
+        np.testing.assert_array_almost_equal(cat_data['dec'], valid_dec, decimal=3)
+
+        # try when defined at negative
+        pra = -0.1
+        pdec = 0.0
+        obs = ObservationMetaData(pointingRA=pra, pointingDec=pdec,
+                                  boundType='box', boundLength=boundLength)
+
+        cat = veryPositiveRaCatalogClass(db, obs_metadata=obs)
+        cat_name = tempfile.mkstemp(dir=self.scratch_dir, prefix='posRa', suffix='.txt')[1]
+        cat.write_catalog(cat_name)
+        cat_data = np.genfromtxt(cat_name, dtype=cat_dtype)
+        np.testing.assert_array_equal(cat_data['cat_id'], valid_id)
+        np.testing.assert_array_almost_equal(cat_data['ra'], valid_ra, decimal=3)
+        np.testing.assert_array_almost_equal(cat_data['dec'], valid_dec, decimal=3)
+
 
 class MemoryTestClass(lsst.utils.tests.MemoryTestCase):
     pass
