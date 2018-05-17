@@ -2,16 +2,17 @@ from __future__ import with_statement
 from builtins import zip
 from builtins import object
 import os
+import sqlite3
 import numpy as np
 import unittest
 import tempfile
 import shutil
 import lsst.utils.tests
 from lsst.sims.utils import ObservationMetaData
-from lsst.sims.catalogs.db import fileDBObject
+from lsst.sims.catalogs.db import fileDBObject, CatalogDBObject
 from lsst.sims.catalogs.definitions import InstanceCatalog
 from lsst.sims.catalogs.decorators import compound
-from lsst.sims.utils import haversine
+from lsst.sims.utils import haversine, angularSeparation
 
 
 ROOT = os.path.abspath(os.path.dirname(__file__))
@@ -380,6 +381,8 @@ class boundingBoxTest(unittest.TestCase):
     def tearDownClass(cls):
         if os.path.exists(cls.starTextName):
             os.unlink(cls.starTextName)
+        for file_name in os.listdir(cls.scratch_dir):
+            os.unlink(os.path.join(cls.scratch_dir, file_name))
         if os.path.exists(cls.scratch_dir):
             shutil.rmtree(cls.scratch_dir)
 
@@ -510,6 +513,66 @@ class boundingBoxTest(unittest.TestCase):
 
         if os.path.exists(catName):
             os.unlink(catName)
+
+    def test_negative_RA(self):
+        """
+        Test that spatial queries behave correctly around RA=0
+        """
+        rng = np.random.RandomState(81234122)
+        db_name = tempfile.mkstemp(dir=self.scratch_dir, prefix='negRA', suffix='.db')[1]
+        with sqlite3.connect(db_name) as connection:
+            cursor = connection.cursor()
+            cursor.execute('''CREATE TABLE neg_ra_table
+                           (cat_id int, ra real, dec real)''')
+
+            connection.commit()
+            n_samples = 1000
+            id_val = np.arange(n_samples, dtype=int) + 1
+            ra = 10.0*(rng.random_sample(n_samples)-0.5)
+            dec = rng.random_sample(n_samples)-0.5
+            values = ((int(ii), rr, dd) for ii, rr, dd in zip(id_val, ra, dec))
+            cursor.executemany('''INSERT INTO neg_ra_table VALUES (?, ?, ?)''', values)
+            connection.commit()
+
+        class negativeRaCatalogDBClass(CatalogDBObject):
+            tableid = 'neg_ra_table'
+            idColKey = 'cat_id'
+            raColName = 'ra'
+            decColName = 'dec'
+            objectTypeId = 126
+
+        class negativeRaCatalogClass(InstanceCatalog):
+            column_outputs = ['cat_id', 'ra', 'dec']
+            delimiter = ' '
+
+        db = negativeRaCatalogDBClass(database=db_name, driver='sqlite')
+
+        boundLength=0.2
+        pra = 359.9
+        pdec = 0.0
+        obs = ObservationMetaData(pointingRA=pra, pointingDec=pdec,
+                                  boundType='circle', boundLength=boundLength)
+
+
+        cat = negativeRaCatalogClass(db, obs_metadata=obs)
+        cat_name = tempfile.mkstemp(dir=self.scratch_dir, prefix='negRa', suffix='.txt')[1]
+
+        cat.write_catalog(cat_name)
+        valid = np.where(angularSeparation(pra, pdec, ra, dec)<boundLength)
+        self.assertGreater(len(valid[0]), 0)
+        self.assertLess(len(valid[0]), n_samples)
+        valid_across = np.where(np.logical_and(angularSeparation(pra, pdec, ra, dec)<boundLength,
+                                               ra<1.0))
+        self.assertGreater(len(valid_across[0]), 0)
+        valid_id = id_val[valid]
+        valid_ra = ra[valid]
+        valid_dec = dec[valid]
+
+        dtype = np.dtype([('cat_id', int), ('ra', float), ('dec', float)])
+        cat_data = np.genfromtxt(cat_name, dtype=dtype)
+        np.testing.assert_array_equal(cat_data['cat_id'], valid_id)
+        np.testing.assert_array_almost_equal(cat_data['ra'], valid_ra, decimal=3)
+        np.testing.assert_array_almost_equal(cat_data['dec'], valid_dec, decimal=3)
 
 
 class MemoryTestClass(lsst.utils.tests.MemoryTestCase):
