@@ -594,6 +594,37 @@ class boundingBoxTest(unittest.TestCase):
         np.testing.assert_array_almost_equal(cat_data['ra'], valid_ra, decimal=3)
         np.testing.assert_array_almost_equal(cat_data['dec'], valid_dec, decimal=3)
 
+        # test it on a box
+        pra = 359.9
+        pdec = 0.0
+        obs = ObservationMetaData(pointingRA=pra, pointingDec=pdec,
+                                  boundType='box', boundLength=boundLength)
+
+        cat = negativeRaCatalogClass(db, obs_metadata=obs)
+        cat_name = tempfile.mkstemp(dir=self.scratch_dir, prefix='negRa', suffix='.txt')[1]
+
+        dec_min = pdec-boundLength
+        dec_max = pdec+boundLength
+
+        valid_id = []
+        valid_ra = []
+        valid_dec = []
+        for rr, dd, ii in zip(ra, dec, id_val):
+            if dd>dec_max or dd<dec_min:
+                continue
+            if np.abs(rr+0.1)<boundLength:
+                valid_id.append(ii)
+                valid_ra.append(rr)
+                valid_dec.append(dd)
+        valid_id = np.array(valid_id)
+        valid_ra = np.array(valid_ra)
+        valid_dec = np.array(valid_dec)
+
+        cat.write_catalog(cat_name)
+        cat_data = np.genfromtxt(cat_name, dtype=cat_dtype)
+        #np.testing.assert_array_equal(cat_data['cat_id'], valid_id)
+        np.testing.assert_array_almost_equal(cat_data['ra'], valid_ra, decimal=3)
+        np.testing.assert_array_almost_equal(cat_data['dec'], valid_dec, decimal=3)
 
 
 class MemoryTestClass(lsst.utils.tests.MemoryTestCase):
