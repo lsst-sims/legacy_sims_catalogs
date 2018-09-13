@@ -589,7 +589,7 @@ class InstanceCatalog(with_metaclass(InstanceCatalogMeta, object)):
 
                 final_dexes = final_dexes[good_dexes]
 
-                if len(good_dexes[0]) < len(chunk):
+                if len(good_dexes[0]) < len(self._current_chunk):
                     self._update_current_chunk(good_dexes)
 
         return final_dexes
