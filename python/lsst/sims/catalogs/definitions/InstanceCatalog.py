@@ -574,12 +574,10 @@ class InstanceCatalog(with_metaclass(InstanceCatalogMeta, object)):
             for filter_col in self._cannot_be_null:
                 filter_vals = self.column_by_name(filter_col)
                 if filter_vals.dtype == float or filter_vals.dtype == int:
-                    print('\nfiltering without casting\n')
                     good_dexes = np.where(np.isfinite(filter_vals))
                 else:
                     try:
                         good_dexes = np.where(np.isfinite(filter_vals.astype(float)))
-                        print('\nfiltering without casting to string\n')
                     except ValueError:
                         filter_vals = np.char.lower(self.column_by_name(filter_col).astype('str'))
 
