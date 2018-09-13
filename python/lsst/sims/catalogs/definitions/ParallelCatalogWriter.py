@@ -1,6 +1,5 @@
 from __future__ import print_function
 import copy
-import gzip
 
 
 __all__ = ["parallelCatalogWriter"]
@@ -88,14 +87,7 @@ def parallelCatalogWriter(catalog_dict, chunk_size=None, constraint=None,
     local_write_mode = write_mode
     if write_header:
         for file_name in catalog_dict:
-
-            open_fn = open
-            actual_write_mode = local_write_mode
-            if file_name.endswith('gz'):
-                open_fn = gzip.open
-                actual_write_mode = local_write_mode+'t'
-
-            with open_fn(file_name, actual_write_mode) as file_handle:
+            with open(file_name, local_write_mode) as file_handle:
                 catalog_dict[file_name].write_header(file_handle)
         local_write_mode = 'a'
 
@@ -108,13 +100,7 @@ def parallelCatalogWriter(catalog_dict, chunk_size=None, constraint=None,
             if len(good_dexes) < len(chunk):
                 chunk = chunk[good_dexes]
 
-            open_fn = open
-            actual_write_mode = local_write_mode
-            if file_name.endswith('gz'):
-                open_fn = gzip.open
-                actual_write_mode = local_write_mode+'t'
-
-            with open_fn(file_name, actual_write_mode) as file_handle:
+            with open(file_name, local_write_mode) as file_handle:
                 catalog_dict[file_name]._write_current_chunk(file_handle)
 
         local_write_mode = 'a'
