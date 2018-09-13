@@ -572,10 +572,16 @@ class InstanceCatalog(with_metaclass(InstanceCatalogMeta, object)):
         # removing rows that run afoul of that criterion from the chunk.
         if self._cannot_be_null is not None:
             for filter_col in self._cannot_be_null:
-                filter_vals = np.char.lower(self.column_by_name(filter_col).astype('str'))
+                filter_vals = self.column_by_name(filter_col)
+                if filter_vals.dtype == float or filter_vals.dtype == int:
+                    print('\nfiltering without casting\n')
+                    good_dexes = np.where(np.isfinite(filter_vals))
+                else:
+                    filter_vals = np.char.lower(self.column_by_name(filter_col).astype('str'))
 
-                good_dexes = np.where(np.logical_and(filter_vals != 'none',
-                                      np.logical_and(filter_vals  != 'nan', filter_vals != 'null')))
+                    good_dexes = np.where(np.logical_and(filter_vals != 'none',
+                                          np.logical_and(filter_vals  != 'nan',
+                                                         filter_vals != 'null')))
 
                 final_dexes = final_dexes[good_dexes]
 
