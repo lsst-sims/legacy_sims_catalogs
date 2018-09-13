@@ -9,6 +9,7 @@ import numpy as np
 import inspect
 import re
 import copy
+import gzip
 from collections import OrderedDict
 from lsst.sims.utils import defaultSpecMap
 from lsst.sims.utils import ObservationMetaData
@@ -503,7 +504,13 @@ class InstanceCatalog(with_metaclass(InstanceCatalogMeta, object)):
         'a' if you want to append to an existing output file (default: 'w')
         """
 
-        with open(filename, write_mode) as file_handle:
+        open_fn = open
+        actual_write_mode = write_mode
+        if filename.endswith('gz'):
+            open_fn = gzip.open
+            actual_write_mode = write_mode+'t'
+
+        with open_fn(filename, actual_write_mode) as file_handle:
             if write_header:
                 self.write_header(file_handle)
 

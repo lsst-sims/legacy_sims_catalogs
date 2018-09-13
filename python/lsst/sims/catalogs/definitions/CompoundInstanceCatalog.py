@@ -3,6 +3,7 @@ from builtins import zip
 from builtins import range
 from builtins import object
 import numpy as np
+import gzip
 from lsst.sims.catalogs.db import CompoundCatalogDBObject
 
 
@@ -287,7 +288,13 @@ class CompoundInstanceCatalog(object):
                                                     constraint=self._constraint,
                                                     chunk_size=chunk_size)
 
-        with open(filename, write_mode) as file_handle:
+        open_fn = open
+        actual_write_mode = write_mode
+        if filename.endswith('gz'):
+            open_fn = gzip.open
+            actual_write_mode = write_mode+'t'
+
+        with open_fn(filename, actual_write_mode) as file_handle:
             if write_header:
                 catList[0].write_header(file_handle)
 
