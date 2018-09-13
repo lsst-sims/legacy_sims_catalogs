@@ -579,6 +579,7 @@ class InstanceCatalog(with_metaclass(InstanceCatalogMeta, object)):
                 else:
                     try:
                         good_dexes = np.where(np.isfinite(filter_vals.astype(float)))
+                        print('\nfiltering without casting to string\n')
                     except ValueError:
                         filter_vals = np.char.lower(self.column_by_name(filter_col).astype('str'))
 
