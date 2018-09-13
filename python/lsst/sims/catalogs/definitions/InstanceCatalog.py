@@ -577,11 +577,14 @@ class InstanceCatalog(with_metaclass(InstanceCatalogMeta, object)):
                     print('\nfiltering without casting\n')
                     good_dexes = np.where(np.isfinite(filter_vals))
                 else:
-                    filter_vals = np.char.lower(self.column_by_name(filter_col).astype('str'))
+                    try:
+                        good_dexes = np.where(np.isfinite(filter_vals.astype(float)))
+                    except ValueError:
+                        filter_vals = np.char.lower(self.column_by_name(filter_col).astype('str'))
 
-                    good_dexes = np.where(np.logical_and(filter_vals != 'none',
-                                          np.logical_and(filter_vals  != 'nan',
-                                                         filter_vals != 'null')))
+                        good_dexes = np.where(np.logical_and(filter_vals != 'none',
+                                              np.logical_and(filter_vals  != 'nan',
+                                                             filter_vals != 'null')))
 
                 final_dexes = final_dexes[good_dexes]
 
