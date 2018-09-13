@@ -560,9 +560,16 @@ class InstanceCatalog(with_metaclass(InstanceCatalogMeta, object)):
             # rows that have already run afoul of self._cannot_be_null
             for col_name in self._cannot_be_null:
                 if col_name in chunk.dtype.names:
-                    str_vec = np.char.lower(chunk[col_name].astype('str'))
-                    good_dexes = np.where(np.logical_and(str_vec != 'none',
-                                          np.logical_and(str_vec != 'nan', str_vec != 'null')))
+                    filter_vals = chunk[col_name]
+                    if filter_vals.dtype == float or filter_vals.dtype == int:
+                        good_dexes = np.where(np.isfinite(filter_vals))
+                    else:
+                        try:
+                            good_dexes = np.where(np.isfinite(filter_vals.astype(float)))
+                        except ValueError:
+                            str_vec = np.char.lower(chunk[col_name].astype('str'))
+                            good_dexes = np.where(np.logical_and(str_vec != 'none',
+                                                  np.logical_and(str_vec != 'nan', str_vec != 'null')))
                     chunk = chunk[good_dexes]
                     final_dexes = final_dexes[good_dexes]
 
