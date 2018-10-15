@@ -370,10 +370,7 @@ class DBObject(object):
         """
         tableNameList = self.get_table_names()
         if tableName is not None:
-            if tableName not in tableNameList:
-                return []
-            else:
-                return [str_cast(xx['name']) for xx in reflection.Inspector.from_engine(self.connection.engine).get_columns(tableName)]
+            return [str_cast(xx['name']) for xx in reflection.Inspector.from_engine(self.connection.engine).get_columns(tableName)]
         else:
             columnDict = {}
             for name in tableNameList:
