@@ -359,8 +359,9 @@ class DBObject(object):
         return conn
 
     def get_table_names(self):
-        """Return a list of the names of the tables in the database"""
-        return [str(xx) for xx in reflection.Inspector.from_engine(self.connection.engine).get_table_names()]
+        """Return a list of the names of the tables (and views) in the database"""
+        return [str(xx) for xx in reflection.Inspector.from_engine(self.connection.engine).get_table_names()] + \
+        [str(xx) for xx in reflection.Inspector.from_engine(self.connection.engine).get_view_names()]
 
     def get_column_names(self, tableName=None):
         """
@@ -370,6 +371,8 @@ class DBObject(object):
         """
         tableNameList = self.get_table_names()
         if tableName is not None:
+            if tableName not in tableNameList:
+                return []
             return [str_cast(xx['name']) for xx in reflection.Inspector.from_engine(self.connection.engine).get_columns(tableName)]
         else:
             columnDict = {}
