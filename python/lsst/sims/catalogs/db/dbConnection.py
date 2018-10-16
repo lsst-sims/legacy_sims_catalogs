@@ -437,7 +437,9 @@ class DBObject(object):
                     dataString += delimit_char
                 dataString += str(xx)
             names = [str_cast(ww) for ww in results[0].keys()]
-            dataArr = numpy.genfromtxt(BytesIO(dataString.encode()), dtype=None, names=names, delimiter=delimit_char)
+            dataArr = numpy.genfromtxt(BytesIO(dataString.encode()), dtype=None,
+                                       names=names, delimiter=delimit_char,
+                                       encoding='utf-8')
             dt_list = []
             for name in dataArr.dtype.names:
                 type_name = str(dataArr.dtype[name])
