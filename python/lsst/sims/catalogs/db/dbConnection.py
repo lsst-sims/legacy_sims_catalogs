@@ -359,8 +359,9 @@ class DBObject(object):
         return conn
 
     def get_table_names(self):
-        """Return a list of the names of the tables in the database"""
-        return [str(xx) for xx in reflection.Inspector.from_engine(self.connection.engine).get_table_names()]
+        """Return a list of the names of the tables (and views) in the database"""
+        return [str(xx) for xx in reflection.Inspector.from_engine(self.connection.engine).get_table_names()] + \
+        [str(xx) for xx in reflection.Inspector.from_engine(self.connection.engine).get_view_names()]
 
     def get_column_names(self, tableName=None):
         """
@@ -372,8 +373,7 @@ class DBObject(object):
         if tableName is not None:
             if tableName not in tableNameList:
                 return []
-            else:
-                return [str_cast(xx['name']) for xx in reflection.Inspector.from_engine(self.connection.engine).get_columns(tableName)]
+            return [str_cast(xx['name']) for xx in reflection.Inspector.from_engine(self.connection.engine).get_columns(tableName)]
         else:
             columnDict = {}
             for name in tableNameList:
@@ -437,7 +437,9 @@ class DBObject(object):
                     dataString += delimit_char
                 dataString += str(xx)
             names = [str_cast(ww) for ww in results[0].keys()]
-            dataArr = numpy.genfromtxt(BytesIO(dataString.encode()), dtype=None, names=names, delimiter=delimit_char)
+            dataArr = numpy.genfromtxt(BytesIO(dataString.encode()), dtype=None,
+                                       names=names, delimiter=delimit_char,
+                                       encoding='utf-8')
             dt_list = []
             for name in dataArr.dtype.names:
                 type_name = str(dataArr.dtype[name])
