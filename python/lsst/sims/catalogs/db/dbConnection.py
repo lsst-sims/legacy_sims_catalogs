@@ -823,10 +823,11 @@ class CatalogDBObject(with_metaclass(CatalogDBObjectMeta, DBObject)):
             results_array = []
 
             for result in results:
-                results_array.append([
-                                      result[colName] if result[colName] or colName not in self.dbDefaultValues
-                                      else self.dbDefaultValues[colName] for colName in cols
-                                     ])
+                results_array.append(tuple(result[colName]
+                                           if result[colName] or
+                                           colName not in self.dbDefaultValues
+                                           else self.dbDefaultValues[colName]
+                                           for colName in cols))
 
         else:
             results_array = [tuple(rr) for rr in results]
