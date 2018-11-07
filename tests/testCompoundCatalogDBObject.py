@@ -680,7 +680,7 @@ class CompoundWithObsMetaData(unittest.TestCase):
         self.assertGreater(len(good_rows), 0)
         self.assertGreater(len(bad_rows), 0)
 
-    def testContraint(self):
+    def testConstraint(self):
         """
         Test that CompoundCatalogDBObject runs correctly with a constraint
         """
@@ -698,11 +698,13 @@ class CompoundWithObsMetaData(unittest.TestCase):
 
         compoundDb = CompoundCatalogDBObject([db1, db2])
 
-        colnames = ['%s_id' % db1.objid,
-                    '%s_raJ2000' % db1.objid, '%s_decJ2000' % db1.objid,
-                    '%s_magMod' % db1.objid,
-                    '%s_raJ2000' % db2.objid, '%s_decJ2000' % db2.objid,
-                    '%s_magMod' % db2.objid]
+        prefix_colnames = ['%s_id' % db1.objid,
+                           '%s_raJ2000' % db1.objid, '%s_decJ2000' % db1.objid,
+                           '%s_magMod' % db1.objid,
+                           '%s_raJ2000' % db2.objid, '%s_decJ2000' % db2.objid,
+                           '%s_magMod' % db2.objid]
+
+        colnames = numpy.unique([compoundDb.name_map(name) for name in prefix_colnames])
 
         results = compoundDb.query_columns(colnames=colnames,
                                            constraint='mag<11.0')
@@ -712,12 +714,24 @@ class CompoundWithObsMetaData(unittest.TestCase):
             for line in chunk:
                 ix = int(line['id'])
                 good_rows.append(ix)
-                self.assertAlmostEqual(line['%s_raJ2000' % db1.objid], self.controlArray['ra'][ix], 10)
-                self.assertAlmostEqual(line['%s_decJ2000' % db1.objid], self.controlArray['dec'][ix], 10)
-                self.assertAlmostEqual(line['%s_magMod' % db1.objid], self.controlArray['mag'][ix], 10)
-                self.assertAlmostEqual(line['%s_raJ2000' % db2.objid], 2.0*self.controlArray['ra'][ix], 10)
-                self.assertAlmostEqual(line['%s_decJ2000' % db2.objid], 2.0*self.controlArray['dec'][ix], 10)
-                self.assertAlmostEqual(line['%s_magMod' % db2.objid], 2.0*self.controlArray['mag'][ix], 10)
+                self.assertAlmostEqual(line[compoundDb.name_map('%s_raJ2000' % db1.objid)],
+                                       self.controlArray['ra'][ix], 10)
+
+                self.assertAlmostEqual(line[compoundDb.name_map('%s_decJ2000' % db1.objid)],
+                                       self.controlArray['dec'][ix], 10)
+
+                self.assertAlmostEqual(line[compoundDb.name_map('%s_magMod' % db1.objid)],
+                                       self.controlArray['mag'][ix], 10)
+
+                self.assertAlmostEqual(line[compoundDb.name_map('%s_raJ2000' % db2.objid)],
+                                       2.0*self.controlArray['ra'][ix], 10)
+
+                self.assertAlmostEqual(line[compoundDb.name_map('%s_decJ2000' % db2.objid)],
+                                       2.0*self.controlArray['dec'][ix], 10)
+
+                self.assertAlmostEqual(line[compoundDb.name_map('%s_magMod' % db2.objid)],
+                                       2.0*self.controlArray['mag'][ix], 10)
+
                 self.assertLess(self.controlArray['mag'][ix], 11.0)
 
         bad_rows = [ii for ii in range(self.controlArray.shape[0]) if ii not in good_rows]
