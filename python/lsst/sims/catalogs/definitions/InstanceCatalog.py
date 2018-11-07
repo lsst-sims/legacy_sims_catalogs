@@ -564,6 +564,7 @@ class InstanceCatalog(with_metaclass(InstanceCatalogMeta, object)):
                         print('filtering %s as float' % col_name)
                         good_dexes = np.where(np.isfinite(chunk[col_name]))
                     else:
+                        print('filtering %s as a string' % col_name)
                         str_vec = np.char.lower(chunk[col_name].astype('str'))
                         good_dexes = np.where(np.logical_and(str_vec != 'none',
                                               np.logical_and(str_vec != 'nan', str_vec != 'null')))
@@ -581,6 +582,7 @@ class InstanceCatalog(with_metaclass(InstanceCatalogMeta, object)):
                     print('filtering %s as float (not prefilter)' % filter_col)
                     good_dexes = np.where(np.isfinite(filter_vals))
                 else:
+                    print('filtering %s as a string (not prefilter)' % filter_col)
                     filter_vals = np.char.lower(filter_vals.astype('str'))
                     good_dexes = np.where(np.logical_and(filter_vals != 'none',
                                           np.logical_and(filter_vals  != 'nan', filter_vals != 'null')))
