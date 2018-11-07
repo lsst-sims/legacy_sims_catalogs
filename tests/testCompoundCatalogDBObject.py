@@ -432,11 +432,13 @@ class CompoundCatalogDBObjectTestCase(unittest.TestCase):
         dbList = [db1, db2, db3]
         compoundDb = CompoundCatalogDBObject(dbList)
 
-        colNames = ['id',
-                    '%s_aa' % db1.objid, '%s_bb' % db1.objid,
-                    '%s_aa' % db2.objid, '%s_bb' % db2.objid,
-                    '%s_aa' % db3.objid, '%s_bb' % db3.objid,
-                    '%s_cc' % db3.objid]
+        prefix_colNames = ['id',
+                           '%s_aa' % db1.objid, '%s_bb' % db1.objid,
+                           '%s_aa' % db2.objid, '%s_bb' % db2.objid,
+                           '%s_aa' % db3.objid, '%s_bb' % db3.objid,
+                           '%s_cc' % db3.objid]
+
+        colNames = numpy.unique([compoundDb.name_map(name) for name in prefix_colNames])
 
         results = compoundDb.query_columns(colnames=colNames, chunk_size=10)
 
@@ -447,30 +449,30 @@ class CompoundCatalogDBObjectTestCase(unittest.TestCase):
             rows = chunk['id']
             self.assertLessEqual(len(rows), 10)
 
-            numpy.testing.assert_array_almost_equal(chunk['%s_aa' % db1.objid],
+            numpy.testing.assert_array_almost_equal(chunk[compoundDb.name_map('%s_aa' % db1.objid)],
                                                     self.controlArray['a'][rows],
                                                     decimal=6)
 
-            numpy.testing.assert_array_equal(chunk['%s_bb' % db1.objid],
+            numpy.testing.assert_array_equal(chunk[compoundDb.name_map('%s_bb' % db1.objid)],
                                              self.controlArray['d'][rows])
 
-            numpy.testing.assert_array_almost_equal(chunk['%s_aa' % db2.objid],
+            numpy.testing.assert_array_almost_equal(chunk[compoundDb.name_map('%s_aa' % db2.objid)],
                                                     2.0*self.controlArray['b'][rows],
                                                     decimal=6)
 
-            numpy.testing.assert_array_almost_equal(chunk['%s_bb' % db2.objid],
+            numpy.testing.assert_array_almost_equal(chunk[compoundDb.name_map('%s_bb' % db2.objid)],
                                                     self.controlArray['a'][rows],
                                                     decimal=6)
 
-            numpy.testing.assert_array_almost_equal(chunk['%s_aa' % db3.objid],
+            numpy.testing.assert_array_almost_equal(chunk[compoundDb.name_map('%s_aa' % db3.objid)],
                                                     self.controlArray['c'][rows]-3.0,
                                                     decimal=6)
 
-            numpy.testing.assert_array_almost_equal(chunk['%s_bb' % db3.objid],
+            numpy.testing.assert_array_almost_equal(chunk[compoundDb.name_map('%s_bb' % db3.objid)],
                                                     self.controlArray['a'][rows],
                                                     decimal=6)
 
-            numpy.testing.assert_array_almost_equal(chunk['%s_cc' % db3.objid],
+            numpy.testing.assert_array_almost_equal(chunk[compoundDb.name_map('%s_cc' % db3.objid)],
                                                     3.0*self.controlArray['b'][rows],
                                                     decimal=6)
 
