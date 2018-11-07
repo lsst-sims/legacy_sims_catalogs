@@ -281,7 +281,7 @@ class CompoundInstanceCatalog(object):
                 if query_name not in colnames:
                     colnames.append(query_name)
                 localNames.append(query_name)
-                local_map[prefixed_name] = colName
+                local_map[query_name] = colName
             master_colnames.append(localNames)
             name_map.append(local_map)
 
