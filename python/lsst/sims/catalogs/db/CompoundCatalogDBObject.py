@@ -92,7 +92,8 @@ class CompoundCatalogDBObject(CatalogDBObject):
         columns to identify them with their specific CatalogDBObjects.
         """
         column_names = []
-        self.columns = []
+        preliminary_columns = {}
+        preliminary_column_name_map = {}
         for dbo, dbName in zip(self._dbObjectClassList, self._nameList):
             db_inst = dbo()
             for row in db_inst.columns:
@@ -100,7 +101,11 @@ class CompoundCatalogDBObject(CatalogDBObject):
                 new_row[0] = str('%s_%s' % (dbName, row[0]))
                 if new_row[1] is None:
                     new_row[1] = row[0]
-                self.columns.append(tuple(new_row))
+                column_key = tuple(new_row[1:])
+                if column_key not in preliminary_columns:
+                    preliminary_columns[column_key] = []
+                    preliminary_column_name_map[column_key] = (row[0], new_row[0])
+                preliminary_columns[column_key].append(tuple(new_row))
                 column_names.append(new_row[0])
 
                 # 25 August 2015
@@ -114,8 +119,37 @@ class CompoundCatalogDBObject(CatalogDBObject):
                 # un-mangled in self.columns so that self.typeMap knows how to deal
                 # with it when it comes back.
                 if row[0] not in column_names and (row[1] is None or row[1] == row[0]):
-                    self.columns.append(row)
+                    preliminary_columns[column_key].append(row)
                     column_names.append(row[0])
+
+        use_prefix_list = []
+        column_name_map = {}
+        for column_key in preliminary_column_name_map:
+            if preliminary_column_name_map[column_key][0] in use_prefix_list:
+                column_name_map[column_key] = preliminary_column_name_map[column_key][1]
+                continue
+            use_prefix = False
+            for column_key2 in preliminary_column_name_map:
+                if column_key2 == column_key:
+                    continue
+                if preliminary_column_name_map[column_key][0] == preliminary_column_name_map[column_key2][0]:
+                    use_prefix_list.append(preliminary_column_name_map[column_key][0])
+                    use_prefix = True
+                    break
+            if use_prefix:
+                column_name_map[column_key] = preliminary_column_name_map[column_key][1]
+            else:
+                column_name_map[column_key] = preliminary_column_name_map[column_key][0]
+
+        self._compound_dbo_name_map = {}
+        self.columns = []
+        for column_key in preliminary_column_name_map:
+            new_row = [column_name_map[column_key]]
+            for nn in column_key:
+                new_row.append(nn)
+            self.columns.append(tuple(new_row))
+            for prelim_row in preliminary_columns[column_key]:
+                self._compound_dbo_name_map[prelim_row[0]] = new_row[0]
 
     def _make_dbTypeMap(self):
         """

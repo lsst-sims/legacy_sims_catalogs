@@ -276,9 +276,12 @@ class CompoundInstanceCatalog(object):
             localNames = []
             local_map = {}
             for colName in cat._active_columns:
-                colnames.append('%s_%s' % (name, colName))
-                localNames.append('%s_%s' % (name, colName))
-                local_map['%s_%s' % (name, colName)] = colName
+                prefixed_name = '%s_%s' % (name, colName)
+                query_name = compound_dbo._compound_dbo_name_map[prefixed_name]
+                if query_name not in colnames:
+                    colnames.append(query_name)
+                localNames.append(query_name)
+                local_map[prefixed_name] = colName
             master_colnames.append(localNames)
             name_map.append(local_map)
 
