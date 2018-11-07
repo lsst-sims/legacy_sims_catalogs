@@ -3,10 +3,88 @@ from builtins import str
 from builtins import range
 from lsst.sims.catalogs.db import CatalogDBObject
 
-__all__ = ["CompoundCatalogDBObject"]
+__all__ = ["CompoundCatalogDBObject",
+           "_CompoundCatalogDBObject_mixin"]
 
 
-class CompoundCatalogDBObject(CatalogDBObject):
+class _CompoundCatalogDBObject_mixin(object):
+    """
+    This mixin exists to separate out utility methods that we will
+    need for the DESC DC2 CompoundCatalogDBObject
+    """
+    def _make_columns(self):
+        """
+        Construct the self.columns member by concatenating the self.columns
+        from the input CatalogDBObjects and modifying the names of the returned
+        columns to identify them with their specific CatalogDBObjects.
+        """
+        column_names = []
+        preliminary_columns = {}
+        preliminary_column_name_map = {}
+        for dbo, dbName in zip(self._dbObjectClassList, self._nameList):
+            db_inst = dbo()
+            for row in db_inst.columns:
+                new_row = [ww for ww in row]
+                new_row[0] = str('%s_%s' % (dbName, row[0]))
+                if new_row[1] is None:
+                    new_row[1] = row[0]
+                column_key = tuple(new_row[1:])
+                if column_key not in preliminary_columns:
+                    preliminary_columns[column_key] = []
+                    preliminary_column_name_map[column_key] = (row[0], new_row[0])
+                preliminary_columns[column_key].append(tuple(new_row))
+                column_names.append(new_row[0])
+
+                # 25 August 2015
+                # This is a modification that needs to be made in order for this
+                # class to work with GalaxyTileObj.  The column galaxytileid in
+                # GalaxyTileObj is removed from the query by query_columns, but
+                # somehow injected back in by the query procedure on fatboy. This
+                # leads to confusion if you try to query something like
+                # galaxyAgn_galaxytileid.  We deal with that by removing all column
+                # names like 'galaxytileid' in query_columns, but leaving 'galaxytileid'
+                # un-mangled in self.columns so that self.typeMap knows how to deal
+                # with it when it comes back.
+                if row[0] not in column_names and (row[1] is None or row[1] == row[0]):
+                    preliminary_columns[column_key].append(row)
+                    column_names.append(row[0])
+
+        use_prefix_list = []
+        column_name_map = {}
+        for column_key in preliminary_column_name_map:
+            if preliminary_column_name_map[column_key][0] in use_prefix_list:
+                column_name_map[column_key] = preliminary_column_name_map[column_key][1]
+                continue
+            use_prefix = False
+            for column_key2 in preliminary_column_name_map:
+                if column_key2 == column_key:
+                    continue
+                if preliminary_column_name_map[column_key][0] == preliminary_column_name_map[column_key2][0]:
+                    use_prefix_list.append(preliminary_column_name_map[column_key][0])
+                    use_prefix = True
+                    break
+            if use_prefix:
+                column_name_map[column_key] = preliminary_column_name_map[column_key][1]
+            else:
+                column_name_map[column_key] = preliminary_column_name_map[column_key][0]
+
+        self._compound_dbo_name_map = {}
+        self.columns = []
+        for column_key in preliminary_column_name_map:
+            new_row = [column_name_map[column_key]]
+            for nn in column_key:
+                new_row.append(nn)
+            self.columns.append(tuple(new_row))
+            for prelim_row in preliminary_columns[column_key]:
+                self._compound_dbo_name_map[prelim_row[0]] = new_row[0]
+
+    def name_map(self, name):
+        if not hasattr(self, '_compound_dbo_name_map'):
+            raise RuntimeError("This CompoundCatalogDBObject does not have a name_map")
+        return self._compound_dbo_name_map[name]
+
+
+class CompoundCatalogDBObject(_CompoundCatalogDBObject_mixin, CatalogDBObject):
     """
     This is a class for taking several CatalogDBObject daughter classes that
     query the same table of the same database for the same rows (but different
@@ -84,77 +162,6 @@ class CompoundCatalogDBObject(CatalogDBObject):
         self.decColName = dbo.decColName
 
         super(CompoundCatalogDBObject, self).__init__(connection=dbo.connection)
-
-    def _make_columns(self):
-        """
-        Construct the self.columns member by concatenating the self.columns
-        from the input CatalogDBObjects and modifying the names of the returned
-        columns to identify them with their specific CatalogDBObjects.
-        """
-        column_names = []
-        preliminary_columns = {}
-        preliminary_column_name_map = {}
-        for dbo, dbName in zip(self._dbObjectClassList, self._nameList):
-            db_inst = dbo()
-            for row in db_inst.columns:
-                new_row = [ww for ww in row]
-                new_row[0] = str('%s_%s' % (dbName, row[0]))
-                if new_row[1] is None:
-                    new_row[1] = row[0]
-                column_key = tuple(new_row[1:])
-                if column_key not in preliminary_columns:
-                    preliminary_columns[column_key] = []
-                    preliminary_column_name_map[column_key] = (row[0], new_row[0])
-                preliminary_columns[column_key].append(tuple(new_row))
-                column_names.append(new_row[0])
-
-                # 25 August 2015
-                # This is a modification that needs to be made in order for this
-                # class to work with GalaxyTileObj.  The column galaxytileid in
-                # GalaxyTileObj is removed from the query by query_columns, but
-                # somehow injected back in by the query procedure on fatboy. This
-                # leads to confusion if you try to query something like
-                # galaxyAgn_galaxytileid.  We deal with that by removing all column
-                # names like 'galaxytileid' in query_columns, but leaving 'galaxytileid'
-                # un-mangled in self.columns so that self.typeMap knows how to deal
-                # with it when it comes back.
-                if row[0] not in column_names and (row[1] is None or row[1] == row[0]):
-                    preliminary_columns[column_key].append(row)
-                    column_names.append(row[0])
-
-        use_prefix_list = []
-        column_name_map = {}
-        for column_key in preliminary_column_name_map:
-            if preliminary_column_name_map[column_key][0] in use_prefix_list:
-                column_name_map[column_key] = preliminary_column_name_map[column_key][1]
-                continue
-            use_prefix = False
-            for column_key2 in preliminary_column_name_map:
-                if column_key2 == column_key:
-                    continue
-                if preliminary_column_name_map[column_key][0] == preliminary_column_name_map[column_key2][0]:
-                    use_prefix_list.append(preliminary_column_name_map[column_key][0])
-                    use_prefix = True
-                    break
-            if use_prefix:
-                column_name_map[column_key] = preliminary_column_name_map[column_key][1]
-            else:
-                column_name_map[column_key] = preliminary_column_name_map[column_key][0]
-
-        self._compound_dbo_name_map = {}
-        self.columns = []
-        for column_key in preliminary_column_name_map:
-            new_row = [column_name_map[column_key]]
-            for nn in column_key:
-                new_row.append(nn)
-            self.columns.append(tuple(new_row))
-            for prelim_row in preliminary_columns[column_key]:
-                self._compound_dbo_name_map[prelim_row[0]] = new_row[0]
-
-    def name_map(self, name):
-        if not hasattr(self, '_compound_dbo_name_map'):
-            raise RuntimeError("This CompoundCatalogDBObject does not have a name_map")
-        return self._compound_dbo_name_map[name]
 
     def _make_dbTypeMap(self):
         """
