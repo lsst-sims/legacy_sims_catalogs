@@ -315,5 +315,6 @@ class CompoundInstanceCatalog(object):
 
                     local_recarray.dtype = new_dtype_list[ix]
                     cat._write_recarray(local_recarray, file_handle)
+                    cat._delete_current_chunk()
 
                 first_chunk = False

@@ -327,6 +327,17 @@ class InstanceCatalog(with_metaclass(InstanceCatalogMeta, object)):
         else:
             self._column_cache = column_cache
 
+    def _delete_current_chunk(self):
+        """
+        Set the column cache and _current_chunk to None.
+        This is just going to be called by the
+        CompoundInstanceCatalog._write_compound method to try to control
+        memory bloat as multiple copies of the returned database query
+        accumulate in the different InstanceCatalogs being written.
+        """
+        self._column_cache = {}
+        self._current_chunk = None
+
     def db_required_columns(self):
         """Get the list of columns required to be in the database object."""
         saved_cache = self._cached_columns
