@@ -560,9 +560,13 @@ class InstanceCatalog(with_metaclass(InstanceCatalogMeta, object)):
             # rows that have already run afoul of self._cannot_be_null
             for col_name in self._cannot_be_null:
                 if col_name in chunk.dtype.names:
-                    str_vec = np.char.lower(chunk[col_name].astype('str'))
-                    good_dexes = np.where(np.logical_and(str_vec != 'none',
-                                          np.logical_and(str_vec != 'nan', str_vec != 'null')))
+                    if chunk[col_name].dtype == float:
+                        print('filtering %s as float' % col_name)
+                        good_dexes = np.where(np.isfinite(chunk[col_name]))
+                    else:
+                        str_vec = np.char.lower(chunk[col_name].astype('str'))
+                        good_dexes = np.where(np.logical_and(str_vec != 'none',
+                                              np.logical_and(str_vec != 'nan', str_vec != 'null')))
                     chunk = chunk[good_dexes]
                     final_dexes = final_dexes[good_dexes]
 
@@ -572,10 +576,14 @@ class InstanceCatalog(with_metaclass(InstanceCatalogMeta, object)):
         # removing rows that run afoul of that criterion from the chunk.
         if self._cannot_be_null is not None:
             for filter_col in self._cannot_be_null:
-                filter_vals = np.char.lower(self.column_by_name(filter_col).astype('str'))
-
-                good_dexes = np.where(np.logical_and(filter_vals != 'none',
-                                      np.logical_and(filter_vals  != 'nan', filter_vals != 'null')))
+                filter_vals = self.column_by_name(filter_col)
+                if filter_vals.dtype == float:
+                    print('filtering %s as float (not prefilter)' % filter_col)
+                    good_dexes = np.where(np.isfinite(filter_vals))
+                else:
+                    filter_vals = np.char.lower(filter_vals.astype('str'))
+                    good_dexes = np.where(np.logical_and(filter_vals != 'none',
+                                          np.logical_and(filter_vals  != 'nan', filter_vals != 'null')))
 
                 final_dexes = final_dexes[good_dexes]
 
