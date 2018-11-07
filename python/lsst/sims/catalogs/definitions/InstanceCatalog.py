@@ -576,21 +576,27 @@ class InstanceCatalog(with_metaclass(InstanceCatalogMeta, object)):
         # If some columns are specified as cannot_be_null, loop over those columns,
         # removing rows that run afoul of that criterion from the chunk.
         if self._cannot_be_null is not None:
+            filter_switch = None
             for filter_col in self._cannot_be_null:
                 filter_vals = self.column_by_name(filter_col)
                 if filter_vals.dtype == float:
                     print('filtering %s as float (not prefilter)' % filter_col)
-                    good_dexes = np.where(np.isfinite(filter_vals))
+                    local_switch = np.isfinite(filter_vals)
                 else:
                     print('filtering %s as a string (not prefilter)' % filter_col)
                     filter_vals = np.char.lower(filter_vals.astype('str'))
-                    good_dexes = np.where(np.logical_and(filter_vals != 'none',
-                                          np.logical_and(filter_vals  != 'nan', filter_vals != 'null')))
+                    local_switch = np.logical_and(filter_vals != 'none',
+                                                  np.logical_and(filter_vals  != 'nan', filter_vals != 'null'))
+                if filter_switch is None:
+                    filter_switch = local_switch
+                else:
+                    filter_switch &= local_switch
 
-                final_dexes = final_dexes[good_dexes]
+            good_dexes = np.where(filter_switch)
+            final_dexes = final_dexes[good_dexes]
 
-                if len(good_dexes[0]) < len(chunk):
-                    self._update_current_chunk(good_dexes)
+            if len(good_dexes[0]) < len(chunk):
+                self._update_current_chunk(good_dexes)
 
         return final_dexes
 
