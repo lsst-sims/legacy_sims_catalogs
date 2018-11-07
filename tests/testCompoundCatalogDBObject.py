@@ -494,25 +494,29 @@ class CompoundCatalogDBObjectTestCase(unittest.TestCase):
 
         db1 = testDbClass20
         db2 = testDbClass21
-        colNames = ['%s_aa' % db1.objid, '%s_bb' % db1.objid,
-                    '%s_a' % db2.objid, '%s_b' % db2.objid]
 
         compoundDb = CompoundCatalogDBObject([db1, db2])
+
+        prefix_colNames = ['%s_aa' % db1.objid, '%s_bb' % db1.objid,
+                           '%s_a' % db2.objid, '%s_b' % db2.objid]
+
+        colNames = numpy.unique([compoundDb.name_map(name) for name in prefix_colNames])
+
         results = compoundDb.query_columns(colnames=colNames)
 
         for chunk in results:
-            numpy.testing.assert_array_almost_equal(chunk['%s_aa' % db1.objid],
+            numpy.testing.assert_array_almost_equal(chunk[compoundDb.name_map('%s_aa' % db1.objid)],
                                                     self.controlArray['a'],
                                                     decimal=6)
 
-            numpy.testing.assert_array_equal(chunk['%s_bb' % db1.objid],
+            numpy.testing.assert_array_equal(chunk[compoundDb.name_map('%s_bb' % db1.objid)],
                                              self.controlArray['d'])
 
-            numpy.testing.assert_array_almost_equal(chunk['%s_a' % db2.objid],
+            numpy.testing.assert_array_almost_equal(chunk[compoundDb.name_map('%s_a' % db2.objid)],
                                                     self.controlArray['a'],
                                                     decimal=6)
 
-            numpy.testing.assert_array_almost_equal(chunk['%s_b' % db2.objid],
+            numpy.testing.assert_array_almost_equal(chunk[compoundDb.name_map('%s_b' % db2.objid)],
                                                     self.controlArray['b'],
                                                     decimal=6)
 
