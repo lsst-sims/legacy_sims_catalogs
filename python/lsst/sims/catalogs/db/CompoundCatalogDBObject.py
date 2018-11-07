@@ -151,6 +151,11 @@ class CompoundCatalogDBObject(CatalogDBObject):
             for prelim_row in preliminary_columns[column_key]:
                 self._compound_dbo_name_map[prelim_row[0]] = new_row[0]
 
+    def name_map(self, name):
+        if not hasattr(self, '_compound_dbo_name_map'):
+            raise RuntimeError("This CompoundCatalogDBObject does not have a name_map")
+        return self._compound_dbo_name_map[name]
+
     def _make_dbTypeMap(self):
         """
         Construct the self.dbTypeMap member by concatenating the self.dbTypeMaps
