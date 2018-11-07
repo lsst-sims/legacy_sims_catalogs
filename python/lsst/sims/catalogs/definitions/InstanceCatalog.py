@@ -583,10 +583,14 @@ class InstanceCatalog(with_metaclass(InstanceCatalogMeta, object)):
                     print('filtering %s as float (not prefilter)' % filter_col)
                     local_switch = np.isfinite(filter_vals)
                 else:
-                    print('filtering %s as a string (not prefilter)' % filter_col)
-                    filter_vals = np.char.lower(filter_vals.astype('str'))
-                    local_switch = np.logical_and(filter_vals != 'none',
-                                                  np.logical_and(filter_vals  != 'nan', filter_vals != 'null'))
+                    try:
+                       filter_vals = filter_vals.astype(float)
+                       local_switch = np.isfinite(filter_vals)
+                    except ValueError:
+                        print('filtering %s as a string (not prefilter)' % filter_col)
+                        filter_vals = np.char.lower(filter_vals.astype('str'))
+                        local_switch = np.logical_and(filter_vals != 'none',
+                                                      np.logical_and(filter_vals  != 'nan', filter_vals != 'null'))
                 if filter_switch is None:
                     filter_switch = local_switch
                 else:
