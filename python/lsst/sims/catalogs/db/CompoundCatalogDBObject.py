@@ -27,6 +27,7 @@ class _CompoundCatalogDBObject_mixin(object):
         for dbo, dbName in zip(self._dbObjectClassList, self._nameList):
             db_inst = dbo()
             for row in db_inst.columns:
+                print(row, dbName)
                 all_rows.append(row)
                 raw_column_names.append(row[1])
                 processed_column_names.append(row[0])
