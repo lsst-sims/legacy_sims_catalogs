@@ -18,65 +18,129 @@ class _CompoundCatalogDBObject_mixin(object):
         from the input CatalogDBObjects and modifying the names of the returned
         columns to identify them with their specific CatalogDBObjects.
         """
-        column_names = []
-        preliminary_columns = {}
-        preliminary_column_name_map = {}
+        raw_column_names = []  # the names as they appear on the database
+        processed_column_names = []  # the names as they appear in the CatalogDBObject
+        prefix_column_names = []  # the names with the objid added
+        raw_column_transform = []  # the full transform applied by the CatalogDBObject
+        all_rows = []  # store the raw rows for the last block of code in this method
+
         for dbo, dbName in zip(self._dbObjectClassList, self._nameList):
             db_inst = dbo()
             for row in db_inst.columns:
-                new_row = [ww for ww in row]
-                new_row[0] = str('%s_%s' % (dbName, row[0]))
-                if new_row[1] is None:
-                    new_row[1] = row[0]
-                column_key = tuple(new_row[1:])
-                if column_key not in preliminary_columns:
-                    preliminary_columns[column_key] = []
-                    preliminary_column_name_map[column_key] = (row[0], new_row[0])
-                preliminary_columns[column_key].append(tuple(new_row))
-                column_names.append(new_row[0])
+                all_rows.append(row)
+                raw_column_names.append(row[1])
+                processed_column_names.append(row[0])
+                prefix_column_names.append('%s_%s' % (dbName, row[0]))
+                raw_column_transform.append(row[1:])
 
-                # 25 August 2015
-                # This is a modification that needs to be made in order for this
-                # class to work with GalaxyTileObj.  The column galaxytileid in
-                # GalaxyTileObj is removed from the query by query_columns, but
-                # somehow injected back in by the query procedure on fatboy. This
-                # leads to confusion if you try to query something like
-                # galaxyAgn_galaxytileid.  We deal with that by removing all column
-                # names like 'galaxytileid' in query_columns, but leaving 'galaxytileid'
-                # un-mangled in self.columns so that self.typeMap knows how to deal
-                # with it when it comes back.
-                if row[0] not in column_names and (row[1] is None or row[1] == row[0]):
-                    preliminary_columns[column_key].append(row)
-                    column_names.append(row[0])
-
-        use_prefix_list = []
-        column_name_map = {}
-        for column_key in preliminary_column_name_map:
-            if preliminary_column_name_map[column_key][0] in use_prefix_list:
-                column_name_map[column_key] = preliminary_column_name_map[column_key][1]
-                continue
-            use_prefix = False
-            for column_key2 in preliminary_column_name_map:
-                if column_key2 == column_key:
-                    continue
-                if preliminary_column_name_map[column_key][0] == preliminary_column_name_map[column_key2][0]:
-                    use_prefix_list.append(preliminary_column_name_map[column_key][0])
-                    use_prefix = True
-                    break
-            if use_prefix:
-                column_name_map[column_key] = preliminary_column_name_map[column_key][1]
-            else:
-                column_name_map[column_key] = preliminary_column_name_map[column_key][0]
 
         self._compound_dbo_name_map = {}
         self.columns = []
-        for column_key in preliminary_column_name_map:
-            new_row = [column_name_map[column_key]]
-            for nn in column_key:
-                new_row.append(nn)
-            self.columns.append(tuple(new_row))
-            for prelim_row in preliminary_columns[column_key]:
-                self._compound_dbo_name_map[prelim_row[0]] = new_row[0]
+        processed_columns_requiring_prefix = set()
+        column_diagnostic = {}
+
+        # Now we need to figure out which of the CatalogDBObject-mapped columns
+        # actually need to be kept independent (i.e sedFilename for galaxy bulges will
+        # not actually be referencing the same column as sedFilename for galaxy disks)
+        # and which can be lumped together (i.e. redshift will be the same database
+        # column for galaxy bulges and disks)
+        for i_r1 in range(len(raw_column_names)):
+
+            # if a processed column has already been determined to be degenerate,
+            # just acknowledget that
+            use_prefix = processed_column_names[i_r1] in processed_columns_requiring_prefix
+
+            if not use_prefix:
+                # If two CatalogDBObjects map different columns in the raw database to
+                # the same transformed column name, then we need to keep the two
+                # distinct in this CompoundCatalogDBObject; we do that by using the
+                # prefix_name, which prepends the objid of the CatalogDBobject to the
+                # transformed column
+                for i_r2 in range(i_r1+1, len(raw_column_names)):
+                    if (processed_column_names[i_r1] == processed_column_names[i_r2] and
+                        raw_column_transform[i_r1] != raw_column_transform[i_r2]):
+
+                        use_prefix = True
+                        break
+
+                if use_prefix:
+                    processed_columns_requiring_prefix.add(processed_column_names[i_r1])
+
+            # under what name will the column actually be queried
+            if use_prefix:
+                query_name = prefix_column_names[i_r1]
+            else:
+                query_name = processed_column_names[i_r1]
+
+
+            if prefix_column_names[i_r1] in self._compound_dbo_name_map:
+                raise RuntimeError("Trying to put %s in compound_db_name_map twice" %
+                                   prefix_column_names[i_r1])
+
+            # build the dict that maps the prefixed column names, which CompoundInstanceCatalog
+            # will reference, to the names that are actually going to be queried from
+            # this CompoundCatalogDBObject
+            self._compound_dbo_name_map[prefix_column_names[i_r1]] = query_name
+
+            # build the self.columns member variable of this CompoundCatalogDBObject
+            column_row = [query_name]
+            column_row += [ww for ww in raw_column_transform[i_r1]]
+
+            # if no transformation was applied, we need to map the column
+            # back to the database column of the same name
+            if column_row[1] is None:
+                column_row[1] = processed_column_names[i_r1]
+
+            column_row = tuple(column_row)
+
+            if column_row[0] in column_diagnostic:
+                if column_row != column_diagnostic[column_row[0]]:
+                    row1 = column_row
+                    row2 = column_diagnostic[column_row[0]]
+                    raise RuntimeError("Trying to change definition of columns "
+                                       + "\n%s\n%s\n" % (row1, row2))
+
+            if column_row not in self.columns:
+                self.columns.append(column_row)
+                column_diagnostic[column_row[0]] = column_row
+
+        # 8 November 2018 (originally 25 August 2015)
+        # This is a modification that needs to be made in order for this
+        # class to work with GalaxyTileObj.  The column galaxytileid in
+        # GalaxyTileObj is removed from the query by query_columns, but
+        # somehow injected back in by the query procedure on fatboy. This
+        # leads to confusion if you try to query something like
+        # galaxyAgn_galaxytileid.  We deal with that by removing all column
+        # names like 'galaxytileid' in query_columns, but leaving 'galaxytileid'
+        # un-mangled in self.columns so that self.typeMap knows how to deal
+        # with it when it comes back
+
+        for column_row in all_rows:
+            if (column_row[0] not in self._compound_dbo_name_map and
+                (column_row[1] is None or column_row[1] == column_row[0])):
+
+                # again: deal with cases where no transformation is applied
+                if column_row[1] is None:
+                    new_row = [ww for ww in column_row]
+                    new_row[1] = new_row[0]
+                    column_row = tuple(new_row)
+
+                if column_row[0] in column_diagnostic:
+                    if column_row != column_diagnostic[column_row[0]]:
+                        row1 = column_row
+                        row2 = column_diagnostic[column_row[0]]
+                        raise RuntimeError("Trying to change definition of columns "
+                                           + "\n%s\n%s\n" % (row1, row2))
+
+                if column_row not in self.columns:
+                    self.columns.append(column_row)
+                    column_diagnostic[column_row[0]] = column_row
+
+                if column_row[0] in self._compound_dbo_name_map:
+                    if column_row[0] != self._column_dbo_name_map[column_row[0]]:
+                        raise RuntimeError("Column name map conflict")
+
+                self._compound_dbo_name_map[column_row[0]] = column_row[0]
 
     def name_map(self, name):
         if not hasattr(self, '_compound_dbo_name_map'):
