@@ -143,6 +143,10 @@ class _CompoundCatalogDBObject_mixin(object):
                 self._compound_dbo_name_map[column_row[0]] = column_row[0]
 
     def name_map(self, name):
+        """
+        Map a column name with the CatalogDBObject's objid prepended to the
+        name of the column that will actually be queried from the database
+        """
         if not hasattr(self, '_compound_dbo_name_map'):
             raise RuntimeError("This CompoundCatalogDBObject does not have a name_map")
         return self._compound_dbo_name_map[name]
