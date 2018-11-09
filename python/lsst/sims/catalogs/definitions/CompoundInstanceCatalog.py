@@ -279,7 +279,6 @@ class CompoundInstanceCatalog(object):
                 prefixed_name = '%s_%s' % (name, colName)
                 query_name = compound_dbo.name_map(prefixed_name)
                 if query_name not in colnames:
-                    print('querying %s -> %s' % (prefixed_name, query_name))
                     colnames.append(query_name)
                 localNames.append(query_name)
                 local_map[query_name] = colName
