@@ -327,6 +327,17 @@ class InstanceCatalog(with_metaclass(InstanceCatalogMeta, object)):
         else:
             self._column_cache = column_cache
 
+    def _delete_current_chunk(self):
+        """
+        Set the column cache and _current_chunk to None.
+        This is just going to be called by the
+        CompoundInstanceCatalog._write_compound method to try to control
+        memory bloat as multiple copies of the returned database query
+        accumulate in the different InstanceCatalogs being written.
+        """
+        self._column_cache = {}
+        self._current_chunk = None
+
     def db_required_columns(self):
         """Get the list of columns required to be in the database object."""
         saved_cache = self._cached_columns
@@ -560,9 +571,12 @@ class InstanceCatalog(with_metaclass(InstanceCatalogMeta, object)):
             # rows that have already run afoul of self._cannot_be_null
             for col_name in self._cannot_be_null:
                 if col_name in chunk.dtype.names:
-                    str_vec = np.char.lower(chunk[col_name].astype('str'))
-                    good_dexes = np.where(np.logical_and(str_vec != 'none',
-                                          np.logical_and(str_vec != 'nan', str_vec != 'null')))
+                    if chunk[col_name].dtype == float:
+                        good_dexes = np.where(np.isfinite(chunk[col_name]))
+                    else:
+                        str_vec = np.char.lower(chunk[col_name].astype('str'))
+                        good_dexes = np.where(np.logical_and(str_vec != 'none',
+                                              np.logical_and(str_vec != 'nan', str_vec != 'null')))
                     chunk = chunk[good_dexes]
                     final_dexes = final_dexes[good_dexes]
 
@@ -571,16 +585,29 @@ class InstanceCatalog(with_metaclass(InstanceCatalogMeta, object)):
         # If some columns are specified as cannot_be_null, loop over those columns,
         # removing rows that run afoul of that criterion from the chunk.
         if self._cannot_be_null is not None:
+            filter_switch = None
             for filter_col in self._cannot_be_null:
-                filter_vals = np.char.lower(self.column_by_name(filter_col).astype('str'))
+                filter_vals = self.column_by_name(filter_col)
+                if filter_vals.dtype == float:
+                    local_switch = np.isfinite(filter_vals)
+                else:
+                    try:
+                       filter_vals = filter_vals.astype(float)
+                       local_switch = np.isfinite(filter_vals)
+                    except ValueError:
+                        filter_vals = np.char.lower(filter_vals.astype('str'))
+                        local_switch = np.logical_and(filter_vals != 'none',
+                                                      np.logical_and(filter_vals  != 'nan', filter_vals != 'null'))
+                if filter_switch is None:
+                    filter_switch = local_switch
+                else:
+                    filter_switch &= local_switch
 
-                good_dexes = np.where(np.logical_and(filter_vals != 'none',
-                                      np.logical_and(filter_vals  != 'nan', filter_vals != 'null')))
+            good_dexes = np.where(filter_switch)
+            final_dexes = final_dexes[good_dexes]
 
-                final_dexes = final_dexes[good_dexes]
-
-                if len(good_dexes[0]) < len(chunk):
-                    self._update_current_chunk(good_dexes)
+            if len(good_dexes[0]) < len(chunk):
+                self._update_current_chunk(good_dexes)
 
         return final_dexes
 

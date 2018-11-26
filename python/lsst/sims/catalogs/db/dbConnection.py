@@ -745,12 +745,14 @@ class CatalogDBObject(with_metaclass(CatalogDBObjectMeta, DBObject)):
         try:
             vals = [self.columnMap[k] for k in colnames]
         except KeyError:
+            offending_columns = '\n'
             for col in colnames:
                 if col in self.columnMap:
                     continue
                 else:
-                    warnings.warn("%s not in columnMap"%(col))
-            raise ValueError('entries in colnames must be in self.columnMap')
+                    offending_columns +='%s\n' % col
+            raise ValueError('entries in colnames must be in self.columnMap. '
+                             'These:%sare not' % offending_columns)
 
         # Get the first query
         idColName = self.columnMap[self.idColKey]
