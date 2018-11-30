@@ -395,7 +395,7 @@ class DBObject(object):
         """
         return results
 
-    def _convert_results_to_numpy_recarray(self, results):
+    def _convert_results_to_numpy_recarray_dbobj(self, results):
         if self.dtype is None:
             """
             Determine the dtype from the data.
@@ -462,7 +462,7 @@ class DBObject(object):
     def _postprocess_arbitrary_results(self, results):
 
         if not isinstance(results, numpy.recarray):
-            retresults = self._convert_results_to_numpy_recarray(results)
+            retresults = self._convert_results_to_numpy_recarray_dbobj(results)
         else:
             retresults = results
 
@@ -792,7 +792,7 @@ class CatalogDBObject(with_metaclass(CatalogDBObjectMeta, DBObject)):
             query = query.filter(text(on_clause))
         return query
 
-    def _postprocess_results(self, results):
+    def _convert_results_to_numpy_recarray_catalogDBObj(self, results):
         """Post-process the query results to put them
         in a structured array.
 
@@ -844,6 +844,13 @@ class CatalogDBObject(with_metaclass(CatalogDBObjectMeta, DBObject)):
             results_array = [tuple(rr) for rr in results]
 
         retresults = numpy.rec.fromrecords(results_array, dtype=dtype)
+        return retresults
+
+    def _postprocess_results(self, results):
+        if not isinstance(results, numpy.recarray):
+            retresults = self._convert_results_to_numpy_recarray_catalogDBObj(results)
+        else:
+            retresults = results
         return self._final_pass(retresults)
 
     def query_columns(self, colnames=None, chunk_size=None,
