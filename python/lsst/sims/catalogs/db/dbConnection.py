@@ -395,15 +395,7 @@ class DBObject(object):
         """
         return results
 
-    def _postprocess_results(self, results):
-        """
-        This wrapper exists so that a ChunkIterator built from a DBObject
-        can have the same API as a ChunkIterator built from a CatalogDBObject
-        """
-        return self._postprocess_arbitrary_results(results)
-
-    def _postprocess_arbitrary_results(self, results):
-
+    def _convert_results_to_numpy_recarray(self, results):
         if self.dtype is None:
             """
             Determine the dtype from the data.
@@ -457,6 +449,23 @@ class DBObject(object):
             return numpy.recarray((0,), dtype = self.dtype)
 
         retresults = numpy.rec.fromrecords([tuple(xx) for xx in results],dtype = self.dtype)
+        return retresults
+
+    def _postprocess_results(self, results):
+        """
+        This wrapper exists so that a ChunkIterator built from a DBObject
+        can have the same API as a ChunkIterator built from a CatalogDBObject
+        """
+        return self._postprocess_arbitrary_results(results)
+
+
+    def _postprocess_arbitrary_results(self, results):
+
+        if not isinstance(results, numpy.recarray):
+            retresults = self._convert_results_to_numpy_recarray(results)
+        else:
+            retresults = results
+
         return self._final_pass(retresults)
 
     def execute_arbitrary(self, query, dtype = None):
