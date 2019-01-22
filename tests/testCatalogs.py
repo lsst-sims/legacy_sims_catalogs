@@ -639,6 +639,7 @@ class boundingBoxTest(unittest.TestCase):
         np.testing.assert_array_equal(cat_data['cat_id'], valid_id)
         np.testing.assert_array_almost_equal(cat_data['ra'], valid_ra, decimal=3)
         np.testing.assert_array_almost_equal(cat_data['dec'], valid_dec, decimal=3)
+        del db
         if os.path.exists(db_name):
             os.unlink(db_name)
 
@@ -769,6 +770,7 @@ class boundingBoxTest(unittest.TestCase):
         np.testing.assert_array_equal(cat_data['cat_id'], valid_id)
         np.testing.assert_array_almost_equal(cat_data['ra'], valid_ra, decimal=3)
         np.testing.assert_array_almost_equal(cat_data['dec'], valid_dec, decimal=3)
+        del db
         if os.path.exists(db_name):
             os.unlink(db_name)
 
