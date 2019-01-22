@@ -521,7 +521,7 @@ class boundingBoxTest(unittest.TestCase):
         Test that spatial queries behave correctly around RA=0
         """
         rng = np.random.RandomState(81234122)
-        db_name = tempfile.mkstemp(dir=self.scratch_dir, prefix='negRA', suffix='.db')[1]
+        db_name = os.path.join(self.scratch_dir, 'neg_ra.db')
         with sqlite3.connect(db_name) as connection:
             cursor = connection.cursor()
             cursor.execute('''CREATE TABLE neg_ra_table
@@ -557,8 +557,7 @@ class boundingBoxTest(unittest.TestCase):
 
 
         cat = negativeRaCatalogClass(db, obs_metadata=obs)
-        cat_name = tempfile.mkstemp(dir=self.scratch_dir, prefix='negRa', suffix='.txt')[1]
-
+        cat_name = os.path.join(self.scratch_dir, 'neg_ra_cat.txt')
         cat.write_catalog(cat_name)
         valid = np.where(angularSeparation(pra, pdec, ra, dec)<boundLength)
         self.assertGreater(len(valid[0]), 0)
@@ -587,8 +586,6 @@ class boundingBoxTest(unittest.TestCase):
                                   boundType='circle', boundLength=boundLength)
 
         cat = negativeRaCatalogClass(db, obs_metadata=obs)
-        cat_name = tempfile.mkstemp(dir=self.scratch_dir, prefix='negRa', suffix='.txt')[1]
-
         cat.write_catalog(cat_name)
 
         cat_data = np.genfromtxt(cat_name, dtype=cat_dtype)
@@ -603,8 +600,6 @@ class boundingBoxTest(unittest.TestCase):
                                   boundType='box', boundLength=boundLength)
 
         cat = negativeRaCatalogClass(db, obs_metadata=obs)
-        cat_name = tempfile.mkstemp(dir=self.scratch_dir, prefix='negRa', suffix='.txt')[1]
-
         dec_min = pdec-boundLength
         dec_max = pdec+boundLength
 
@@ -635,7 +630,6 @@ class boundingBoxTest(unittest.TestCase):
                                   boundType='box', boundLength=boundLength)
 
         cat = negativeRaCatalogClass(db, obs_metadata=obs)
-        cat_name = tempfile.mkstemp(dir=self.scratch_dir, prefix='negRa', suffix='.txt')[1]
         cat.write_catalog(cat_name)
         cat_data = np.genfromtxt(cat_name, dtype=cat_dtype)
         np.testing.assert_array_equal(cat_data['cat_id'], valid_id)
@@ -650,7 +644,7 @@ class boundingBoxTest(unittest.TestCase):
         Test that spatial queries behave correctly around RA=0 (when RA>350)
         """
         rng = np.random.RandomState(81234122)
-        db_name = tempfile.mkstemp(dir=self.scratch_dir, prefix='posRA', suffix='.db')[1]
+        db_name = os.path.join(self.scratch_dir, 'very_pos_ra.db')
         with sqlite3.connect(db_name) as connection:
             cursor = connection.cursor()
             cursor.execute('''CREATE TABLE neg_ra_table
@@ -688,8 +682,7 @@ class boundingBoxTest(unittest.TestCase):
 
 
         cat = veryPositiveRaCatalogClass(db, obs_metadata=obs)
-        cat_name = tempfile.mkstemp(dir=self.scratch_dir, prefix='posRa', suffix='.txt')[1]
-
+        cat_name = os.path.join(self.scratch_dir, 'very_pos_ra_cat.txt')
         cat.write_catalog(cat_name)
         valid = np.where(angularSeparation(pra, pdec, ra, dec)<boundLength)
         self.assertGreater(len(valid[0]), 0)
@@ -718,8 +711,6 @@ class boundingBoxTest(unittest.TestCase):
                                   boundType='circle', boundLength=boundLength)
 
         cat = veryPositiveRaCatalogClass(db, obs_metadata=obs)
-        cat_name = tempfile.mkstemp(dir=self.scratch_dir, prefix='posRa', suffix='.txt')[1]
-
         cat.write_catalog(cat_name)
 
         cat_data = np.genfromtxt(cat_name, dtype=cat_dtype)
@@ -734,7 +725,6 @@ class boundingBoxTest(unittest.TestCase):
                                   boundType='box', boundLength=boundLength)
 
         cat = veryPositiveRaCatalogClass(db, obs_metadata=obs)
-        cat_name = tempfile.mkstemp(dir=self.scratch_dir, prefix='posRa', suffix='.txt')[1]
 
         dec_min = pdec-boundLength
         dec_max = pdec+boundLength
@@ -766,7 +756,6 @@ class boundingBoxTest(unittest.TestCase):
                                   boundType='box', boundLength=boundLength)
 
         cat = veryPositiveRaCatalogClass(db, obs_metadata=obs)
-        cat_name = tempfile.mkstemp(dir=self.scratch_dir, prefix='posRa', suffix='.txt')[1]
         cat.write_catalog(cat_name)
         cat_data = np.genfromtxt(cat_name, dtype=cat_dtype)
         np.testing.assert_array_equal(cat_data['cat_id'], valid_id)
