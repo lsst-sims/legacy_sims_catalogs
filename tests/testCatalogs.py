@@ -8,6 +8,7 @@ import unittest
 import tempfile
 import shutil
 import lsst.utils.tests
+from lsst.sims.utils.CodeUtilities import sims_clean_up
 from lsst.sims.utils import ObservationMetaData
 from lsst.sims.catalogs.db import fileDBObject, CatalogDBObject
 from lsst.sims.catalogs.definitions import InstanceCatalog
@@ -379,6 +380,7 @@ class boundingBoxTest(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
+        sims_clean_up()
         if os.path.exists(cls.starTextName):
             os.unlink(cls.starTextName)
         for file_name in os.listdir(cls.scratch_dir):
