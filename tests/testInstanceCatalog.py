@@ -85,7 +85,7 @@ def createCannotBeNullTestDB(filename=None, add_nans=True, dir=None):
             output = np.array([(ii, values[0], values[1], values[2], w1, w2)], dtype=dtype)
         else:
             size = output.size
-            output.resize(size+1)
+            output = np.resize(output, size+1)
             output[size] = (ii, values[0], values[1], values[2], w1, w2)
 
         if np.isnan(values[0]) and add_nans:
