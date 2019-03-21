@@ -294,7 +294,7 @@ class CompoundInstanceCatalog(object):
             if write_header:
                 catList[0].write_header(file_handle)
 
-            new_dtype_list = [None]*len(catList)
+            new_dtype_name_list = [None]*len(catList)
 
             first_chunk = True
             for chunk in master_results:
@@ -310,13 +310,11 @@ class CompoundInstanceCatalog(object):
                     local_recarray.flags['WRITEABLE'] = False  # so numpy does not raise a warning
                                                                # because it thinks we may accidentally
                                                                # write to this array
-                    if new_dtype_list[ix] is None:
-                        new_dtype = np.dtype([tuple([dd.replace(catName+'_', '')] +
-                                                    [local_recarray.dtype[dd]])
-                                              for dd in master_colnames[ix]])
-                        new_dtype_list[ix] = new_dtype
+                    if new_dtype_name_list[ix] is None:
+                        new_dtype_name_list[ix] = list([dd.replace(catName+'_','')
+                                                        for dd in master_colnames[ix]])
 
-                    local_recarray.dtype = new_dtype_list[ix]
+                    local_recarray.dtype.names = new_dtype_name_list[ix]
                     cat._write_recarray(local_recarray, file_handle)
                     cat._delete_current_chunk()
 
