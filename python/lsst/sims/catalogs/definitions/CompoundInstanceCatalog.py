@@ -3,6 +3,7 @@ from builtins import zip
 from builtins import range
 from builtins import object
 import numpy as np
+import numpy.lib.recfunctions as recfunctions
 from lsst.sims.catalogs.db import CompoundCatalogDBObject
 
 
@@ -305,7 +306,8 @@ class CompoundInstanceCatalog(object):
                             if name not in chunk.dtype.fields:
                                 master_colnames[ix][iy] = name_map[ix][name]
 
-                    local_recarray = chunk[master_colnames[ix]].view(np.recarray)
+                    local_recarray = recfunctions.repack_fields(
+                                        chunk[master_colnames[ix]].view(np.recarray))
 
                     local_recarray.flags['WRITEABLE'] = False  # so numpy does not raise a warning
                                                                # because it thinks we may accidentally
