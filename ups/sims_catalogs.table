@@ -1,8 +1,6 @@
 setupRequired(daf_persistence)
 setupRequired(pymssql)
-setupRequired(python)
 setupRequired(sims_utils)
-setupRequired(sqlalchemy)
 setupRequired(utils)
 
 #Anaconda provides scipy which is needed by this package.
