@@ -33,7 +33,7 @@ from sqlalchemy.engine import reflection, url
 from sqlalchemy import (create_engine, MetaData,
                         Table, event, text)
 from sqlalchemy import exc as sa_exc
-from lsst.daf.persistence import DbAuth
+from lsst.daf.butler.registry import DbAuth
 from lsst.sims.utils.CodeUtilities import sims_clean_up
 
 #The documentation at http://docs.sqlalchemy.org/en/rel_0_7/core/types.html#sqlalchemy.types.Numeric
@@ -155,21 +155,17 @@ class DBConnection(object):
 
         #DbAuth will not look up hosts that are None, '' or 0
         if self._host:
-            try:
-                authDict = {'username': DbAuth.username(self._host, str(self._port)),
-                            'password': DbAuth.password(self._host, str(self._port))}
-            except:
-                if self._driver == 'mssql+pymssql':
-                    print("\nFor more information on database authentication using the db-auth.paf"
-                          " policy file see: "
-                          "https://confluence.lsstcorp.org/display/SIM/Accessing+the+UW+CATSIM+Database\n")
-                raise
-
+            auth = DbAuth(
+                    os.path.join(os.environ["HOME"], ".lsst", "db-auth.yaml"))
+            username, password = auth.getAuth(
+                    self._driver, host=self._host, port=self._port,
+                    database=self._database)
             dbUrl = url.URL(self._driver,
                             host=self._host,
                             port=self._port,
                             database=self._database,
-                            **authDict)
+                            username=username,
+                            password=password)
         else:
             dbUrl = url.URL(self._driver,
                             database=self._database)

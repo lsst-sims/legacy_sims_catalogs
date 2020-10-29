@@ -1,4 +1,4 @@
-setupRequired(daf_persistence)
+setupRequired(daf_butler)
 setupRequired(pymssql)
 setupRequired(sims_utils)
 setupRequired(utils)
