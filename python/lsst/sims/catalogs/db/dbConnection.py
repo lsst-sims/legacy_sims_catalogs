@@ -1,4 +1,3 @@
-from __future__ import print_function
 from future import standard_library
 standard_library.install_aliases()
 import sys
@@ -35,6 +34,7 @@ from sqlalchemy import (create_engine, MetaData,
 from sqlalchemy import exc as sa_exc
 from lsst.daf.butler.registry import DbAuth
 from lsst.sims.utils.CodeUtilities import sims_clean_up
+from lsst.utils import getPackageDir
 
 #The documentation at http://docs.sqlalchemy.org/en/rel_0_7/core/types.html#sqlalchemy.types.Numeric
 #suggests using the cdecimal module.  Since it is not standard, import decimal.
@@ -155,8 +155,12 @@ class DBConnection(object):
 
         #DbAuth will not look up hosts that are None, '' or 0
         if self._host:
-            auth = DbAuth(
-                    os.path.join(os.environ["HOME"], ".lsst", "db-auth.yaml"))
+            # This is triggered when you need to connect to a remote database.
+            # Use 'HOME' as the default location (backwards compatibility) but fail graciously
+            authdir = os.getenv('HOME')
+            if os.getenv('HOME') is None:
+                authdir = getPackageDir('SIMS_CATALOGS')
+            auth = DbAuth(os.path.join(authdir, ".lsst", "db-auth.yaml"))
             username, password = auth.getAuth(
                     self._driver, host=self._host, port=self._port,
                     database=self._database)
@@ -421,7 +425,7 @@ class DBObject(object):
                                    "Please specify a dtype with the 'dtype' kwarg.")
 
             for xx in results[0]:
-                if dataString is not '':
+                if dataString != '':
                     dataString += delimit_char
                 dataString += str(xx)
             names = [str_cast(ww) for ww in results[0].keys()]
