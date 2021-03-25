@@ -158,8 +158,10 @@ class DBConnection(object):
             # This is triggered when you need to connect to a remote database.
             # Use 'HOME' as the default location (backwards compatibility) but fail graciously
             authdir = os.getenv('HOME')
-            if os.getenv('HOME') is None:
-                authdir = getPackageDir('SIMS_CATALOGS')
+            if authdir is None:
+                # Use an empty file in this package, which causes
+                # a fallback to database-native authentication.
+                authdir = getPackageDir('sims_catalogs')
             auth = DbAuth(os.path.join(authdir, ".lsst", "db-auth.yaml"))
             username, password = auth.getAuth(
                     self._driver, host=self._host, port=self._port,
