@@ -162,7 +162,9 @@ class DBConnection(object):
                 # Use an empty file in this package, which causes
                 # a fallback to database-native authentication.
                 authdir = getPackageDir('sims_catalogs')
-            auth = DbAuth(os.path.join(authdir, ".lsst", "db-auth.yaml"))
+                auth = DbAuth(os.path.join(authdir, "tests", "db-auth.yaml"))
+            else:
+                auth = DbAuth(os.path.join(authdir, ".lsst", "db-auth.yaml"))
             username, password = auth.getAuth(
                     self._driver, host=self._host, port=self._port,
                     database=self._database)

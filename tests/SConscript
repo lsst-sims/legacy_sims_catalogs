@@ -2,4 +2,5 @@
 import os
 from lsst.sconsUtils import scripts, env
 
+Execute(Chmod("db-auth.yaml", 0o600))
 scripts.BasicSConscript.tests()
