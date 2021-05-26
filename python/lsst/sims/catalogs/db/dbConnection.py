@@ -39,7 +39,6 @@ from lsst.utils import getPackageDir
 #The documentation at http://docs.sqlalchemy.org/en/rel_0_7/core/types.html#sqlalchemy.types.Numeric
 #suggests using the cdecimal module.  Since it is not standard, import decimal.
 #TODO: test for cdecimal and use it if it exists.
-import decimal
 from future.utils import with_metaclass
 
 __all__ = ["ChunkIterator", "DBObject", "CatalogDBObject", "fileDBObject"]
@@ -88,7 +87,7 @@ class ChunkIterator(object):
         return self
 
     def __next__(self):
-        if self.chunk_size is None and not self.exec_query.closed:
+        if self.chunk_size is None:
             chunk = self.exec_query.fetchall()
             return self._postprocess_results(chunk)
         elif self.chunk_size is not None:
@@ -168,15 +167,15 @@ class DBConnection(object):
             username, password = auth.getAuth(
                     self._driver, host=self._host, port=self._port,
                     database=self._database)
-            dbUrl = url.URL(self._driver,
-                            host=self._host,
-                            port=self._port,
-                            database=self._database,
-                            username=username,
-                            password=password)
+            dbUrl = url.URL.create(self._driver,
+                                   host=self._host,
+                                   port=self._port,
+                                   database=self._database,
+                                   username=username,
+                                   password=password)
         else:
-            dbUrl = url.URL(self._driver,
-                            database=self._database)
+            dbUrl = url.URL.create(self._driver,
+                                   database=self._database)
 
 
         self._engine = create_engine(dbUrl, echo=self._verbose)
