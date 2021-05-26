@@ -87,7 +87,7 @@ class ChunkIterator(object):
         return self
 
     def __next__(self):
-        if self.chunk_size is None and not self.dbobj.connection.closed:
+        if self.chunk_size is None:
             chunk = self.exec_query.fetchall()
             return self._postprocess_results(chunk)
         elif self.chunk_size is not None:
